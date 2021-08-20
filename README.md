@@ -1,2 +1,4 @@
-# L5P Keyboard RGB
- Controls the RGB on the keyboard for the Legion 5 Pro from lenovo. Mostly used for learning a bit of rust.
+# L5P Keyboard RGB Control Program
+A fun little experiment. Probably contains bugs.
+
+Thanks to legendk95#0574 (272711294338072577) over at discord for initially reverse engineering the way to talk to the keyboard.
