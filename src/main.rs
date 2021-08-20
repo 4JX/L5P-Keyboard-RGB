@@ -229,30 +229,30 @@ fn main() {
 				"Static" => {
 					app_ui.control_tiles.activate();
 					*effect_loop_is_active.lock() = false;
-					keyboard.lock().set_effect(keyboard_utils::KeyboardEffects::Static);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Static);
 					force_update_colors(&app_ui.control_tiles.control_sections, &keyboard);
 				}
 				"Breath" => {
 					app_ui.control_tiles.activate();
 					*effect_loop_is_active.lock() = false;
-					keyboard.lock().set_effect(keyboard_utils::KeyboardEffects::Breath);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Breath);
 					force_update_colors(&app_ui.control_tiles.control_sections, &keyboard);
 				}
 				"Smooth" => {
 					app_ui.control_tiles.deactivate();
 					*effect_loop_is_active.lock() = false;
-					keyboard.lock().set_effect(keyboard_utils::KeyboardEffects::Smooth);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Smooth);
 				}
 				"LeftWave" => {
 					app_ui.control_tiles.deactivate();
 					*effect_loop_is_active.lock() = false;
-					keyboard.lock().set_effect(keyboard_utils::KeyboardEffects::LeftWave);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::LeftWave);
 				}
 				"RightWave" => {
 					app_ui.control_tiles.deactivate();
 					*effect_loop_is_active.lock() = false;
 
-					keyboard.lock().set_effect(keyboard_utils::KeyboardEffects::RightWave);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::RightWave);
 				}
 				"LeftPulse" => {
 					//Preparations
@@ -260,7 +260,7 @@ fn main() {
 					wait_thread_end(&thread_ended_signal);
 					app_ui.control_tiles.master_only();
 					*effect_loop_is_active.lock() = true;
-					keyboard.lock().set_effect(keyboard_utils::KeyboardEffects::Static);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Static);
 
 					//Create necessary clones to be passed into thread
 					let should_loop = Arc::clone(&effect_loop_is_active);
@@ -304,7 +304,7 @@ fn main() {
 					wait_thread_end(&thread_ended_signal);
 					app_ui.control_tiles.master_only();
 					*effect_loop_is_active.lock() = true;
-					keyboard.lock().set_effect(keyboard_utils::KeyboardEffects::Static);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Static);
 
 					//Create necessary clones to be passed into thread
 					let should_loop = Arc::clone(&effect_loop_is_active);
@@ -347,7 +347,7 @@ fn main() {
 					wait_thread_end(&thread_ended_signal);
 					app_ui.control_tiles.deactivate();
 					*effect_loop_is_active.lock() = true;
-					keyboard.lock().set_effect(keyboard_utils::KeyboardEffects::Static);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Static);
 
 					//Create necessary clones to be passed into thread
 					let should_loop = Arc::clone(&effect_loop_is_active);
