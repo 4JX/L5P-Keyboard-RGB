@@ -89,7 +89,7 @@ fn add_control_tile_handle(control_tile: &mut gui::RgbControlTile, keyboard: Arc
 }
 
 fn add_master_control_tile_handle(control_tiles: &mut gui::ControlTiles, keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, effect_loop_is_active: Arc<Mutex<bool>>) {
-	let mut master_tile = control_tiles.master.1.clone();
+	let mut master_tile = control_tiles.master.clone();
 
 	//Button
 	master_tile.toggle_button.handle({
@@ -176,18 +176,18 @@ fn add_master_control_tile_handle(control_tiles: &mut gui::ControlTiles, keyboar
 
 fn force_update_colors(sections: &gui::SectionControlTiles, keyboard: &Arc<Mutex<keyboard_utils::Keyboard>>) {
 	let target = [
-		sections.left.1.red_input.value().parse::<f32>().unwrap(),
-		sections.left.1.green_input.value().parse::<f32>().unwrap(),
-		sections.left.1.blue_input.value().parse::<f32>().unwrap(),
-		sections.center_left.1.red_input.value().parse::<f32>().unwrap(),
-		sections.center_left.1.green_input.value().parse::<f32>().unwrap(),
-		sections.center_left.1.blue_input.value().parse::<f32>().unwrap(),
-		sections.center_right.1.red_input.value().parse::<f32>().unwrap(),
-		sections.center_right.1.green_input.value().parse::<f32>().unwrap(),
-		sections.center_right.1.blue_input.value().parse::<f32>().unwrap(),
-		sections.right.1.red_input.value().parse::<f32>().unwrap(),
-		sections.right.1.green_input.value().parse::<f32>().unwrap(),
-		sections.right.1.blue_input.value().parse::<f32>().unwrap(),
+		sections.left.red_input.value().parse::<f32>().unwrap(),
+		sections.left.green_input.value().parse::<f32>().unwrap(),
+		sections.left.blue_input.value().parse::<f32>().unwrap(),
+		sections.center_left.red_input.value().parse::<f32>().unwrap(),
+		sections.center_left.green_input.value().parse::<f32>().unwrap(),
+		sections.center_left.blue_input.value().parse::<f32>().unwrap(),
+		sections.center_right.red_input.value().parse::<f32>().unwrap(),
+		sections.center_right.green_input.value().parse::<f32>().unwrap(),
+		sections.center_right.blue_input.value().parse::<f32>().unwrap(),
+		sections.right.red_input.value().parse::<f32>().unwrap(),
+		sections.right.green_input.value().parse::<f32>().unwrap(),
+		sections.right.blue_input.value().parse::<f32>().unwrap(),
 	];
 	keyboard.lock().set_colors_to(&target);
 }
@@ -210,10 +210,10 @@ fn main() {
 	//Begin app logic
 
 	let mut app_ui = gui::create_ui();
-	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.left.1, keyboard.clone(), 0, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.center_left.1, keyboard.clone(), 1, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.center_right.1, keyboard.clone(), 2, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.right.1, keyboard.clone(), 3, effect_loop_is_active.clone());
+	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.left, keyboard.clone(), 0, effect_loop_is_active.clone());
+	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.center_left, keyboard.clone(), 1, effect_loop_is_active.clone());
+	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.center_right, keyboard.clone(), 2, effect_loop_is_active.clone());
+	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.right, keyboard.clone(), 3, effect_loop_is_active.clone());
 	add_master_control_tile_handle(&mut app_ui.control_tiles.clone(), keyboard.clone(), effect_loop_is_active.clone());
 
 	// Effect choice
@@ -271,7 +271,7 @@ fn main() {
 					thread::spawn(move || {
 						*signal.lock() = false;
 						while *should_loop.lock() {
-							let master_tile = &control_tiles.lock().master.1;
+							let master_tile = &control_tiles.lock().master;
 							let red = master_tile.red_input.value().parse::<f32>().unwrap();
 							let green = master_tile.green_input.value().parse::<f32>().unwrap();
 							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();
@@ -315,7 +315,7 @@ fn main() {
 					thread::spawn(move || {
 						*signal.lock() = false;
 						while *should_loop.lock() {
-							let master_tile = &control_tiles.lock().master.1;
+							let master_tile = &control_tiles.lock().master;
 							let red = master_tile.red_input.value().parse::<f32>().unwrap();
 							let green = master_tile.green_input.value().parse::<f32>().unwrap();
 							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();

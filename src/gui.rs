@@ -40,45 +40,45 @@ pub struct AppUi {
 }
 #[derive(Clone)]
 pub struct ControlTiles {
-	pub master: (Tile, RgbControlTile),
+	pub master: RgbControlTile,
 	pub control_sections: SectionControlTiles,
 }
 
 impl ControlTiles {
 	pub fn activate(&mut self) {
-		self.master.1.activate();
+		self.master.activate();
 		self.control_sections.activate();
 	}
 	pub fn deactivate(&mut self) {
-		self.master.1.deactivate();
+		self.master.deactivate();
 		self.control_sections.deactivate();
 	}
 	pub fn master_only(&mut self) {
 		self.deactivate();
-		self.master.1.activate();
-		self.master.1.toggle_button.deactivate();
+		self.master.activate();
+		self.master.toggle_button.deactivate();
 	}
 }
 #[derive(Clone)]
 pub struct SectionControlTiles {
-	pub left: (Tile, RgbControlTile),
-	pub center_left: (Tile, RgbControlTile),
-	pub center_right: (Tile, RgbControlTile),
-	pub right: (Tile, RgbControlTile),
+	pub left: RgbControlTile,
+	pub center_left: RgbControlTile,
+	pub center_right: RgbControlTile,
+	pub right: RgbControlTile,
 }
 
 impl SectionControlTiles {
 	pub fn activate(&mut self) {
-		self.left.1.activate();
-		self.center_left.1.activate();
-		self.center_right.1.activate();
-		self.right.1.activate();
+		self.left.activate();
+		self.center_left.activate();
+		self.center_right.activate();
+		self.right.activate();
 	}
 	pub fn deactivate(&mut self) {
-		self.left.1.deactivate();
-		self.center_left.1.deactivate();
-		self.center_right.1.deactivate();
-		self.right.1.deactivate();
+		self.left.deactivate();
+		self.center_left.deactivate();
+		self.center_right.deactivate();
+		self.right.deactivate();
 	}
 	pub fn change_color_value(&mut self, color: BaseColor, value: f32) {
 		if !(0.0..=255.0).contains(&value) {
@@ -86,22 +86,22 @@ impl SectionControlTiles {
 		}
 		match color {
 			BaseColor::Red => {
-				self.left.1.red_input.set_value(value.to_string().as_str());
-				self.center_left.1.red_input.set_value(value.to_string().as_str());
-				self.center_right.1.red_input.set_value(value.to_string().as_str());
-				self.right.1.red_input.set_value(value.to_string().as_str());
+				self.left.red_input.set_value(value.to_string().as_str());
+				self.center_left.red_input.set_value(value.to_string().as_str());
+				self.center_right.red_input.set_value(value.to_string().as_str());
+				self.right.red_input.set_value(value.to_string().as_str());
 			}
 			BaseColor::Green => {
-				self.left.1.green_input.set_value(value.to_string().as_str());
-				self.center_left.1.green_input.set_value(value.to_string().as_str());
-				self.center_right.1.green_input.set_value(value.to_string().as_str());
-				self.right.1.green_input.set_value(value.to_string().as_str());
+				self.left.green_input.set_value(value.to_string().as_str());
+				self.center_left.green_input.set_value(value.to_string().as_str());
+				self.center_right.green_input.set_value(value.to_string().as_str());
+				self.right.green_input.set_value(value.to_string().as_str());
 			}
 			BaseColor::Blue => {
-				self.left.1.blue_input.set_value(value.to_string().as_str());
-				self.center_left.1.blue_input.set_value(value.to_string().as_str());
-				self.center_right.1.blue_input.set_value(value.to_string().as_str());
-				self.right.1.blue_input.set_value(value.to_string().as_str());
+				self.left.blue_input.set_value(value.to_string().as_str());
+				self.center_left.blue_input.set_value(value.to_string().as_str());
+				self.center_right.blue_input.set_value(value.to_string().as_str());
+				self.right.blue_input.set_value(value.to_string().as_str());
 			}
 		}
 	}
@@ -109,6 +109,7 @@ impl SectionControlTiles {
 
 #[derive(Clone)]
 pub struct RgbControlTile {
+	pub exterior_tile: Tile,
 	pub toggle_button: ToggleButton,
 	pub red_input: IntInput,
 	pub green_input: IntInput,
@@ -130,33 +131,33 @@ impl RgbControlTile {
 	}
 }
 
-fn new_rgb_controller_tile(masterTile: bool) -> (Tile, RgbControlTile) {
+fn new_rgb_controller_tile(masterTile: bool) -> RgbControlTile {
 	let center_x = 540 / 2;
 	let center_y = 90 / 2 - 20;
 	let offset = 120;
 
 	//Begin tile
 	let mut control_tile = RgbControlTile {
+		exterior_tile: Tile::new(0, 0, 540, 90, ""),
 		toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
 		red_input: IntInput::new(center_x - offset, center_y, 60, 40, "R:"),
 		green_input: IntInput::new(center_x, center_y, 60, 40, "G:"),
 		blue_input: IntInput::new(center_x + offset, center_y, 60, 40, "B:"),
 	};
-	let mut exterior_tile = Tile::new(0, 0, 540, 90, "");
 
-	exterior_tile.add(&control_tile.toggle_button);
+	control_tile.exterior_tile.add(&control_tile.toggle_button);
 
-	exterior_tile.add(&control_tile.red_input);
-	exterior_tile.add(&control_tile.green_input);
-	exterior_tile.add(&control_tile.blue_input);
-	exterior_tile.end();
+	control_tile.exterior_tile.add(&control_tile.red_input);
+	control_tile.exterior_tile.add(&control_tile.green_input);
+	control_tile.exterior_tile.add(&control_tile.blue_input);
+	control_tile.exterior_tile.end();
 	//Themeing
-	exterior_tile.set_frame(FrameType::FlatBox);
+	control_tile.exterior_tile.set_frame(FrameType::FlatBox);
 
 	if masterTile {
-		exterior_tile.set_color(Color::from_u32(0x777777));
+		control_tile.exterior_tile.set_color(Color::from_u32(0x777777));
 	} else {
-		exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
+		control_tile.exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
 	}
 
 	//Button
@@ -188,7 +189,7 @@ fn new_rgb_controller_tile(masterTile: bool) -> (Tile, RgbControlTile) {
 	//Blue
 	theme_input(&mut control_tile.blue_input, BaseColor::Blue);
 
-	(exterior_tile, control_tile)
+	control_tile
 }
 
 pub fn create_ui() -> AppUi {
@@ -204,11 +205,11 @@ pub fn create_ui() -> AppUi {
 	};
 	let control_tiles = ControlTiles { master, control_sections };
 
-	color_picker_pack.add(&control_tiles.control_sections.left.0);
-	color_picker_pack.add(&control_tiles.control_sections.center_left.0);
-	color_picker_pack.add(&control_tiles.control_sections.center_right.0);
-	color_picker_pack.add(&control_tiles.control_sections.right.0);
-	color_picker_pack.add(&control_tiles.master.0);
+	color_picker_pack.add(&control_tiles.control_sections.left.exterior_tile);
+	color_picker_pack.add(&control_tiles.control_sections.center_left.exterior_tile);
+	color_picker_pack.add(&control_tiles.control_sections.center_right.exterior_tile);
+	color_picker_pack.add(&control_tiles.control_sections.right.exterior_tile);
+	color_picker_pack.add(&control_tiles.master.exterior_tile);
 	color_picker_pack.end();
 
 	let mut effect_type_tile = Tile::new(540, 0, 360, 360, "");
