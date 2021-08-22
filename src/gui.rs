@@ -20,7 +20,8 @@ const RED: u32 = 0xff0000;
 const GREEN: u32 = 0x00ff00;
 const BLUE: u32 = 0x0000ff;
 const DARK_GRAY: u32 = 0x333333;
-const LIGHT_GRAY: u32 = 0x444444;
+const GRAY: u32 = 0x444444;
+const LIGHT_GRAY: u32 = 0x777777;
 const LIGHTER_GRAY: u32 = 0xcccccc;
 
 #[derive(Copy, Clone)]
@@ -131,7 +132,7 @@ impl RgbControlTile {
 	}
 }
 
-fn new_rgb_controller_tile(masterTile: bool) -> RgbControlTile {
+fn new_rgb_controller_tile(master_tile: bool) -> RgbControlTile {
 	let center_x = 540 / 2;
 	let center_y = 90 / 2 - 20;
 	let offset = 120;
@@ -154,10 +155,10 @@ fn new_rgb_controller_tile(masterTile: bool) -> RgbControlTile {
 	//Themeing
 	control_tile.exterior_tile.set_frame(FrameType::FlatBox);
 
-	if masterTile {
-		control_tile.exterior_tile.set_color(Color::from_u32(0x777777));
-	} else {
+	if master_tile {
 		control_tile.exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
+	} else {
+		control_tile.exterior_tile.set_color(Color::from_u32(GRAY));
 	}
 
 	//Button
