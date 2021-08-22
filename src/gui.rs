@@ -1,4 +1,3 @@
-// #![windows_subsystem = "windows"]
 use fltk::{
 	app,
 	browser::HoldBrowser,
@@ -36,15 +35,7 @@ pub enum BaseColor {
 	Green,
 	Blue,
 }
-#[derive(Clone)]
-pub struct AppUi {
-	pub app: app::App,
-	pub control_tiles: ControlTiles,
-	pub effect_browser: HoldBrowser,
-	pub speed: Choice,
-	pub brightness: Choice,
-	pub effects_list: Vec<&'static str>,
-}
+
 #[derive(Clone)]
 pub struct ControlTiles {
 	pub master: RgbControlTile,
