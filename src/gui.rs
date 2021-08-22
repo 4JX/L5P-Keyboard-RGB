@@ -287,7 +287,7 @@ pub fn start_ui() {
 
 	let keyboard: crate::keyboard_utils::Keyboard = match crate::keyboard_utils::get_keyboard() {
 		Ok(keyboard) => keyboard,
-		Err(err) => panic!("adasd {}", err),
+		Err(err) => panic!("{}", err),
 	};
 	let keyboard = Arc::from(Mutex::from(keyboard));
 	let effect_loop_is_active = Arc::new(Mutex::new(false));
