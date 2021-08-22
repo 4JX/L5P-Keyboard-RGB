@@ -24,6 +24,7 @@ const WHITE: u32 = 0xffffff;
 const RED: u32 = 0xff0000;
 const GREEN: u32 = 0x00ff00;
 const BLUE: u32 = 0x0000ff;
+
 const DARK_GRAY: u32 = 0x333333;
 const GRAY: u32 = 0x444444;
 const LIGHT_GRAY: u32 = 0x777777;
@@ -38,8 +39,8 @@ pub enum BaseColor {
 
 #[derive(Clone)]
 pub struct ControlTiles {
-	pub master: RgbControlTile,
-	pub control_sections: SectionControlTiles,
+	pub master: ZoneControlTile,
+	pub control_sections: KeyboardControlTiles,
 }
 
 impl ControlTiles {
@@ -59,14 +60,14 @@ impl ControlTiles {
 }
 
 #[derive(Clone)]
-pub struct SectionControlTiles {
-	pub left: RgbControlTile,
-	pub center_left: RgbControlTile,
-	pub center_right: RgbControlTile,
-	pub right: RgbControlTile,
+pub struct KeyboardControlTiles {
+	pub left: ZoneControlTile,
+	pub center_left: ZoneControlTile,
+	pub center_right: ZoneControlTile,
+	pub right: ZoneControlTile,
 }
 
-impl SectionControlTiles {
+impl KeyboardControlTiles {
 	pub fn activate(&mut self) {
 		self.left.activate();
 		self.center_left.activate();
@@ -107,7 +108,7 @@ impl SectionControlTiles {
 }
 
 #[derive(Clone)]
-pub struct RgbControlTile {
+pub struct ZoneControlTile {
 	pub exterior_tile: Tile,
 	pub toggle_button: ToggleButton,
 	pub red_input: IntInput,
@@ -115,7 +116,7 @@ pub struct RgbControlTile {
 	pub blue_input: IntInput,
 }
 
-impl RgbControlTile {
+impl ZoneControlTile {
 	pub fn activate(&mut self) {
 		self.toggle_button.activate();
 		self.red_input.activate();
@@ -130,13 +131,13 @@ impl RgbControlTile {
 	}
 }
 
-fn new_rgb_controller_tile(master_tile: bool) -> RgbControlTile {
+fn new_rgb_controller_tile(master_tile: bool) -> ZoneControlTile {
 	let center_x = 540 / 2;
 	let center_y = 90 / 2 - 20;
 	let offset = 120;
 
 	//Begin tile
-	let mut control_tile = RgbControlTile {
+	let mut control_tile = ZoneControlTile {
 		exterior_tile: Tile::new(0, 0, 540, 90, ""),
 		toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
 		red_input: IntInput::new(center_x - offset, center_y, 60, 40, "R:"),
@@ -196,7 +197,7 @@ pub fn start_ui() {
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
 	let master = new_rgb_controller_tile(true);
-	let control_sections: SectionControlTiles = SectionControlTiles {
+	let control_sections: KeyboardControlTiles = KeyboardControlTiles {
 		left: (new_rgb_controller_tile(false)),
 		center_left: (new_rgb_controller_tile(false)),
 		center_right: (new_rgb_controller_tile(false)),
@@ -276,10 +277,10 @@ pub fn start_ui() {
 	let thread_ended_signal = Arc::new(Mutex::new(true));
 
 	//Begin app logic
-	add_control_tile_handle(&mut control_tiles.control_sections.left, keyboard.clone(), 0, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut control_tiles.control_sections.center_left, keyboard.clone(), 1, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut control_tiles.control_sections.center_right, keyboard.clone(), 2, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut control_tiles.control_sections.right, keyboard.clone(), 3, effect_loop_is_active.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.left, keyboard.clone(), 0, effect_loop_is_active.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_left, keyboard.clone(), 1, effect_loop_is_active.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_right, keyboard.clone(), 2, effect_loop_is_active.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.right, keyboard.clone(), 3, effect_loop_is_active.clone());
 	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), effect_loop_is_active.clone());
 
 	// Effect choice
@@ -480,7 +481,7 @@ pub fn start_ui() {
 	app.run().unwrap();
 }
 
-fn add_control_tile_handle(control_tile: &mut RgbControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
+fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
 	//Button
 	control_tile.toggle_button.handle({
 		let keyboard = keyboard.clone();
@@ -638,7 +639,7 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 	add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, keyboard, control_tiles.clone(), effect_loop_is_active);
 }
 
-fn force_update_colors(sections: &SectionControlTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
+fn force_update_colors(sections: &KeyboardControlTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
 	let target = [
 		sections.left.red_input.value().parse::<f32>().unwrap(),
 		sections.left.green_input.value().parse::<f32>().unwrap(),
