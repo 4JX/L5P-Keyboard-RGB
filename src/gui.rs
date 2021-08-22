@@ -211,7 +211,7 @@ pub fn start_ui() {
 		center_right: (new_rgb_controller_tile(false)),
 		right: (new_rgb_controller_tile(false)),
 	};
-	let control_tiles = ControlTiles { master, control_sections };
+	let mut control_tiles = ControlTiles { master, control_sections };
 
 	color_picker_pack.add(&control_tiles.control_sections.left.exterior_tile);
 	color_picker_pack.add(&control_tiles.control_sections.center_left.exterior_tile);
@@ -276,15 +276,6 @@ pub fn start_ui() {
 	brightness_choice.set_label_size(20);
 	brightness_choice.set_value(0);
 
-	let mut app_ui = AppUi {
-		app,
-		control_tiles,
-		effect_browser,
-		speed: speed_choice,
-		brightness: brightness_choice,
-		effects_list,
-	};
-
 	let keyboard: crate::keyboard_utils::Keyboard = match crate::keyboard_utils::get_keyboard() {
 		Ok(keyboard) => keyboard,
 		Err(err) => panic!("{}", err),
@@ -294,46 +285,46 @@ pub fn start_ui() {
 	let thread_ended_signal = Arc::new(Mutex::new(true));
 
 	//Begin app logic
-	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.left, keyboard.clone(), 0, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.center_left, keyboard.clone(), 1, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.center_right, keyboard.clone(), 2, effect_loop_is_active.clone());
-	add_control_tile_handle(&mut app_ui.control_tiles.control_sections.right, keyboard.clone(), 3, effect_loop_is_active.clone());
-	add_master_control_tile_handle(&mut app_ui.control_tiles.clone(), keyboard.clone(), effect_loop_is_active.clone());
+	add_control_tile_handle(&mut control_tiles.control_sections.left, keyboard.clone(), 0, effect_loop_is_active.clone());
+	add_control_tile_handle(&mut control_tiles.control_sections.center_left, keyboard.clone(), 1, effect_loop_is_active.clone());
+	add_control_tile_handle(&mut control_tiles.control_sections.center_right, keyboard.clone(), 2, effect_loop_is_active.clone());
+	add_control_tile_handle(&mut control_tiles.control_sections.right, keyboard.clone(), 3, effect_loop_is_active.clone());
+	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), effect_loop_is_active.clone());
 
 	// Effect choice
-	app_ui.effect_browser.set_callback({
+	effect_browser.set_callback({
 		let keyboard = keyboard.clone();
-		let mut app_ui = app_ui.clone();
 		let thread_ended_signal = Arc::clone(&thread_ended_signal);
+		let speed_choice = speed_choice.clone();
 		move |browser| match browser.value() {
 			0 => {
 				browser.select(1);
 			}
-			_ => match app_ui.effects_list[(browser.value() - 1) as usize] {
+			_ => match effects_list[(browser.value() - 1) as usize] {
 				"Static" => {
-					app_ui.control_tiles.activate();
+					control_tiles.activate();
 					*effect_loop_is_active.lock() = false;
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
-					force_update_colors(&app_ui.control_tiles.control_sections, &keyboard);
+					force_update_colors(&control_tiles.control_sections, &keyboard);
 				}
 				"Breath" => {
-					app_ui.control_tiles.activate();
+					control_tiles.activate();
 					*effect_loop_is_active.lock() = false;
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Breath);
-					force_update_colors(&app_ui.control_tiles.control_sections, &keyboard);
+					force_update_colors(&control_tiles.control_sections, &keyboard);
 				}
 				"Smooth" => {
-					app_ui.control_tiles.deactivate();
+					control_tiles.deactivate();
 					*effect_loop_is_active.lock() = false;
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Smooth);
 				}
 				"LeftWave" => {
-					app_ui.control_tiles.deactivate();
+					control_tiles.deactivate();
 					*effect_loop_is_active.lock() = false;
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::LeftWave);
 				}
 				"RightWave" => {
-					app_ui.control_tiles.deactivate();
+					control_tiles.deactivate();
 					*effect_loop_is_active.lock() = false;
 
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::RightWave);
@@ -342,15 +333,15 @@ pub fn start_ui() {
 					//Preparations
 					*effect_loop_is_active.lock() = false;
 					wait_thread_end(&thread_ended_signal);
-					app_ui.control_tiles.master_only();
+					control_tiles.master_only();
 					*effect_loop_is_active.lock() = true;
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 
 					//Create necessary clones to be passed into thread
 					let should_loop = Arc::clone(&effect_loop_is_active);
 					let keyboard = Arc::clone(&keyboard);
-					let speed = Arc::from(Mutex::from(app_ui.speed.clone()));
-					let control_tiles = Arc::from(Mutex::from(app_ui.control_tiles.clone()));
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
+					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
 					let signal = Arc::clone(&thread_ended_signal);
 					thread::spawn(move || {
 						*signal.lock() = false;
@@ -361,22 +352,22 @@ pub fn start_ui() {
 							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();
 
 							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							if !*should_loop.lock() {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							if !*should_loop.lock() {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							if !*should_loop.lock() {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
-							keyboard.lock().transition_colors_to(&color, 255 / speed.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							thread::sleep(time::Duration::from_millis(50));
 						}
 						*signal.lock() = true;
@@ -386,15 +377,15 @@ pub fn start_ui() {
 					//Preparations
 					*effect_loop_is_active.lock() = false;
 					wait_thread_end(&thread_ended_signal);
-					app_ui.control_tiles.master_only();
+					control_tiles.master_only();
 					*effect_loop_is_active.lock() = true;
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 
 					//Create necessary clones to be passed into thread
 					let should_loop = Arc::clone(&effect_loop_is_active);
 					let keyboard = Arc::clone(&keyboard);
-					let speed = Arc::from(Mutex::from(app_ui.speed.clone()));
-					let control_tiles = Arc::from(Mutex::from(app_ui.control_tiles.clone()));
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
+					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
 					let signal = Arc::clone(&thread_ended_signal);
 					thread::spawn(move || {
 						*signal.lock() = false;
@@ -404,22 +395,22 @@ pub fn start_ui() {
 							let green = master_tile.green_input.value().parse::<f32>().unwrap();
 							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
-							keyboard.lock().transition_colors_to(&color, 255 / speed.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							if !*should_loop.lock() {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							if !*should_loop.lock() {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							if !*should_loop.lock() {
 								break;
 							}
 							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							thread::sleep(time::Duration::from_millis(50));
 						}
 						*signal.lock() = true;
@@ -429,7 +420,7 @@ pub fn start_ui() {
 					//Preparations
 					*effect_loop_is_active.lock() = false;
 					wait_thread_end(&thread_ended_signal);
-					app_ui.control_tiles.deactivate();
+					control_tiles.deactivate();
 					*effect_loop_is_active.lock() = true;
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 
@@ -469,7 +460,7 @@ pub fn start_ui() {
 	});
 
 	//Speed
-	app_ui.speed.set_callback({
+	speed_choice.set_callback({
 		let keyboard = keyboard.clone();
 		move |choice| match choice.choice() {
 			Some(value) => {
@@ -483,7 +474,7 @@ pub fn start_ui() {
 	});
 
 	//Brightness
-	app_ui.brightness.set_callback({
+	brightness_choice.set_callback({
 		move |choice| match choice.choice() {
 			Some(value) => {
 				let brightness = value.parse::<u8>().unwrap();
