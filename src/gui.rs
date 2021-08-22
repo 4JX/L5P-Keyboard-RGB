@@ -130,7 +130,7 @@ impl RgbControlTile {
 	}
 }
 
-fn new_rgb_controller_tile() -> (Tile, RgbControlTile) {
+fn new_rgb_controller_tile(masterTile: bool) -> (Tile, RgbControlTile) {
 	let center_x = 540 / 2;
 	let center_y = 90 / 2 - 20;
 	let offset = 120;
@@ -143,20 +143,21 @@ fn new_rgb_controller_tile() -> (Tile, RgbControlTile) {
 		blue_input: IntInput::new(center_x + offset, center_y, 60, 40, "B:"),
 	};
 	let mut exterior_tile = Tile::new(0, 0, 540, 90, "");
-	let mut button_tile = Tile::new(0, 0, 90, 90, "");
-	button_tile.add(&control_tile.toggle_button);
-	button_tile.end();
-	let mut colors_tile = Tile::new(90, 0, 450, 90, "");
 
-	colors_tile.add(&control_tile.red_input);
-	colors_tile.add(&control_tile.green_input);
-	colors_tile.add(&control_tile.blue_input);
-	colors_tile.end();
+	exterior_tile.add(&control_tile.toggle_button);
+
+	exterior_tile.add(&control_tile.red_input);
+	exterior_tile.add(&control_tile.green_input);
+	exterior_tile.add(&control_tile.blue_input);
 	exterior_tile.end();
 	//Themeing
 	exterior_tile.set_frame(FrameType::FlatBox);
 
-	exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
+	if masterTile {
+		exterior_tile.set_color(Color::from_u32(0x777777));
+	} else {
+		exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
+	}
 
 	//Button
 	control_tile.toggle_button.set_frame(FrameType::OFlatFrame);
@@ -190,82 +191,18 @@ fn new_rgb_controller_tile() -> (Tile, RgbControlTile) {
 	(exterior_tile, control_tile)
 }
 
-fn get_control_tiles(control_sections: SectionControlTiles) -> ControlTiles {
-	let center_x = 540 / 2;
-	let center_y = 90 / 2 - 20;
-	let offset = 120;
-
-	//Begin tile
-	let mut control_tile = RgbControlTile {
-		toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
-		red_input: IntInput::new(center_x - offset, center_y, 60, 40, "R:"),
-		green_input: IntInput::new(center_x, center_y, 60, 40, "G:"),
-		blue_input: IntInput::new(center_x + offset, center_y, 60, 40, "B:"),
-	};
-
-	let mut exterior_tile = Tile::new(0, 0, 540, 90, "");
-	let mut button_tile = Tile::new(0, 0, 90, 90, "");
-	button_tile.add(&control_tile.toggle_button);
-	button_tile.end();
-	let mut colors_tile = Tile::new(90, 0, 450, 90, "");
-
-	colors_tile.add(&control_tile.red_input);
-	colors_tile.add(&control_tile.green_input);
-	colors_tile.add(&control_tile.blue_input);
-	colors_tile.end();
-	exterior_tile.end();
-	//Themeing
-	exterior_tile.set_frame(FrameType::FlatBox);
-
-	exterior_tile.set_color(Color::from_u32(0x777777));
-
-	//Button
-	control_tile.toggle_button.set_frame(FrameType::OFlatFrame);
-	control_tile.toggle_button.set_color(Color::from_u32(WHITE));
-
-	//Inputs
-	//Inputs
-	fn theme_input(input: &mut IntInput, color: BaseColor) {
-		match color {
-			BaseColor::Red => input.set_label_color(Color::from_u32(RED)),
-			BaseColor::Green => input.set_label_color(Color::from_u32(GREEN)),
-			BaseColor::Blue => input.set_label_color(Color::from_u32(BLUE)),
-		}
-		input.set_frame(FrameType::FlatBox);
-		input.set_color(Color::from_u32(DARK_GRAY));
-		input.set_selection_color(Color::White);
-		input.set_text_color(Color::from_u32(WHITE));
-		input.set_text_size(30);
-		input.set_label_size(30);
-		input.set_value("0");
-	}
-
-	//Red
-	theme_input(&mut control_tile.red_input, BaseColor::Red);
-
-	//Green
-	theme_input(&mut control_tile.green_input, BaseColor::Green);
-
-	//Blue
-	theme_input(&mut control_tile.blue_input, BaseColor::Blue);
-
-	ControlTiles {
-		master: (exterior_tile, control_tile),
-		control_sections,
-	}
-}
-
 pub fn create_ui() -> AppUi {
 	let app = app::App::default();
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Light Control Thing");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
-	let section_tiles: SectionControlTiles = SectionControlTiles {
-		left: (new_rgb_controller_tile()),
-		center_left: (new_rgb_controller_tile()),
-		center_right: (new_rgb_controller_tile()),
-		right: (new_rgb_controller_tile()),
+	let master = new_rgb_controller_tile(true);
+	let control_sections: SectionControlTiles = SectionControlTiles {
+		left: (new_rgb_controller_tile(false)),
+		center_left: (new_rgb_controller_tile(false)),
+		center_right: (new_rgb_controller_tile(false)),
+		right: (new_rgb_controller_tile(false)),
 	};
-	let control_tiles = get_control_tiles(section_tiles);
+	let control_tiles = ControlTiles { master, control_sections };
 
 	color_picker_pack.add(&control_tiles.control_sections.left.0);
 	color_picker_pack.add(&control_tiles.control_sections.center_left.0);
