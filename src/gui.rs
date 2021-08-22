@@ -193,7 +193,7 @@ fn new_rgb_controller_tile(master_tile: bool) -> RgbControlTile {
 
 pub fn start_ui() {
 	let app = app::App::default();
-	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Light Control Thing");
+	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
 	let master = new_rgb_controller_tile(true);
 	let control_sections: SectionControlTiles = SectionControlTiles {
