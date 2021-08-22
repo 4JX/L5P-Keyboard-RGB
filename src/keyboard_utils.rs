@@ -220,12 +220,7 @@ fn build_payload(keyboard_state: &LightingState) -> Result<[u8; 33], &'static st
 			0x04
 		}
 	};
-	if !SPEED_RANGE.contains(&keyboard_state.speed) {
-		return Err("Speed is outside valid range (1-4)");
-	}
-	if !BRIGHTNESS_RANGE.contains(&keyboard_state.brightness) {
-		return Err("Brightness is outside valid range (1-2)");
-	}
+
 	payload[3] = keyboard_state.speed;
 	payload[4] = keyboard_state.brightness;
 
