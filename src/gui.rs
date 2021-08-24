@@ -515,7 +515,7 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 
 	fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
 		let triplet_index = zone_index * 3;
-		let index = match color {
+		let color_index = match color {
 			BaseColor::Red => 0,
 			BaseColor::Green => 1,
 			BaseColor::Blue => 2,
@@ -531,11 +531,11 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 							if val > 255.0 {
 								input.set_value("255");
 								if !*effect_loop_is_active.lock() {
-									keyboard.lock().set_value_by_index(triplet_index + index, 255.0);
+									keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
 								}
 							} else {
 								if !*effect_loop_is_active.lock() {
-									keyboard.lock().set_value_by_index(triplet_index + index, val);
+									keyboard.lock().set_value_by_index(triplet_index + color_index, val);
 								}
 							}
 						}
