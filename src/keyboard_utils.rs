@@ -78,18 +78,14 @@ impl Keyboard {
 		self.refresh();
 	}
 
-	pub fn set_value_by_index(&mut self, triplet_index: u8, color_index: u8, new_value: f32) {
-		if !(0..4).contains(&triplet_index) {
-			panic!("Triplet index is outside valid range (0-3)");
-		}
-
-		if !(0..3).contains(&color_index) {
-			panic!("Color index is outside valid range (0-2)");
+	pub fn set_value_by_index(&mut self, color_index: u8, new_value: f32) {
+		if !(0..12).contains(&color_index) {
+			panic!("Color index is outside valid range (0-11)");
 		}
 		if !RGB_RANGE.contains(&new_value) {
 			panic!("Keyboard colors has value outside accepted range (0-255)");
 		}
-		let full_index: usize = ((triplet_index * 3) + color_index) as usize;
+		let full_index: usize = color_index as usize;
 		self.current_state.rgb_values[full_index] = new_value;
 		self.refresh();
 	}
@@ -112,7 +108,7 @@ impl Keyboard {
 			panic!("Zone index is outside valid range (0-3)");
 		}
 		for val in new_values.iter() {
-			if !RGB_RANGE.contains(&val) {
+			if !RGB_RANGE.contains(val) {
 				panic!("Keyboard colors has value outside accepted range (0-255)");
 			}
 		}
@@ -200,7 +196,7 @@ fn build_payload(keyboard_state: &LightingState) -> Result<[u8; 33], &'static st
 		return Err("Brightness is outside valid range (1-2)");
 	}
 	for i in keyboard_state.rgb_values.iter() {
-		if !RGB_RANGE.contains(&i) {
+		if !RGB_RANGE.contains(i) {
 			return Err("Keyboard colors has value outside accepted range (0-255)");
 		}
 	}

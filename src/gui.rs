@@ -1,15 +1,21 @@
-// #![windows_subsystem = "windows"]
 use fltk::{
 	app,
 	browser::HoldBrowser,
 	button::ToggleButton,
-	enums::{Color, Font, FrameType},
+	enums::{Color, Event, Font, FrameType},
 	group::{Pack, Tile},
 	input::IntInput,
 	menu::Choice,
 	prelude::*,
 	window::Window,
 };
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::{thread, time};
+
+use parking_lot::Mutex;
+use rand::Rng;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 450;
@@ -19,8 +25,10 @@ const WHITE: u32 = 0xffffff;
 const RED: u32 = 0xff0000;
 const GREEN: u32 = 0x00ff00;
 const BLUE: u32 = 0x0000ff;
+
 const DARK_GRAY: u32 = 0x333333;
-const LIGHT_GRAY: u32 = 0x444444;
+const GRAY: u32 = 0x444444;
+const LIGHT_GRAY: u32 = 0x777777;
 const LIGHTER_GRAY: u32 = 0xcccccc;
 
 #[derive(Copy, Clone)]
@@ -29,56 +37,49 @@ pub enum BaseColor {
 	Green,
 	Blue,
 }
-#[derive(Clone)]
-pub struct AppUi {
-	pub app: app::App,
-	pub control_tiles: ControlTiles,
-	pub effect_browser: HoldBrowser,
-	pub speed: Choice,
-	pub brightness: Choice,
-	pub effects_list: Vec<&'static str>,
-}
+
 #[derive(Clone)]
 pub struct ControlTiles {
-	pub master: (Tile, RgbControlTile),
-	pub control_sections: SectionControlTiles,
+	pub master: ZoneControlTile,
+	pub control_sections: KeyboardControlTiles,
 }
 
 impl ControlTiles {
 	pub fn activate(&mut self) {
-		self.master.1.activate();
+		self.master.activate();
 		self.control_sections.activate();
 	}
 	pub fn deactivate(&mut self) {
-		self.master.1.deactivate();
+		self.master.deactivate();
 		self.control_sections.deactivate();
 	}
 	pub fn master_only(&mut self) {
 		self.deactivate();
-		self.master.1.activate();
-		self.master.1.toggle_button.deactivate();
+		self.master.activate();
+		self.master.toggle_button.deactivate();
 	}
-}
-#[derive(Clone)]
-pub struct SectionControlTiles {
-	pub left: (Tile, RgbControlTile),
-	pub center_left: (Tile, RgbControlTile),
-	pub center_right: (Tile, RgbControlTile),
-	pub right: (Tile, RgbControlTile),
 }
 
-impl SectionControlTiles {
+#[derive(Clone)]
+pub struct KeyboardControlTiles {
+	pub left: ZoneControlTile,
+	pub center_left: ZoneControlTile,
+	pub center_right: ZoneControlTile,
+	pub right: ZoneControlTile,
+}
+
+impl KeyboardControlTiles {
 	pub fn activate(&mut self) {
-		self.left.1.activate();
-		self.center_left.1.activate();
-		self.center_right.1.activate();
-		self.right.1.activate();
+		self.left.activate();
+		self.center_left.activate();
+		self.center_right.activate();
+		self.right.activate();
 	}
 	pub fn deactivate(&mut self) {
-		self.left.1.deactivate();
-		self.center_left.1.deactivate();
-		self.center_right.1.deactivate();
-		self.right.1.deactivate();
+		self.left.deactivate();
+		self.center_left.deactivate();
+		self.center_right.deactivate();
+		self.right.deactivate();
 	}
 	pub fn change_color_value(&mut self, color: BaseColor, value: f32) {
 		if !(0.0..=255.0).contains(&value) {
@@ -86,36 +87,37 @@ impl SectionControlTiles {
 		}
 		match color {
 			BaseColor::Red => {
-				self.left.1.red_input.set_value(value.to_string().as_str());
-				self.center_left.1.red_input.set_value(value.to_string().as_str());
-				self.center_right.1.red_input.set_value(value.to_string().as_str());
-				self.right.1.red_input.set_value(value.to_string().as_str());
+				self.left.red_input.set_value(value.to_string().as_str());
+				self.center_left.red_input.set_value(value.to_string().as_str());
+				self.center_right.red_input.set_value(value.to_string().as_str());
+				self.right.red_input.set_value(value.to_string().as_str());
 			}
 			BaseColor::Green => {
-				self.left.1.green_input.set_value(value.to_string().as_str());
-				self.center_left.1.green_input.set_value(value.to_string().as_str());
-				self.center_right.1.green_input.set_value(value.to_string().as_str());
-				self.right.1.green_input.set_value(value.to_string().as_str());
+				self.left.green_input.set_value(value.to_string().as_str());
+				self.center_left.green_input.set_value(value.to_string().as_str());
+				self.center_right.green_input.set_value(value.to_string().as_str());
+				self.right.green_input.set_value(value.to_string().as_str());
 			}
 			BaseColor::Blue => {
-				self.left.1.blue_input.set_value(value.to_string().as_str());
-				self.center_left.1.blue_input.set_value(value.to_string().as_str());
-				self.center_right.1.blue_input.set_value(value.to_string().as_str());
-				self.right.1.blue_input.set_value(value.to_string().as_str());
+				self.left.blue_input.set_value(value.to_string().as_str());
+				self.center_left.blue_input.set_value(value.to_string().as_str());
+				self.center_right.blue_input.set_value(value.to_string().as_str());
+				self.right.blue_input.set_value(value.to_string().as_str());
 			}
 		}
 	}
 }
 
 #[derive(Clone)]
-pub struct RgbControlTile {
+pub struct ZoneControlTile {
+	pub exterior_tile: Tile,
 	pub toggle_button: ToggleButton,
 	pub red_input: IntInput,
 	pub green_input: IntInput,
 	pub blue_input: IntInput,
 }
 
-impl RgbControlTile {
+impl ZoneControlTile {
 	pub fn activate(&mut self) {
 		self.toggle_button.activate();
 		self.red_input.activate();
@@ -130,33 +132,34 @@ impl RgbControlTile {
 	}
 }
 
-fn new_rgb_controller_tile() -> (Tile, RgbControlTile) {
+fn new_zone_control_tile(master_tile: bool) -> ZoneControlTile {
 	let center_x = 540 / 2;
 	let center_y = 90 / 2 - 20;
 	let offset = 120;
 
 	//Begin tile
-	let mut control_tile = RgbControlTile {
+	let mut control_tile = ZoneControlTile {
+		exterior_tile: Tile::new(0, 0, 540, 90, ""),
 		toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
 		red_input: IntInput::new(center_x - offset, center_y, 60, 40, "R:"),
 		green_input: IntInput::new(center_x, center_y, 60, 40, "G:"),
 		blue_input: IntInput::new(center_x + offset, center_y, 60, 40, "B:"),
 	};
-	let mut exterior_tile = Tile::new(0, 0, 540, 90, "");
-	let mut button_tile = Tile::new(0, 0, 90, 90, "");
-	button_tile.add(&control_tile.toggle_button);
-	button_tile.end();
-	let mut colors_tile = Tile::new(90, 0, 450, 90, "");
 
-	colors_tile.add(&control_tile.red_input);
-	colors_tile.add(&control_tile.green_input);
-	colors_tile.add(&control_tile.blue_input);
-	colors_tile.end();
-	exterior_tile.end();
+	control_tile.exterior_tile.add(&control_tile.toggle_button);
+
+	control_tile.exterior_tile.add(&control_tile.red_input);
+	control_tile.exterior_tile.add(&control_tile.green_input);
+	control_tile.exterior_tile.add(&control_tile.blue_input);
+	control_tile.exterior_tile.end();
 	//Themeing
-	exterior_tile.set_frame(FrameType::FlatBox);
+	control_tile.exterior_tile.set_frame(FrameType::FlatBox);
 
-	exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
+	if master_tile {
+		control_tile.exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
+	} else {
+		control_tile.exterior_tile.set_color(Color::from_u32(GRAY));
+	}
 
 	//Button
 	control_tile.toggle_button.set_frame(FrameType::OFlatFrame);
@@ -187,91 +190,33 @@ fn new_rgb_controller_tile() -> (Tile, RgbControlTile) {
 	//Blue
 	theme_input(&mut control_tile.blue_input, BaseColor::Blue);
 
-	(exterior_tile, control_tile)
+	control_tile
 }
 
-fn get_control_tiles(control_sections: SectionControlTiles) -> ControlTiles {
-	let center_x = 540 / 2;
-	let center_y = 90 / 2 - 20;
-	let offset = 120;
+pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
+	//Keyboard
+	let keyboard = Arc::from(Mutex::from(keyboard));
+	let stop_signal = Arc::new(AtomicBool::new(true));
+	let thread_ended_signal = Arc::new(AtomicBool::new(true));
 
-	//Begin tile
-	let mut control_tile = RgbControlTile {
-		toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
-		red_input: IntInput::new(center_x - offset, center_y, 60, 40, "R:"),
-		green_input: IntInput::new(center_x, center_y, 60, 40, "G:"),
-		blue_input: IntInput::new(center_x + offset, center_y, 60, 40, "B:"),
-	};
-
-	let mut exterior_tile = Tile::new(0, 0, 540, 90, "");
-	let mut button_tile = Tile::new(0, 0, 90, 90, "");
-	button_tile.add(&control_tile.toggle_button);
-	button_tile.end();
-	let mut colors_tile = Tile::new(90, 0, 450, 90, "");
-
-	colors_tile.add(&control_tile.red_input);
-	colors_tile.add(&control_tile.green_input);
-	colors_tile.add(&control_tile.blue_input);
-	colors_tile.end();
-	exterior_tile.end();
-	//Themeing
-	exterior_tile.set_frame(FrameType::FlatBox);
-
-	exterior_tile.set_color(Color::from_u32(0x777777));
-
-	//Button
-	control_tile.toggle_button.set_frame(FrameType::OFlatFrame);
-	control_tile.toggle_button.set_color(Color::from_u32(WHITE));
-
-	//Inputs
-	//Inputs
-	fn theme_input(input: &mut IntInput, color: BaseColor) {
-		match color {
-			BaseColor::Red => input.set_label_color(Color::from_u32(RED)),
-			BaseColor::Green => input.set_label_color(Color::from_u32(GREEN)),
-			BaseColor::Blue => input.set_label_color(Color::from_u32(BLUE)),
-		}
-		input.set_frame(FrameType::FlatBox);
-		input.set_color(Color::from_u32(DARK_GRAY));
-		input.set_selection_color(Color::White);
-		input.set_text_color(Color::from_u32(WHITE));
-		input.set_text_size(30);
-		input.set_label_size(30);
-		input.set_value("0");
-	}
-
-	//Red
-	theme_input(&mut control_tile.red_input, BaseColor::Red);
-
-	//Green
-	theme_input(&mut control_tile.green_input, BaseColor::Green);
-
-	//Blue
-	theme_input(&mut control_tile.blue_input, BaseColor::Blue);
-
-	ControlTiles {
-		master: (exterior_tile, control_tile),
-		control_sections,
-	}
-}
-
-pub fn create_ui() -> AppUi {
+	//UI
 	let app = app::App::default();
-	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Light Control Thing");
+	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
-	let section_tiles: SectionControlTiles = SectionControlTiles {
-		left: (new_rgb_controller_tile()),
-		center_left: (new_rgb_controller_tile()),
-		center_right: (new_rgb_controller_tile()),
-		right: (new_rgb_controller_tile()),
+	let master = new_zone_control_tile(true);
+	let control_sections: KeyboardControlTiles = KeyboardControlTiles {
+		left: (new_zone_control_tile(false)),
+		center_left: (new_zone_control_tile(false)),
+		center_right: (new_zone_control_tile(false)),
+		right: (new_zone_control_tile(false)),
 	};
-	let control_tiles = get_control_tiles(section_tiles);
+	let mut control_tiles = ControlTiles { master, control_sections };
 
-	color_picker_pack.add(&control_tiles.control_sections.left.0);
-	color_picker_pack.add(&control_tiles.control_sections.center_left.0);
-	color_picker_pack.add(&control_tiles.control_sections.center_right.0);
-	color_picker_pack.add(&control_tiles.control_sections.right.0);
-	color_picker_pack.add(&control_tiles.master.0);
+	color_picker_pack.add(&control_tiles.control_sections.left.exterior_tile);
+	color_picker_pack.add(&control_tiles.control_sections.center_left.exterior_tile);
+	color_picker_pack.add(&control_tiles.control_sections.center_right.exterior_tile);
+	color_picker_pack.add(&control_tiles.control_sections.right.exterior_tile);
+	color_picker_pack.add(&control_tiles.master.exterior_tile);
 	color_picker_pack.end();
 
 	let mut effect_type_tile = Tile::new(540, 0, 360, 360, "");
@@ -330,12 +275,388 @@ pub fn create_ui() -> AppUi {
 	brightness_choice.set_label_size(20);
 	brightness_choice.set_value(0);
 
-	AppUi {
-		app,
-		control_tiles,
-		effect_browser,
-		speed: speed_choice,
-		brightness: brightness_choice,
-		effects_list,
+	//Begin app logic
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.left, keyboard.clone(), 0, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_left, keyboard.clone(), 1, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_right, keyboard.clone(), 2, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.right, keyboard.clone(), 3, stop_signal.clone());
+	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), stop_signal.clone());
+
+	// Effect choice
+	effect_browser.set_callback({
+		let keyboard = keyboard.clone();
+		let thread_ended_signal = Arc::clone(&thread_ended_signal);
+		let speed_choice = speed_choice.clone();
+		move |browser| match browser.value() {
+			0 => {
+				browser.select(1);
+			}
+			_ => match effects_list[(browser.value() - 1) as usize] {
+				"Static" => {
+					control_tiles.activate();
+					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+					force_update_colors(&control_tiles.control_sections, &keyboard);
+				}
+				"Breath" => {
+					control_tiles.activate();
+					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Breath);
+					force_update_colors(&control_tiles.control_sections, &keyboard);
+				}
+				"Smooth" => {
+					control_tiles.deactivate();
+					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Smooth);
+				}
+				"LeftWave" => {
+					control_tiles.deactivate();
+					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::LeftWave);
+				}
+				"RightWave" => {
+					control_tiles.deactivate();
+					stop_signal.store(true, Ordering::Relaxed);
+
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::RightWave);
+				}
+				"LeftPulse" => {
+					//Preparations
+					stop_signal.store(true, Ordering::Relaxed);
+					wait_thread_end(&thread_ended_signal);
+					control_tiles.master_only();
+					stop_signal.store(false, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+
+					//Create necessary clones to be passed into thread
+					let stop_signal = Arc::clone(&stop_signal);
+					let keyboard = Arc::clone(&keyboard);
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
+					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
+					thread::spawn(move || {
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						while !stop_signal.load(Ordering::Relaxed) {
+							let master_tile = &control_tiles.lock().master;
+							let red = master_tile.red_input.value().parse::<f32>().unwrap();
+							let green = master_tile.green_input.value().parse::<f32>().unwrap();
+							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();
+
+							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+							let color: [f32; 12] = [0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0];
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							thread::sleep(time::Duration::from_millis(50));
+						}
+						thread_ended_signal.store(true, Ordering::Relaxed);
+					});
+				}
+				"RightPulse" => {
+					//Preparations
+					stop_signal.store(true, Ordering::Relaxed);
+					wait_thread_end(&thread_ended_signal);
+					control_tiles.master_only();
+					stop_signal.store(false, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+
+					//Create necessary clones to be passed into thread
+					let stop_signal = Arc::clone(&stop_signal);
+					let keyboard = Arc::clone(&keyboard);
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
+					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
+					thread::spawn(move || {
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						while !stop_signal.load(Ordering::Relaxed) {
+							let master_tile = &control_tiles.lock().master;
+							let red = master_tile.red_input.value().parse::<f32>().unwrap();
+							let green = master_tile.green_input.value().parse::<f32>().unwrap();
+							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();
+							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0];
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+							let color: [f32; 12] = [0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							thread::sleep(time::Duration::from_millis(50));
+						}
+						thread_ended_signal.store(true, Ordering::Relaxed);
+					});
+				}
+				"Lightning" => {
+					//Preparations
+					stop_signal.store(true, Ordering::Relaxed);
+					wait_thread_end(&thread_ended_signal);
+					control_tiles.deactivate();
+					stop_signal.store(false, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+
+					//Create necessary clones to be passed into thread
+					let stop_signal = Arc::clone(&stop_signal);
+					let keyboard = Arc::clone(&keyboard);
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
+					thread::spawn(move || {
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						let zone = 0;
+						let mut zone_repeat_count = 0;
+						while !stop_signal.load(Ordering::Relaxed) {
+							let mut next_zone = rand::thread_rng().gen_range(0..4);
+							if next_zone == zone {
+								zone_repeat_count += 1;
+								if zone_repeat_count > 1 {
+									while next_zone == zone {
+										next_zone = rand::thread_rng().gen_range(0..4);
+									}
+									zone_repeat_count = 0;
+								}
+							}
+							let zone = next_zone;
+							let steps = rand::thread_rng().gen_range(50..=200);
+							keyboard.lock().set_zone_by_index(zone, [255.0; 3]);
+							// keyboard.lock().set_colors_to(&[255.0; 12]);
+							keyboard.lock().transition_colors_to(&[0.0; 12], steps, 5);
+							let sleep_time = rand::thread_rng().gen_range(100..=2000);
+							thread::sleep(time::Duration::from_millis(sleep_time));
+						}
+						thread_ended_signal.store(true, Ordering::Relaxed);
+					});
+				}
+				_ => {}
+			},
+		}
+	});
+
+	//Speed
+	speed_choice.set_callback({
+		let keyboard = keyboard.clone();
+		move |choice| {
+			if let Some(value) = choice.choice() {
+				let speed = value.parse::<u8>().unwrap();
+				if (1..=4).contains(&speed) {
+					keyboard.lock().set_speed(speed);
+				}
+			}
+		}
+	});
+
+	//Brightness
+	brightness_choice.set_callback({
+		move |choice| {
+			if let Some(value) = choice.choice() {
+				let brightness = value.parse::<u8>().unwrap();
+				if (1..=2).contains(&brightness) {
+					keyboard.lock().set_brightness(brightness);
+				}
+			}
+		}
+	});
+
+	app.run().unwrap();
+}
+
+fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
+	//Button
+	control_tile.toggle_button.handle({
+		let keyboard = keyboard.clone();
+		let mut control_tile = control_tile.clone();
+		move |button, event| match event {
+			Event::Released => {
+				match button.is_toggled() {
+					true => {
+						keyboard.lock().set_zone_by_index(zone_index, [0.0; 3]);
+						control_tile.red_input.deactivate();
+						control_tile.green_input.deactivate();
+						control_tile.blue_input.deactivate();
+					}
+					false => {
+						keyboard.lock().set_zone_by_index(
+							zone_index,
+							[
+								control_tile.red_input.value().parse::<f32>().unwrap(),
+								control_tile.green_input.value().parse::<f32>().unwrap(),
+								control_tile.blue_input.value().parse::<f32>().unwrap(),
+							],
+						);
+						control_tile.red_input.activate();
+						control_tile.green_input.activate();
+						control_tile.blue_input.activate();
+					}
+				}
+				true
+			}
+			_ => false,
+		}
+	});
+
+	fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
+		let triplet_index = zone_index * 3;
+		let color_index = match color {
+			BaseColor::Red => 0,
+			BaseColor::Green => 1,
+			BaseColor::Blue => 2,
+		};
+		input.handle({
+			let keyboard = keyboard;
+			let stop_signal = Arc::clone(&stop_signal);
+			move |input, event| match event {
+				Event::KeyUp => {
+					match input.value().parse::<f32>() {
+						Ok(val) => {
+							input.set_value(&val.to_string());
+							if val > 255.0 {
+								input.set_value("255");
+								if stop_signal.load(Ordering::Relaxed) {
+									keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
+								}
+							} else {
+								if stop_signal.load(Ordering::Relaxed) {
+									keyboard.lock().set_value_by_index(triplet_index + color_index, val);
+								}
+							}
+						}
+						Err(_) => {
+							input.set_value("0");
+						}
+					}
+					true
+				}
+				_ => false,
+			}
+		});
+	}
+
+	//Red
+	add_input_handle(&mut control_tile.red_input, BaseColor::Red, keyboard.clone(), zone_index, stop_signal.clone());
+	//Green
+	add_input_handle(&mut control_tile.green_input, BaseColor::Green, keyboard.clone(), zone_index, stop_signal.clone());
+	//Blue
+	add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, zone_index, stop_signal);
+}
+
+fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) {
+	let mut master_tile = control_tiles.master.clone();
+
+	//Button
+	master_tile.toggle_button.handle({
+		let keyboard = keyboard.clone();
+		let mut control_tiles = control_tiles.clone();
+		let mut master_tile = master_tile.clone();
+		move |button, event| match event {
+			Event::Released => {
+				match button.is_toggled() {
+					true => {
+						keyboard.lock().set_colors_to(&[0.0; 12]);
+						master_tile.red_input.deactivate();
+						master_tile.green_input.deactivate();
+						master_tile.blue_input.deactivate();
+						control_tiles.control_sections.deactivate();
+					}
+					false => {
+						force_update_colors(&control_tiles.control_sections, &keyboard);
+						master_tile.red_input.activate();
+						master_tile.green_input.activate();
+						master_tile.blue_input.activate();
+						control_tiles.control_sections.activate();
+					}
+				}
+				true
+			}
+			_ => false,
+		}
+	});
+
+	fn add_master_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, control_tiles: ControlTiles, stop_signal: Arc<AtomicBool>) {
+		let index = match color {
+			BaseColor::Red => 0,
+			BaseColor::Green => 1,
+			BaseColor::Blue => 2,
+		};
+		input.handle({
+			let keyboard = keyboard;
+			let mut control_tiles = control_tiles;
+			let stop_signal = Arc::clone(&stop_signal);
+			move |input, event| match event {
+				Event::KeyUp => {
+					match input.value().parse::<f32>() {
+						Ok(val) => {
+							input.set_value(&val.to_string());
+							if val > 255.0 {
+								input.set_value("255");
+								if stop_signal.load(Ordering::Relaxed) {
+									keyboard.lock().solid_set_value_by_index(index, 255.0);
+								}
+								control_tiles.control_sections.change_color_value(color, 255.0);
+							} else {
+								if stop_signal.load(Ordering::Relaxed) {
+									keyboard.lock().solid_set_value_by_index(index, val);
+								}
+								control_tiles.control_sections.change_color_value(color, val);
+							}
+						}
+						Err(_) => {
+							input.set_value("0");
+							control_tiles.control_sections.change_color_value(color, 0.0);
+						}
+					}
+					true
+				}
+				_ => false,
+			}
+		});
+	}
+
+	//Red
+	add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, keyboard.clone(), control_tiles.clone(), stop_signal.clone());
+	//Green
+	add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, keyboard.clone(), control_tiles.clone(), stop_signal.clone());
+	//Blue
+	add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, keyboard, control_tiles.clone(), stop_signal);
+}
+
+fn force_update_colors(sections: &KeyboardControlTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
+	let target = [
+		sections.left.red_input.value().parse::<f32>().unwrap(),
+		sections.left.green_input.value().parse::<f32>().unwrap(),
+		sections.left.blue_input.value().parse::<f32>().unwrap(),
+		sections.center_left.red_input.value().parse::<f32>().unwrap(),
+		sections.center_left.green_input.value().parse::<f32>().unwrap(),
+		sections.center_left.blue_input.value().parse::<f32>().unwrap(),
+		sections.center_right.red_input.value().parse::<f32>().unwrap(),
+		sections.center_right.green_input.value().parse::<f32>().unwrap(),
+		sections.center_right.blue_input.value().parse::<f32>().unwrap(),
+		sections.right.red_input.value().parse::<f32>().unwrap(),
+		sections.right.green_input.value().parse::<f32>().unwrap(),
+		sections.right.blue_input.value().parse::<f32>().unwrap(),
+	];
+	keyboard.lock().set_colors_to(&target);
+}
+
+fn wait_thread_end(thread_end_signal: &Arc<AtomicBool>) {
+	while !thread_end_signal.load(Ordering::Relaxed) {
+		thread::sleep(time::Duration::from_millis(100));
 	}
 }
