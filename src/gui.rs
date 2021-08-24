@@ -232,7 +232,19 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 
 	let mut effect_type_tile = Tile::new(540, 0, 360, 360, "");
 	let mut effect_browser = HoldBrowser::new(0, 0, 310, 310, "").center_of_parent();
-	let effects_list: Vec<&str> = vec!["Static", "Breath", "Smooth", "LeftWave", "RightWave", "LeftPulse", "RightPulse", "Lightning", "AmbientLight"];
+	let effects_list: Vec<&str> = vec![
+		"Static",
+		"Breath",
+		"Smooth",
+		"LeftWave",
+		"RightWave",
+		"LeftPulse",
+		"RightPulse",
+		"Lightning",
+		"AmbientLight",
+		"SmoothLeftWave",
+		"SmoothRightWave",
+	];
 	for effect in effects_list.iter() {
 		effect_browser.add(effect);
 	}
@@ -515,6 +527,68 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 						}
 					});
 				}
+				"SmoothLeftWave" => {
+					//Preparations
+					stop_signal.store(true, Ordering::Relaxed);
+					wait_thread_end(&thread_ended_signal);
+					control_tiles.master_only();
+					stop_signal.store(false, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+
+					//Create necessary clones to be passed into thread
+					let stop_signal = Arc::clone(&stop_signal);
+					let keyboard = Arc::clone(&keyboard);
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
+
+					thread::spawn(move || {
+						let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						while !stop_signal.load(Ordering::Relaxed) {
+							let mut color: [f32; 12] = [0.0; 12];
+							shift_colors(&mut gradient, 3);
+							for i in 0..12 {
+								color[i] = gradient[i] as f32;
+							}
+							keyboard.lock().transition_colors_to(&color, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+						}
+						thread_ended_signal.store(true, Ordering::Relaxed);
+					});
+				}
+				"SmoothRightWave" => {
+					//Preparations
+					stop_signal.store(true, Ordering::Relaxed);
+					wait_thread_end(&thread_ended_signal);
+					control_tiles.master_only();
+					stop_signal.store(false, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+
+					//Create necessary clones to be passed into thread
+					let stop_signal = Arc::clone(&stop_signal);
+					let keyboard = Arc::clone(&keyboard);
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
+
+					thread::spawn(move || {
+						let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						while !stop_signal.load(Ordering::Relaxed) {
+							let mut color: [f32; 12] = [0.0; 12];
+							shift_colors(&mut gradient, 9);
+							for i in 0..12 {
+								color[i] = gradient[i] as f32;
+							}
+							keyboard.lock().transition_colors_to(&color, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+						}
+						thread_ended_signal.store(true, Ordering::Relaxed);
+					});
+				}
 				_ => {}
 			},
 		}
@@ -728,5 +802,12 @@ fn force_update_colors(sections: &KeyboardControlTiles, keyboard: &Arc<Mutex<cra
 fn wait_thread_end(thread_end_signal: &Arc<AtomicBool>) {
 	while !thread_end_signal.load(Ordering::Relaxed) {
 		thread::sleep(Duration::from_millis(100));
+	}
+}
+
+fn shift_colors(vec: &mut Vec<f32>, steps: u8) {
+	for i in 0..steps {
+		let temp = vec.pop().unwrap();
+		vec.insert(0, temp);
 	}
 }
