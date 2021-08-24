@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  
+
 jobs:
   publish:
     name: Publish for ${{ matrix.os }}
@@ -30,19 +30,37 @@ jobs:
             asset_name: l5p-kb-rgb-macos
 
     steps:
-    - name: Download deps
-      run: |
-         if [ "$RUNNER_OS" == "Linux" ]; then
-          sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev
-         fi
-      shell: bash
-    - uses: actions/checkout@v2
-    - name: Build
-      shell: bash
-      run: cargo build --release --verbose
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.asset_name }}
-        path: ${{ matrix.artifact_name }}
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: '10.0'
+      - name: Download dependencies
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+           sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev
+           vcpkg update && vcpkg install libvpx libyuv
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+           brew install nasm
+           vcpkg update && vcpkg install libvpx libyuv
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+           vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
+          fi
+        shell: bash
+      - uses: actions/checkout@v2
+      - name: Build
+        shell: bash
+        run: cargo build --release --verbose
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.artifact_name }}
