@@ -2,7 +2,7 @@
 A fun little experiment. Probably contains bugs.
 
 ## Download
-You may download precompiled versions from [here](https://github.com/4JX/L5P-Keyboard-RGB/actions/runs/1164408240) under the "artifacts" section.
+You may download precompiled versions from [here](https://github.com/4JX/L5P-Keyboard-RGB/actions/runs/1164448234) under the "artifacts" section.
 
 ## Available effects
 **All stock effects:** Static, Breath, Smooth, LeftWave, RightWave.
