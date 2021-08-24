@@ -3,7 +3,7 @@ mod gui;
 mod keyboard_utils;
 
 fn main() {
-	let keyboard: crate::keyboard_utils::Keyboard = match crate::keyboard_utils::get_keyboard() {
+	let keyboard: keyboard_utils::Keyboard = match keyboard_utils::get_keyboard() {
 		Ok(keyboard) => keyboard,
 		Err(err) => panic!("{}", err),
 	};
