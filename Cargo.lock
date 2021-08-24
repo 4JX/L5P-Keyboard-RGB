@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "bitflags"
-version = "1.2.1"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
+checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "cc"
@@ -31,9 +31,9 @@ dependencies = [
 
 [[package]]
 name = "fltk"
-version = "1.0.18"
+version = "1.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a485bf4666504dfb72014bf3c04a136614eba7aff744bd863ce0199dd413703"
+checksum = "6bf356f493316a45a5b90b8d5db97c0fd9850b87ab19cc7f88b53ca5d01fd710"
 dependencies = [
  "bitflags",
  "fltk-derive",
@@ -45,9 +45,9 @@ dependencies = [
 
 [[package]]
 name = "fltk-derive"
-version = "1.0.17"
+version = "1.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87124563a40cadd3b9098d3672e731e67e53494691321fecfd4dc009b8bc8ce6"
+checksum = "57ddbb2cb93484b56da41b80c1466bca2620b68b61847d5e7f999bda0782ab78"
 dependencies = [
  "quote",
  "syn",
@@ -55,9 +55,9 @@ dependencies = [
 
 [[package]]
 name = "fltk-sys"
-version = "1.0.17"
+version = "1.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "549e88fa49afff68e5040736ab80a2191d018d8dbb24c2cdd0d2a9d3b2766181"
+checksum = "ebe424d107ab6ef0a4b756295c259bb8cec6e610548d55481457309884d526d4"
 dependencies = [
  "cmake",
  "libc",
@@ -112,9 +112,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.95"
+version = "0.2.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "789da6d93f1b866ffe175afc5322a4d76c038605a1c3319bb57b06967ca98a36"
+checksum = "a1fa8cddc8fbbee11227ef194b5317ed014b8acbf15139bd716a18ad3fe99ec5"
 
 [[package]]
 name = "lock_api"
@@ -270,9 +270,9 @@ checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 
 [[package]]
 name = "syn"
-version = "1.0.72"
+version = "1.0.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1e8cdbefb79a9a5a65e0db8b47b723ee907b7c7f8496c76a1770b5c310bab82"
+checksum = "b7f58f7e8eaa0009c5fec437aabf511bd9933e4b2d7407bd05273c01a8906ea7"
 dependencies = [
  "proc-macro2",
  "quote",
