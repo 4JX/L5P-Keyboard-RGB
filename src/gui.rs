@@ -453,27 +453,25 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 	//Speed
 	speed_choice.set_callback({
 		let keyboard = keyboard.clone();
-		move |choice| match choice.choice() {
-			Some(value) => {
+		move |choice| {
+			if let Some(value) = choice.choice() {
 				let speed = value.parse::<u8>().unwrap();
 				if (1..=4).contains(&speed) {
 					keyboard.lock().set_speed(speed);
 				}
 			}
-			_ => {}
 		}
 	});
 
 	//Brightness
 	brightness_choice.set_callback({
-		move |choice| match choice.choice() {
-			Some(value) => {
+		move |choice| {
+			if let Some(value) = choice.choice() {
 				let brightness = value.parse::<u8>().unwrap();
 				if (1..=2).contains(&brightness) {
 					keyboard.lock().set_brightness(brightness);
 				}
 			}
-			_ => {}
 		}
 	});
 
