@@ -131,7 +131,7 @@ impl ZoneControlTile {
 	}
 }
 
-fn new_rgb_controller_tile(master_tile: bool) -> ZoneControlTile {
+fn new_zone_control_tile(master_tile: bool) -> ZoneControlTile {
 	let center_x = 540 / 2;
 	let center_y = 90 / 2 - 20;
 	let offset = 120;
@@ -192,16 +192,22 @@ fn new_rgb_controller_tile(master_tile: bool) -> ZoneControlTile {
 	control_tile
 }
 
-pub fn start_ui() {
+pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
+	//Keyboard
+	let keyboard = Arc::from(Mutex::from(keyboard));
+	let effect_loop_is_active = Arc::new(Mutex::new(false));
+	let thread_ended_signal = Arc::new(Mutex::new(true));
+
+	//UI
 	let app = app::App::default();
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
-	let master = new_rgb_controller_tile(true);
+	let master = new_zone_control_tile(true);
 	let control_sections: KeyboardControlTiles = KeyboardControlTiles {
-		left: (new_rgb_controller_tile(false)),
-		center_left: (new_rgb_controller_tile(false)),
-		center_right: (new_rgb_controller_tile(false)),
-		right: (new_rgb_controller_tile(false)),
+		left: (new_zone_control_tile(false)),
+		center_left: (new_zone_control_tile(false)),
+		center_right: (new_zone_control_tile(false)),
+		right: (new_zone_control_tile(false)),
 	};
 	let mut control_tiles = ControlTiles { master, control_sections };
 
@@ -267,14 +273,6 @@ pub fn start_ui() {
 	brightness_choice.set_text_size(20);
 	brightness_choice.set_label_size(20);
 	brightness_choice.set_value(0);
-
-	let keyboard: crate::keyboard_utils::Keyboard = match crate::keyboard_utils::get_keyboard() {
-		Ok(keyboard) => keyboard,
-		Err(err) => panic!("{}", err),
-	};
-	let keyboard = Arc::from(Mutex::from(keyboard));
-	let effect_loop_is_active = Arc::new(Mutex::new(false));
-	let thread_ended_signal = Arc::new(Mutex::new(true));
 
 	//Begin app logic
 	add_zone_control_tile_handle(&mut control_tiles.control_sections.left, keyboard.clone(), 0, effect_loop_is_active.clone());
