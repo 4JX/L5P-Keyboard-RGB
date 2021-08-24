@@ -481,7 +481,7 @@ pub fn start_ui() {
 	app.run().unwrap();
 }
 
-fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
+fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
 	//Button
 	control_tile.toggle_button.handle({
 		let keyboard = keyboard.clone();
@@ -490,14 +490,14 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 			Event::Released => {
 				match button.is_toggled() {
 					true => {
-						keyboard.lock().set_zone_by_index(index, [0.0; 3]);
+						keyboard.lock().set_zone_by_index(zone_index, [0.0; 3]);
 						control_tile.red_input.deactivate();
 						control_tile.green_input.deactivate();
 						control_tile.blue_input.deactivate();
 					}
 					false => {
 						keyboard.lock().set_zone_by_index(
-							index,
+							zone_index,
 							[
 								control_tile.red_input.value().parse::<f32>().unwrap(),
 								control_tile.green_input.value().parse::<f32>().unwrap(),
@@ -515,7 +515,8 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 		}
 	});
 
-	fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, triplet_index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
+	fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
+		let triplet_index = zone_index * 3;
 		let index = match color {
 			BaseColor::Red => 0,
 			BaseColor::Green => 1,
@@ -532,11 +533,11 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 							if val > 255.0 {
 								input.set_value("255");
 								if !*effect_loop_is_active.lock() {
-									keyboard.lock().set_value_by_index(triplet_index, index, 255.0);
+									keyboard.lock().set_value_by_index(triplet_index + index, 255.0);
 								}
 							} else {
 								if !*effect_loop_is_active.lock() {
-									keyboard.lock().set_value_by_index(triplet_index, index, val);
+									keyboard.lock().set_value_by_index(triplet_index + index, val);
 								}
 							}
 						}
@@ -552,11 +553,11 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 	}
 
 	//Red
-	add_input_handle(&mut control_tile.red_input, BaseColor::Red, keyboard.clone(), index, effect_loop_is_active.clone());
+	add_input_handle(&mut control_tile.red_input, BaseColor::Red, keyboard.clone(), zone_index, effect_loop_is_active.clone());
 	//Green
-	add_input_handle(&mut control_tile.green_input, BaseColor::Green, keyboard.clone(), index, effect_loop_is_active.clone());
+	add_input_handle(&mut control_tile.green_input, BaseColor::Green, keyboard.clone(), zone_index, effect_loop_is_active.clone());
 	//Blue
-	add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, index, effect_loop_is_active);
+	add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, zone_index, effect_loop_is_active);
 }
 
 fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, effect_loop_is_active: Arc<Mutex<bool>>) {
