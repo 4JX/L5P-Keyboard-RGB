@@ -10,12 +10,23 @@ use fltk::{
 	window::Window,
 };
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::{thread, time};
+use image::buffer::ConvertBuffer;
 
 use parking_lot::Mutex;
+
 use rand::Rng;
+
+use scrap::{Capturer, Display};
+
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::{
+	thread,
+	time::{Duration, Instant},
+};
+
+const DISP_WIDTH: u32 = 2560;
+const DISP_HEIGHT: u32 = 1600;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 450;
@@ -221,7 +232,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 
 	let mut effect_type_tile = Tile::new(540, 0, 360, 360, "");
 	let mut effect_browser = HoldBrowser::new(0, 0, 310, 310, "").center_of_parent();
-	let effects_list: Vec<&str> = vec!["Static", "Breath", "Smooth", "LeftWave", "RightWave", "LeftPulse", "RightPulse", "Lightning"];
+	let effects_list: Vec<&str> = vec!["Static", "Breath", "Smooth", "LeftWave", "RightWave", "LeftPulse", "RightPulse", "Lightning", "AmbientLight"];
 	for effect in effects_list.iter() {
 		effect_browser.add(effect);
 	}
@@ -359,7 +370,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							thread::sleep(time::Duration::from_millis(50));
+							thread::sleep(Duration::from_millis(50));
 						}
 						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
@@ -402,7 +413,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 							}
 							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							thread::sleep(time::Duration::from_millis(50));
+							thread::sleep(Duration::from_millis(50));
 						}
 						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
@@ -440,9 +451,68 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 							// keyboard.lock().set_colors_to(&[255.0; 12]);
 							keyboard.lock().transition_colors_to(&[0.0; 12], steps, 5);
 							let sleep_time = rand::thread_rng().gen_range(100..=2000);
-							thread::sleep(time::Duration::from_millis(sleep_time));
+							thread::sleep(Duration::from_millis(sleep_time));
 						}
 						thread_ended_signal.store(true, Ordering::Relaxed);
+					});
+				}
+				"AmbientLight" => {
+					//Preparations
+					stop_signal.store(true, Ordering::Relaxed);
+					wait_thread_end(&thread_ended_signal);
+					control_tiles.deactivate();
+					stop_signal.store(false, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+
+					//Create necessary clones to be passed into thread
+					let stop_signal = Arc::clone(&stop_signal);
+					let keyboard = Arc::clone(&keyboard);
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
+					thread::spawn(move || {
+						thread_ended_signal.store(false, Ordering::Relaxed);
+
+						//Display setup
+						let displays = Display::all().unwrap().len();
+						for i in 0..displays {
+							let display = Display::all().unwrap().remove(i);
+							if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
+								let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+								let (w, h) = (capturer.width(), capturer.height());
+
+								let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
+								type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
+								while !stop_signal.load(Ordering::Relaxed) {
+									if let Ok(frame) = capturer.frame(0) {
+										let now = Instant::now();
+										let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
+										let rgb_img: image::RgbImage = bgra_img.convert();
+										let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
+										let dst = resized.into_vec();
+
+										let mut result: [f32; 12] = [0.0; 12];
+										for i in 0..12 {
+											result[i] = dst[i] as f32;
+										}
+										keyboard.lock().transition_colors_to(&result, 4, 1);
+										let elapsed_time = now.elapsed();
+										if elapsed_time < seconds_per_frame {
+											thread::sleep(seconds_per_frame - elapsed_time);
+										}
+									} else {
+										//Janky recover from error because it does not like admin prompts on windows
+										let displays = Display::all().unwrap().len();
+										for i in 0..displays {
+											let display = Display::all().unwrap().remove(i);
+											if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
+												capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+											}
+										}
+									}
+								}
+								thread_ended_signal.store(true, Ordering::Relaxed);
+								drop(capturer);
+							}
+						}
 					});
 				}
 				_ => {}
@@ -657,6 +727,6 @@ fn force_update_colors(sections: &KeyboardControlTiles, keyboard: &Arc<Mutex<cra
 
 fn wait_thread_end(thread_end_signal: &Arc<AtomicBool>) {
 	while !thread_end_signal.load(Ordering::Relaxed) {
-		thread::sleep(time::Duration::from_millis(100));
+		thread::sleep(Duration::from_millis(100));
 	}
 }
