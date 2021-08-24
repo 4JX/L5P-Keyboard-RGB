@@ -10,6 +10,7 @@ use fltk::{
 	window::Window,
 };
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::{thread, time};
 
@@ -195,8 +196,8 @@ fn new_zone_control_tile(master_tile: bool) -> ZoneControlTile {
 pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 	//Keyboard
 	let keyboard = Arc::from(Mutex::from(keyboard));
-	let effect_loop_is_active = Arc::new(Mutex::new(false));
-	let thread_ended_signal = Arc::new(Mutex::new(true));
+	let stop_signal = Arc::new(AtomicBool::new(true));
+	let thread_ended_signal = Arc::new(AtomicBool::new(true));
 
 	//UI
 	let app = app::App::default();
@@ -275,11 +276,11 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 	brightness_choice.set_value(0);
 
 	//Begin app logic
-	add_zone_control_tile_handle(&mut control_tiles.control_sections.left, keyboard.clone(), 0, effect_loop_is_active.clone());
-	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_left, keyboard.clone(), 1, effect_loop_is_active.clone());
-	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_right, keyboard.clone(), 2, effect_loop_is_active.clone());
-	add_zone_control_tile_handle(&mut control_tiles.control_sections.right, keyboard.clone(), 3, effect_loop_is_active.clone());
-	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), effect_loop_is_active.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.left, keyboard.clone(), 0, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_left, keyboard.clone(), 1, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_right, keyboard.clone(), 2, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.control_sections.right, keyboard.clone(), 3, stop_signal.clone());
+	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), stop_signal.clone());
 
 	// Effect choice
 	effect_browser.set_callback({
@@ -293,49 +294,49 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 			_ => match effects_list[(browser.value() - 1) as usize] {
 				"Static" => {
 					control_tiles.activate();
-					*effect_loop_is_active.lock() = false;
+					stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 					force_update_colors(&control_tiles.control_sections, &keyboard);
 				}
 				"Breath" => {
 					control_tiles.activate();
-					*effect_loop_is_active.lock() = false;
+					stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Breath);
 					force_update_colors(&control_tiles.control_sections, &keyboard);
 				}
 				"Smooth" => {
 					control_tiles.deactivate();
-					*effect_loop_is_active.lock() = false;
+					stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Smooth);
 				}
 				"LeftWave" => {
 					control_tiles.deactivate();
-					*effect_loop_is_active.lock() = false;
+					stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::LeftWave);
 				}
 				"RightWave" => {
 					control_tiles.deactivate();
-					*effect_loop_is_active.lock() = false;
+					stop_signal.store(true, Ordering::Relaxed);
 
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::RightWave);
 				}
 				"LeftPulse" => {
 					//Preparations
-					*effect_loop_is_active.lock() = false;
+					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
 					control_tiles.master_only();
-					*effect_loop_is_active.lock() = true;
+					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 
 					//Create necessary clones to be passed into thread
-					let should_loop = Arc::clone(&effect_loop_is_active);
+					let stop_signal = Arc::clone(&stop_signal);
 					let keyboard = Arc::clone(&keyboard);
 					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
 					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
-					let signal = Arc::clone(&thread_ended_signal);
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
 					thread::spawn(move || {
-						*signal.lock() = false;
-						while *should_loop.lock() {
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						while !stop_signal.load(Ordering::Relaxed) {
 							let master_tile = &control_tiles.lock().master;
 							let red = master_tile.red_input.value().parse::<f32>().unwrap();
 							let green = master_tile.green_input.value().parse::<f32>().unwrap();
@@ -343,86 +344,86 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 
 							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if !*should_loop.lock() {
+							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if !*should_loop.lock() {
+							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if !*should_loop.lock() {
+							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							thread::sleep(time::Duration::from_millis(50));
 						}
-						*signal.lock() = true;
+						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
 				}
 				"RightPulse" => {
 					//Preparations
-					*effect_loop_is_active.lock() = false;
+					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
 					control_tiles.master_only();
-					*effect_loop_is_active.lock() = true;
+					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 
 					//Create necessary clones to be passed into thread
-					let should_loop = Arc::clone(&effect_loop_is_active);
+					let stop_signal = Arc::clone(&stop_signal);
 					let keyboard = Arc::clone(&keyboard);
 					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
 					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
-					let signal = Arc::clone(&thread_ended_signal);
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
 					thread::spawn(move || {
-						*signal.lock() = false;
-						while *should_loop.lock() {
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						while !stop_signal.load(Ordering::Relaxed) {
 							let master_tile = &control_tiles.lock().master;
 							let red = master_tile.red_input.value().parse::<f32>().unwrap();
 							let green = master_tile.green_input.value().parse::<f32>().unwrap();
 							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if !*should_loop.lock() {
+							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if !*should_loop.lock() {
+							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
 							let color: [f32; 12] = [0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if !*should_loop.lock() {
+							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
 							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							thread::sleep(time::Duration::from_millis(50));
 						}
-						*signal.lock() = true;
+						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
 				}
 				"Lightning" => {
 					//Preparations
-					*effect_loop_is_active.lock() = false;
+					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
 					control_tiles.deactivate();
-					*effect_loop_is_active.lock() = true;
+					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 
 					//Create necessary clones to be passed into thread
-					let should_loop = Arc::clone(&effect_loop_is_active);
+					let stop_signal = Arc::clone(&stop_signal);
 					let keyboard = Arc::clone(&keyboard);
-					let signal = Arc::clone(&thread_ended_signal);
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
 					thread::spawn(move || {
-						*signal.lock() = false;
+						thread_ended_signal.store(false, Ordering::Relaxed);
 						let zone = 0;
 						let mut zone_repeat_count = 0;
-						while *should_loop.lock() {
+						while !stop_signal.load(Ordering::Relaxed) {
 							let mut next_zone = rand::thread_rng().gen_range(0..4);
 							if next_zone == zone {
 								zone_repeat_count += 1;
@@ -441,7 +442,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 							let sleep_time = rand::thread_rng().gen_range(100..=2000);
 							thread::sleep(time::Duration::from_millis(sleep_time));
 						}
-						*signal.lock() = true;
+						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
 				}
 				_ => {}
@@ -479,7 +480,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 	app.run().unwrap();
 }
 
-fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
+fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
 	//Button
 	control_tile.toggle_button.handle({
 		let keyboard = keyboard.clone();
@@ -513,7 +514,7 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 		}
 	});
 
-	fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, effect_loop_is_active: Arc<Mutex<bool>>) {
+	fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
 		let triplet_index = zone_index * 3;
 		let color_index = match color {
 			BaseColor::Red => 0,
@@ -522,7 +523,7 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 		};
 		input.handle({
 			let keyboard = keyboard;
-			let effect_loop_is_active = Arc::clone(&effect_loop_is_active);
+			let stop_signal = Arc::clone(&stop_signal);
 			move |input, event| match event {
 				Event::KeyUp => {
 					match input.value().parse::<f32>() {
@@ -530,11 +531,11 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 							input.set_value(&val.to_string());
 							if val > 255.0 {
 								input.set_value("255");
-								if !*effect_loop_is_active.lock() {
+								if stop_signal.load(Ordering::Relaxed) {
 									keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
 								}
 							} else {
-								if !*effect_loop_is_active.lock() {
+								if stop_signal.load(Ordering::Relaxed) {
 									keyboard.lock().set_value_by_index(triplet_index + color_index, val);
 								}
 							}
@@ -551,14 +552,14 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 	}
 
 	//Red
-	add_input_handle(&mut control_tile.red_input, BaseColor::Red, keyboard.clone(), zone_index, effect_loop_is_active.clone());
+	add_input_handle(&mut control_tile.red_input, BaseColor::Red, keyboard.clone(), zone_index, stop_signal.clone());
 	//Green
-	add_input_handle(&mut control_tile.green_input, BaseColor::Green, keyboard.clone(), zone_index, effect_loop_is_active.clone());
+	add_input_handle(&mut control_tile.green_input, BaseColor::Green, keyboard.clone(), zone_index, stop_signal.clone());
 	//Blue
-	add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, zone_index, effect_loop_is_active);
+	add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, zone_index, stop_signal);
 }
 
-fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, effect_loop_is_active: Arc<Mutex<bool>>) {
+fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) {
 	let mut master_tile = control_tiles.master.clone();
 
 	//Button
@@ -590,7 +591,7 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 		}
 	});
 
-	fn add_master_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, control_tiles: ControlTiles, effect_loop_is_active: Arc<Mutex<bool>>) {
+	fn add_master_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, control_tiles: ControlTiles, stop_signal: Arc<AtomicBool>) {
 		let index = match color {
 			BaseColor::Red => 0,
 			BaseColor::Green => 1,
@@ -599,7 +600,7 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 		input.handle({
 			let keyboard = keyboard;
 			let mut control_tiles = control_tiles;
-			let effect_loop_is_active = Arc::clone(&effect_loop_is_active);
+			let stop_signal = Arc::clone(&stop_signal);
 			move |input, event| match event {
 				Event::KeyUp => {
 					match input.value().parse::<f32>() {
@@ -607,12 +608,12 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 							input.set_value(&val.to_string());
 							if val > 255.0 {
 								input.set_value("255");
-								if !*effect_loop_is_active.lock() {
+								if stop_signal.load(Ordering::Relaxed) {
 									keyboard.lock().solid_set_value_by_index(index, 255.0);
 								}
 								control_tiles.control_sections.change_color_value(color, 255.0);
 							} else {
-								if !*effect_loop_is_active.lock() {
+								if stop_signal.load(Ordering::Relaxed) {
 									keyboard.lock().solid_set_value_by_index(index, val);
 								}
 								control_tiles.control_sections.change_color_value(color, val);
@@ -631,11 +632,11 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 	}
 
 	//Red
-	add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, keyboard.clone(), control_tiles.clone(), effect_loop_is_active.clone());
+	add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, keyboard.clone(), control_tiles.clone(), stop_signal.clone());
 	//Green
-	add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, keyboard.clone(), control_tiles.clone(), effect_loop_is_active.clone());
+	add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, keyboard.clone(), control_tiles.clone(), stop_signal.clone());
 	//Blue
-	add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, keyboard, control_tiles.clone(), effect_loop_is_active);
+	add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, keyboard, control_tiles.clone(), stop_signal);
 }
 
 fn force_update_colors(sections: &KeyboardControlTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
@@ -656,8 +657,8 @@ fn force_update_colors(sections: &KeyboardControlTiles, keyboard: &Arc<Mutex<cra
 	keyboard.lock().set_colors_to(&target);
 }
 
-fn wait_thread_end(signal: &Arc<Mutex<bool>>) {
-	while !*signal.lock() {
+fn wait_thread_end(thread_end_signal: &Arc<AtomicBool>) {
+	while !thread_end_signal.load(Ordering::Relaxed) {
 		thread::sleep(time::Duration::from_millis(100));
 	}
 }
