@@ -59,8 +59,8 @@ jobs:
       - name: Build
         shell: bash
         run: cargo build --release --verbose
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{ matrix.asset_name }}
-        path: ${{ matrix.artifact_name }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.asset_name }}
+          path: ${{ matrix.artifact_name }}
