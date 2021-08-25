@@ -2,6 +2,10 @@
 
 A fun little experiment. Probably contains bugs.
 
+You can suggest new effects or report bugs you've encountered in the issues tab.
+
+**⚠️ Use at your own risk, the developer is not responsible for any damages that may arise as a result of using this program.**
+
 ## Download
 
 You may download precompiled versions from [here](https://github.com/4JX/L5P-Keyboard-RGB/actions/runs/1164448234) under the "artifacts" section.
