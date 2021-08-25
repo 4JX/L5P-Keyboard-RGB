@@ -442,27 +442,18 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					//Create necessary clones to be passed into thread
 					let stop_signal = Arc::clone(&stop_signal);
 					let keyboard = Arc::clone(&keyboard);
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
 					let thread_ended_signal = Arc::clone(&thread_ended_signal);
 					thread::spawn(move || {
 						thread_ended_signal.store(false, Ordering::Relaxed);
-						let zone = 0;
-						let mut zone_repeat_count = 0;
 						while !stop_signal.load(Ordering::Relaxed) {
-							let mut next_zone = rand::thread_rng().gen_range(0..4);
-							if next_zone == zone {
-								zone_repeat_count += 1;
-								if zone_repeat_count > 1 {
-									while next_zone == zone {
-										next_zone = rand::thread_rng().gen_range(0..4);
-									}
-									zone_repeat_count = 0;
-								}
-							}
-							let zone = next_zone;
+							let zone = rand::thread_rng().gen_range(0..4);
 							let steps = rand::thread_rng().gen_range(50..=200);
 							keyboard.lock().set_zone_by_index(zone, [255.0; 3]);
 							// keyboard.lock().set_colors_to(&[255.0; 12]);
-							keyboard.lock().transition_colors_to(&[0.0; 12], steps, 5);
+							keyboard
+								.lock()
+								.transition_colors_to(&[0.0; 12], steps / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 5);
 							let sleep_time = rand::thread_rng().gen_range(100..=2000);
 							thread::sleep(Duration::from_millis(sleep_time));
 						}
@@ -574,7 +565,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 						let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 						thread_ended_signal.store(false, Ordering::Relaxed);
 						while !stop_signal.load(Ordering::Relaxed) {
-							shift_vec(&mut gradient, 3);
+							shift_vec(&mut gradient, 9);
 							let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 							keyboard.lock().transition_colors_to(&colors, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
 							if stop_signal.load(Ordering::Relaxed) {
