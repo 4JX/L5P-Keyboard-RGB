@@ -2,9 +2,14 @@
 
 A fun little experiment. Probably contains bugs.
 
-You can suggest new effects or report bugs you've encountered in the issues tab.
-
 **⚠️ Use at your own risk, the developer is not responsible for any damages that may arise as a result of using this program.**
+
+## Compatibility
+This program has been tested to work on the 4 zone keyboard of the Legion 5 Pro 2021. It [*should*](https://www.reddit.com/r/LenovoLegion/comments/panu9f/progress_update_on_effects_d/haf346a?utm_source=share&utm_medium=web2x&context=3) alledgedly work on the Legion 5 Gen 6 2021 too, though I'd need to test it with an user who has one.
+
+### "How about X model"
+- **Legion 7(i):** Won't work, the backlight on these is per-key and uses a different way of communicating.
+- **Any variant with a white backlight:** Havent figured out how to talk to this one yet, but given the limited number of states (off,  low, high) there's not many effects I'd be able to add anyways.
 
 ## Download
 
@@ -18,6 +23,9 @@ You may download precompiled versions from [here](https://github.com/4JX/L5P-Key
 - **Lightning:** Adds a little _spark_.
 - **AmbientLight:** Reacts to content on your screen.
 - **Smooth(Left/Right)Wave:** An implementation of the classic wave effect.
+
+## Crashes, freezes, errrors, etc
+I cannot guarantee this solution will work for anyone but myself. That being said feel free to open an issue if you encounter any of these problems on the [issues tab](https://github.com/4JX/L5P-Keyboard-RGB/issues).
 
 ---
 
