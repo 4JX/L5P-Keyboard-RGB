@@ -53,17 +53,17 @@ pub enum BaseColor {
 #[derive(Clone)]
 pub struct ControlTiles {
 	pub master: ZoneControlTile,
-	pub control_sections: KeyboardControlTiles,
+	pub zones: KeyboardZoneTiles,
 }
 
 impl ControlTiles {
 	pub fn activate(&mut self) {
 		self.master.activate();
-		self.control_sections.activate();
+		self.zones.activate();
 	}
 	pub fn deactivate(&mut self) {
 		self.master.deactivate();
-		self.control_sections.deactivate();
+		self.zones.deactivate();
 	}
 	pub fn master_only(&mut self) {
 		self.deactivate();
@@ -73,14 +73,14 @@ impl ControlTiles {
 }
 
 #[derive(Clone)]
-pub struct KeyboardControlTiles {
+pub struct KeyboardZoneTiles {
 	pub left: ZoneControlTile,
 	pub center_left: ZoneControlTile,
 	pub center_right: ZoneControlTile,
 	pub right: ZoneControlTile,
 }
 
-impl KeyboardControlTiles {
+impl KeyboardZoneTiles {
 	pub fn activate(&mut self) {
 		self.left.activate();
 		self.center_left.activate();
@@ -216,18 +216,18 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
 	let master = new_zone_control_tile(true);
-	let control_sections: KeyboardControlTiles = KeyboardControlTiles {
+	let zones: KeyboardZoneTiles = KeyboardZoneTiles {
 		left: (new_zone_control_tile(false)),
 		center_left: (new_zone_control_tile(false)),
 		center_right: (new_zone_control_tile(false)),
 		right: (new_zone_control_tile(false)),
 	};
-	let mut control_tiles = ControlTiles { master, control_sections };
+	let mut control_tiles = ControlTiles { master, zones };
 
-	color_picker_pack.add(&control_tiles.control_sections.left.exterior_tile);
-	color_picker_pack.add(&control_tiles.control_sections.center_left.exterior_tile);
-	color_picker_pack.add(&control_tiles.control_sections.center_right.exterior_tile);
-	color_picker_pack.add(&control_tiles.control_sections.right.exterior_tile);
+	color_picker_pack.add(&control_tiles.zones.left.exterior_tile);
+	color_picker_pack.add(&control_tiles.zones.center_left.exterior_tile);
+	color_picker_pack.add(&control_tiles.zones.center_right.exterior_tile);
+	color_picker_pack.add(&control_tiles.zones.right.exterior_tile);
 	color_picker_pack.add(&control_tiles.master.exterior_tile);
 	color_picker_pack.end();
 
@@ -245,6 +245,8 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 		"AmbientLight",
 		"SmoothLeftWave",
 		"SmoothRightWave",
+		"LeftSwipe",
+		"RightSwipe",
 	];
 	for effect in effects_list.iter() {
 		effect_browser.add(effect);
@@ -300,10 +302,10 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 	brightness_choice.set_value(0);
 
 	//Begin app logic
-	add_zone_control_tile_handle(&mut control_tiles.control_sections.left, keyboard.clone(), 0, stop_signal.clone());
-	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_left, keyboard.clone(), 1, stop_signal.clone());
-	add_zone_control_tile_handle(&mut control_tiles.control_sections.center_right, keyboard.clone(), 2, stop_signal.clone());
-	add_zone_control_tile_handle(&mut control_tiles.control_sections.right, keyboard.clone(), 3, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.zones.left, keyboard.clone(), 0, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.zones.center_left, keyboard.clone(), 1, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.zones.center_right, keyboard.clone(), 2, stop_signal.clone());
+	add_zone_control_tile_handle(&mut control_tiles.zones.right, keyboard.clone(), 3, stop_signal.clone());
 	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), stop_signal.clone());
 
 	// Effect choice
@@ -320,13 +322,13 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					control_tiles.activate();
 					stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
-					force_update_colors(&control_tiles.control_sections, &keyboard);
+					force_update_colors(&control_tiles.zones, &keyboard);
 				}
 				"Breath" => {
 					control_tiles.activate();
 					stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Breath);
-					force_update_colors(&control_tiles.control_sections, &keyboard);
+					force_update_colors(&control_tiles.zones, &keyboard);
 				}
 				"Smooth" => {
 					control_tiles.deactivate();
@@ -575,6 +577,64 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
 				}
+				"LeftSwipe" => {
+					//Preparations
+					stop_signal.store(true, Ordering::Relaxed);
+					wait_thread_end(&thread_ended_signal);
+					control_tiles.deactivate();
+					stop_signal.store(false, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+
+					//Create necessary clones to be passed into thread
+					let stop_signal = Arc::clone(&stop_signal);
+					let keyboard = Arc::clone(&keyboard);
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
+					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
+					thread::spawn(move || {
+						let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
+						let lock_control_tiles = &control_tiles.lock();
+						// lock_control_tiles.left.value().parse::<f32>().unwrap();
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						while !stop_signal.load(Ordering::Relaxed) {
+							shift_vec(&mut gradient, 3);
+							let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+							keyboard.lock().transition_colors_to(&colors, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+						}
+						thread_ended_signal.store(true, Ordering::Relaxed);
+					});
+				}
+				"RightSwipe" => {
+					//Preparations
+					stop_signal.store(true, Ordering::Relaxed);
+					wait_thread_end(&thread_ended_signal);
+					control_tiles.deactivate();
+					stop_signal.store(false, Ordering::Relaxed);
+					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+
+					//Create necessary clones to be passed into thread
+					let stop_signal = Arc::clone(&stop_signal);
+					let keyboard = Arc::clone(&keyboard);
+					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
+					let thread_ended_signal = Arc::clone(&thread_ended_signal);
+
+					thread::spawn(move || {
+						let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
+						thread_ended_signal.store(false, Ordering::Relaxed);
+						while !stop_signal.load(Ordering::Relaxed) {
+							shift_vec(&mut gradient, 3);
+							let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+							keyboard.lock().transition_colors_to(&colors, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							if stop_signal.load(Ordering::Relaxed) {
+								break;
+							}
+						}
+						thread_ended_signal.store(true, Ordering::Relaxed);
+					});
+				}
 				_ => {}
 			},
 		}
@@ -703,14 +763,14 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 						master_tile.red_input.deactivate();
 						master_tile.green_input.deactivate();
 						master_tile.blue_input.deactivate();
-						control_tiles.control_sections.deactivate();
+						control_tiles.zones.deactivate();
 					}
 					false => {
-						force_update_colors(&control_tiles.control_sections, &keyboard);
+						force_update_colors(&control_tiles.zones, &keyboard);
 						master_tile.red_input.activate();
 						master_tile.green_input.activate();
 						master_tile.blue_input.activate();
-						control_tiles.control_sections.activate();
+						control_tiles.zones.activate();
 					}
 				}
 				true
@@ -739,17 +799,17 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 								if stop_signal.load(Ordering::Relaxed) {
 									keyboard.lock().solid_set_value_by_index(index, 255.0);
 								}
-								control_tiles.control_sections.change_color_value(color, 255.0);
+								control_tiles.zones.change_color_value(color, 255.0);
 							} else {
 								if stop_signal.load(Ordering::Relaxed) {
 									keyboard.lock().solid_set_value_by_index(index, val);
 								}
-								control_tiles.control_sections.change_color_value(color, val);
+								control_tiles.zones.change_color_value(color, val);
 							}
 						}
 						Err(_) => {
 							input.set_value("0");
-							control_tiles.control_sections.change_color_value(color, 0.0);
+							control_tiles.zones.change_color_value(color, 0.0);
 						}
 					}
 					true
@@ -767,7 +827,7 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 	add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, keyboard, control_tiles.clone(), stop_signal);
 }
 
-fn force_update_colors(sections: &KeyboardControlTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
+fn force_update_colors(sections: &KeyboardZoneTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
 	let target = [
 		sections.left.red_input.value().parse::<f32>().unwrap(),
 		sections.left.green_input.value().parse::<f32>().unwrap(),
