@@ -612,7 +612,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 								zones_lock.right.green_input.value().parse::<f32>().unwrap(),
 								zones_lock.right.blue_input.value().parse::<f32>().unwrap(),
 							];
-							for i in 0..4 {
+							for _i in 0..4 {
 								shift_vec(&mut gradient, 3);
 								let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 								keyboard.lock().transition_colors_to(&colors, 150 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
@@ -660,7 +660,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 								zones_lock.right.green_input.value().parse::<f32>().unwrap(),
 								zones_lock.right.blue_input.value().parse::<f32>().unwrap(),
 							];
-							for i in 0..4 {
+							for _i in 0..4 {
 								shift_vec(&mut gradient, 9);
 								let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 								keyboard.lock().transition_colors_to(&colors, 150 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
