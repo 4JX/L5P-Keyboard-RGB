@@ -514,6 +514,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 											}
 										}
 									}
+									thread::sleep(Duration::from_millis(20));
 								}
 								thread_ended_signal.store(true, Ordering::Relaxed);
 								drop(capturer);
@@ -545,6 +546,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
+							thread::sleep(Duration::from_millis(20));
 						}
 						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
@@ -573,6 +575,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
+							thread::sleep(Duration::from_millis(20));
 						}
 						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
@@ -581,7 +584,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
-					control_tiles.deactivate();
+					control_tiles.master.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 
@@ -592,17 +595,35 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					let thread_ended_signal = Arc::clone(&thread_ended_signal);
 					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
 					thread::spawn(move || {
-						let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
-						let lock_control_tiles = &control_tiles.lock();
-						// lock_control_tiles.zones.left.value().parse::<f32>().unwrap();
 						thread_ended_signal.store(false, Ordering::Relaxed);
 						while !stop_signal.load(Ordering::Relaxed) {
-							shift_vec(&mut gradient, 3);
-							let colors: [f32; 12] = gradient.clone().try_into().unwrap();
-							keyboard.lock().transition_colors_to(&colors, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							let zones_lock = &control_tiles.lock().zones;
+							let mut gradient = vec![
+								zones_lock.left.red_input.value().parse::<f32>().unwrap(),
+								zones_lock.left.green_input.value().parse::<f32>().unwrap(),
+								zones_lock.left.blue_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_left.red_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_left.green_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_left.blue_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_right.red_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_right.green_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_right.blue_input.value().parse::<f32>().unwrap(),
+								zones_lock.right.red_input.value().parse::<f32>().unwrap(),
+								zones_lock.right.green_input.value().parse::<f32>().unwrap(),
+								zones_lock.right.blue_input.value().parse::<f32>().unwrap(),
+							];
+							for i in 0..4 {
+								shift_vec(&mut gradient, 3);
+								let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+								keyboard.lock().transition_colors_to(&colors, 150 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+								if stop_signal.load(Ordering::Relaxed) {
+									break;
+								}
+							}
 							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
+							thread::sleep(Duration::from_millis(20));
 						}
 						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
@@ -611,7 +632,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
-					control_tiles.deactivate();
+					control_tiles.master.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
 
@@ -620,17 +641,37 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					let keyboard = Arc::clone(&keyboard);
 					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
 					let thread_ended_signal = Arc::clone(&thread_ended_signal);
-
+					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
 					thread::spawn(move || {
-						let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 						thread_ended_signal.store(false, Ordering::Relaxed);
 						while !stop_signal.load(Ordering::Relaxed) {
-							shift_vec(&mut gradient, 3);
-							let colors: [f32; 12] = gradient.clone().try_into().unwrap();
-							keyboard.lock().transition_colors_to(&colors, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+							let zones_lock = &control_tiles.lock().zones;
+							let mut gradient = vec![
+								zones_lock.left.red_input.value().parse::<f32>().unwrap(),
+								zones_lock.left.green_input.value().parse::<f32>().unwrap(),
+								zones_lock.left.blue_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_left.red_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_left.green_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_left.blue_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_right.red_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_right.green_input.value().parse::<f32>().unwrap(),
+								zones_lock.center_right.blue_input.value().parse::<f32>().unwrap(),
+								zones_lock.right.red_input.value().parse::<f32>().unwrap(),
+								zones_lock.right.green_input.value().parse::<f32>().unwrap(),
+								zones_lock.right.blue_input.value().parse::<f32>().unwrap(),
+							];
+							for i in 0..4 {
+								shift_vec(&mut gradient, 9);
+								let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+								keyboard.lock().transition_colors_to(&colors, 150 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
+								if stop_signal.load(Ordering::Relaxed) {
+									break;
+								}
+							}
 							if stop_signal.load(Ordering::Relaxed) {
 								break;
 							}
+							thread::sleep(Duration::from_millis(20));
 						}
 						thread_ended_signal.store(true, Ordering::Relaxed);
 					});
