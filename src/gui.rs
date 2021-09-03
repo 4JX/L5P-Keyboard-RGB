@@ -594,7 +594,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					thread::spawn(move || {
 						let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 						let lock_control_tiles = &control_tiles.lock();
-						// lock_control_tiles.left.value().parse::<f32>().unwrap();
+						// lock_control_tiles.zones.left.value().parse::<f32>().unwrap();
 						thread_ended_signal.store(false, Ordering::Relaxed);
 						while !stop_signal.load(Ordering::Relaxed) {
 							shift_vec(&mut gradient, 3);
@@ -827,20 +827,20 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 	add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, keyboard, control_tiles.clone(), stop_signal);
 }
 
-fn force_update_colors(sections: &KeyboardZoneTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
+fn force_update_colors(zones: &KeyboardZoneTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
 	let target = [
-		sections.left.red_input.value().parse::<f32>().unwrap(),
-		sections.left.green_input.value().parse::<f32>().unwrap(),
-		sections.left.blue_input.value().parse::<f32>().unwrap(),
-		sections.center_left.red_input.value().parse::<f32>().unwrap(),
-		sections.center_left.green_input.value().parse::<f32>().unwrap(),
-		sections.center_left.blue_input.value().parse::<f32>().unwrap(),
-		sections.center_right.red_input.value().parse::<f32>().unwrap(),
-		sections.center_right.green_input.value().parse::<f32>().unwrap(),
-		sections.center_right.blue_input.value().parse::<f32>().unwrap(),
-		sections.right.red_input.value().parse::<f32>().unwrap(),
-		sections.right.green_input.value().parse::<f32>().unwrap(),
-		sections.right.blue_input.value().parse::<f32>().unwrap(),
+		zones.left.red_input.value().parse::<f32>().unwrap(),
+		zones.left.green_input.value().parse::<f32>().unwrap(),
+		zones.left.blue_input.value().parse::<f32>().unwrap(),
+		zones.center_left.red_input.value().parse::<f32>().unwrap(),
+		zones.center_left.green_input.value().parse::<f32>().unwrap(),
+		zones.center_left.blue_input.value().parse::<f32>().unwrap(),
+		zones.center_right.red_input.value().parse::<f32>().unwrap(),
+		zones.center_right.green_input.value().parse::<f32>().unwrap(),
+		zones.center_right.blue_input.value().parse::<f32>().unwrap(),
+		zones.right.red_input.value().parse::<f32>().unwrap(),
+		zones.right.green_input.value().parse::<f32>().unwrap(),
+		zones.right.blue_input.value().parse::<f32>().unwrap(),
 	];
 	keyboard.lock().set_colors_to(&target);
 }
