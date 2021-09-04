@@ -56,6 +56,7 @@ pub struct ControlTiles {
 	pub zones: KeyboardZoneTiles,
 }
 
+#[allow(dead_code)]
 impl ControlTiles {
 	pub fn activate(&mut self) {
 		self.master.activate();
@@ -239,8 +240,6 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 		"Smooth",
 		"LeftWave",
 		"RightWave",
-		"LeftPulse",
-		"RightPulse",
 		"Lightning",
 		"AmbientLight",
 		"SmoothLeftWave",
@@ -345,93 +344,6 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					stop_signal.store(true, Ordering::Relaxed);
 
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::RightWave);
-				}
-				"LeftPulse" => {
-					//Preparations
-					stop_signal.store(true, Ordering::Relaxed);
-					wait_thread_end(&thread_ended_signal);
-					control_tiles.master_only();
-					stop_signal.store(false, Ordering::Relaxed);
-					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
-
-					//Create necessary clones to be passed into thread
-					let stop_signal = Arc::clone(&stop_signal);
-					let keyboard = Arc::clone(&keyboard);
-					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
-					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
-					let thread_ended_signal = Arc::clone(&thread_ended_signal);
-					thread::spawn(move || {
-						thread_ended_signal.store(false, Ordering::Relaxed);
-						while !stop_signal.load(Ordering::Relaxed) {
-							let master_tile = &control_tiles.lock().master;
-							let red = master_tile.red_input.value().parse::<f32>().unwrap();
-							let green = master_tile.green_input.value().parse::<f32>().unwrap();
-							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();
-
-							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							let color: [f32; 12] = [0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
-							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							thread::sleep(Duration::from_millis(50));
-						}
-						thread_ended_signal.store(true, Ordering::Relaxed);
-					});
-				}
-				"RightPulse" => {
-					//Preparations
-					stop_signal.store(true, Ordering::Relaxed);
-					wait_thread_end(&thread_ended_signal);
-					control_tiles.master_only();
-					stop_signal.store(false, Ordering::Relaxed);
-					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
-
-					//Create necessary clones to be passed into thread
-					let stop_signal = Arc::clone(&stop_signal);
-					let keyboard = Arc::clone(&keyboard);
-					let speed_choice = Arc::from(Mutex::from(speed_choice.clone()));
-					let control_tiles = Arc::from(Mutex::from(control_tiles.clone()));
-					let thread_ended_signal = Arc::clone(&thread_ended_signal);
-					thread::spawn(move || {
-						thread_ended_signal.store(false, Ordering::Relaxed);
-						while !stop_signal.load(Ordering::Relaxed) {
-							let master_tile = &control_tiles.lock().master;
-							let red = master_tile.red_input.value().parse::<f32>().unwrap();
-							let green = master_tile.green_input.value().parse::<f32>().unwrap();
-							let blue = master_tile.blue_input.value().parse::<f32>().unwrap();
-							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue];
-							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							let color: [f32; 12] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							let color: [f32; 12] = [0.0, 0.0, 0.0, red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							let color: [f32; 12] = [red, green, blue, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-							keyboard.lock().transition_colors_to(&color, 255 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
-							thread::sleep(Duration::from_millis(50));
-						}
-						thread_ended_signal.store(true, Ordering::Relaxed);
-					});
 				}
 				"Lightning" => {
 					//Preparations
