@@ -25,7 +25,7 @@ You may download precompiled versions from [here](https://github.com/4JX/L5P-Key
 - **Lightning:** Adds a little _spark_.
 - **AmbientLight:** Reacts to content on your screen.
 - **Smooth(Left/Right)Wave:** An implementation of the classic wave effect.
-- **(Left/Right)Swipe:** Transitions the selecter colors from side to side, useful for custom waves.
+- **(Left/Right)Swipe:** Transitions the selected colors from side to side, useful for custom waves.
 
 ## Crashes, freezes, errrors, etc
 
