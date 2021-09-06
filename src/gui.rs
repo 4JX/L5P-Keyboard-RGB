@@ -206,14 +206,12 @@ fn new_zone_control_tile(master_tile: bool) -> ZoneControlTile {
 	control_tile
 }
 
-pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
+pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
 	//Keyboard
-	let keyboard = Arc::from(Mutex::from(keyboard));
 	let stop_signal = Arc::new(AtomicBool::new(true));
 	let thread_ended_signal = Arc::new(AtomicBool::new(true));
 
 	//UI
-	let app = app::App::default();
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
 	let master = new_zone_control_tile(true);
@@ -314,7 +312,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 		let speed_choice = speed_choice.clone();
 		move |browser| match browser.value() {
 			0 => {
-				browser.select(1);
+				browser.select(0);
 			}
 			_ => match effects_list[(browser.value() - 1) as usize] {
 				"Static" => {
@@ -619,8 +617,6 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 			}
 		}
 	});
-
-	app.run().unwrap();
 }
 
 fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
