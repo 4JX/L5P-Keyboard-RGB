@@ -496,6 +496,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
+					control_tiles.activate();
 					control_tiles.master.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
@@ -544,6 +545,7 @@ pub fn start_ui(keyboard: crate::keyboard_utils::Keyboard) {
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
+					control_tiles.activate();
 					control_tiles.master.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
