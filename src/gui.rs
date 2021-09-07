@@ -206,7 +206,7 @@ fn new_zone_control_tile(master_tile: bool) -> ZoneControlTile {
 	control_tile
 }
 
-pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
+pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::window::Window {
 	//Keyboard
 	let stop_signal = Arc::new(AtomicBool::new(true));
 	let thread_ended_signal = Arc::new(AtomicBool::new(true));
@@ -617,6 +617,7 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
 			}
 		}
 	});
+	win
 }
 
 fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
