@@ -1,4 +1,4 @@
-# L5P Keyboard RGB Control Program
+# Legion Keyboard RGB Control Program
 
 A fun little experiment. Probably contains bugs.
 
@@ -6,7 +6,7 @@ A fun little experiment. Probably contains bugs.
 
 ## Compatibility
 
-This program has been tested to work on the 4 zone keyboard of the Legion 5 Pro 2021. It [_should_](https://www.reddit.com/r/LenovoLegion/comments/panu9f/progress_update_on_effects_d/haf346a?utm_source=share&utm_medium=web2x&context=3) alledgedly work on the Legion 5 Gen 6 2021 too, though I'd need to test it with an user who has one.
+This program has been tested to work on the 4 zone keyboard of the 2021 Legion 5 and Legion 5 Pro models.
 
 ### "How about X model"
 

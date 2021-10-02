@@ -151,7 +151,7 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	let thread_ended_signal = Arc::new(AtomicBool::new(true));
 
 	//UI
-	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Keyboard RGB Control");
+	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
 	let mut control_tiles = create_control_tiles(keyboard.clone(), stop_signal.clone());
 
