@@ -646,13 +646,11 @@ fn create_control_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, s
 						match input.value().parse::<f32>() {
 							Ok(val) => {
 								input.set_value(&val.to_string());
-								if val > 255.0 {
-									input.set_value("255");
-									if stop_signal.load(Ordering::Relaxed) {
+								if stop_signal.load(Ordering::Relaxed) {
+									if val > 255.0 {
+										input.set_value("255");
 										keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
-									}
-								} else {
-									if stop_signal.load(Ordering::Relaxed) {
+									} else {
 										keyboard.lock().set_value_by_index(triplet_index + color_index, val);
 									}
 								}
@@ -769,7 +767,7 @@ fn create_control_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, s
 		zones,
 	};
 
-	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), stop_signal.clone());
+	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard, stop_signal);
 
 	control_tiles
 }
