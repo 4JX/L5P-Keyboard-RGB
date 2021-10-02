@@ -26,7 +26,6 @@ pub struct LightingState {
 	speed: u8,
 	brightness: u8,
 	rgb_values: [f32; 12],
-	separate_zones: bool,
 }
 
 pub struct Keyboard {
@@ -37,19 +36,6 @@ pub struct Keyboard {
 #[allow(dead_code)]
 impl Keyboard {
 	pub fn refresh(&mut self) {
-		self.current_state.separate_zones = true;
-		let payload = match build_payload(&self.current_state) {
-			Ok(payload) => payload,
-			Err(err) => panic!("{}", err),
-		};
-		match self.keyboard_hid.send_feature_report(&payload) {
-			Ok(_keyboard_hid) => {}
-			Err(err) => panic!("{}", err),
-		};
-	}
-
-	pub fn solid_refresh(&mut self) {
-		self.current_state.separate_zones = false;
 		let payload = match build_payload(&self.current_state) {
 			Ok(payload) => payload,
 			Err(err) => panic!("{}", err),
@@ -182,7 +168,6 @@ pub fn get_keyboard() -> Result<Keyboard, Box<dyn Error>> {
 		speed: 1,
 		brightness: 1,
 		rgb_values: [0.0; 12],
-		separate_zones: false,
 	};
 
 	let mut keyboard = Keyboard { keyboard_hid, current_state };
@@ -225,17 +210,8 @@ fn build_payload(keyboard_state: &LightingState) -> Result<[u8; 33], &'static st
 
 	match keyboard_state.effect_type {
 		LightingEffects::Static | LightingEffects::Breath => {
-			if keyboard_state.separate_zones {
-				for i in 0..12 {
-					payload[i + 5] = keyboard_state.rgb_values[i] as u8;
-				}
-			} else {
-				for i in 0..3 {
-					payload[i + 5] = keyboard_state.rgb_values[i] as u8;
-					payload[i + 8] = keyboard_state.rgb_values[i] as u8;
-					payload[i + 11] = keyboard_state.rgb_values[i] as u8;
-					payload[i + 14] = keyboard_state.rgb_values[i] as u8;
-				}
+			for i in 0..12 {
+				payload[i + 5] = keyboard_state.rgb_values[i] as u8;
 			}
 		}
 		_ => {}
