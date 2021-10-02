@@ -1,15 +1,10 @@
 #![windows_subsystem = "windows"]
-use fltk::{app, prelude::*};
+use fltk::app;
 use parking_lot::Mutex;
 use std::sync::Arc;
-use tray_item::{IconSource, TrayItem};
 
 mod gui;
 mod keyboard_utils;
-
-type HWND = *mut std::os::raw::c_void;
-
-static mut WINDOW: HWND = std::ptr::null_mut();
 
 fn main() {
 	let app = app::App::default();
@@ -18,11 +13,18 @@ fn main() {
 		Err(err) => panic!("{}", err),
 	};
 
-	let mut win = gui::start_ui(keyboard.clone());
-
 	//Windows tray logic
 	#[cfg(target_os = "windows")]
 	{
+		use fltk::prelude::*;
+		use tray_item::{IconSource, TrayItem};
+
+		type HWND = *mut std::os::raw::c_void;
+
+		static mut WINDOW: HWND = std::ptr::null_mut();
+
+		let mut win = gui::start_ui(keyboard.clone());
+
 		unsafe {
 			WINDOW = win.raw_handle();
 		}
@@ -39,10 +41,10 @@ fn main() {
 
 		tray.add_menu_item("Show", move || {
 			extern "C" {
-				pub fn ShowWindow(hwnd: crate::HWND, nCmdShow: i32) -> bool;
+				pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> bool;
 			}
 			unsafe {
-				ShowWindow(crate::WINDOW, 9);
+				ShowWindow(WINDOW, 9);
 			}
 		})
 		.unwrap();
@@ -64,5 +66,8 @@ fn main() {
 	}
 
 	#[cfg(not(target_os = "windows"))]
-	app.run().unwrap();
+	{
+		start_ui(keyboard.clone());
+		app.run().unwrap();
+	}
 }
