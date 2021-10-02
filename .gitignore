@@ -1,0 +1,8 @@
+# Github
+.gitattributes
+
+# VSCode
+.vscode
+
+# Rust
+target
