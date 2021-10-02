@@ -145,67 +145,6 @@ impl ZoneControlTile {
 	}
 }
 
-fn new_zone_control_tile(master_tile: bool) -> ZoneControlTile {
-	let center_x = 540 / 2;
-	let center_y = 90 / 2 - 20;
-	let offset = 120;
-
-	//Begin tile
-	let mut control_tile = ZoneControlTile {
-		exterior_tile: Tile::new(0, 0, 540, 90, ""),
-		toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
-		red_input: IntInput::new(center_x - offset, center_y, 60, 40, "R:"),
-		green_input: IntInput::new(center_x, center_y, 60, 40, "G:"),
-		blue_input: IntInput::new(center_x + offset, center_y, 60, 40, "B:"),
-	};
-
-	control_tile.exterior_tile.add(&control_tile.toggle_button);
-
-	control_tile.exterior_tile.add(&control_tile.red_input);
-	control_tile.exterior_tile.add(&control_tile.green_input);
-	control_tile.exterior_tile.add(&control_tile.blue_input);
-	control_tile.exterior_tile.end();
-	//Themeing
-	control_tile.exterior_tile.set_frame(FrameType::FlatBox);
-
-	if master_tile {
-		control_tile.exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
-	} else {
-		control_tile.exterior_tile.set_color(Color::from_u32(GRAY));
-	}
-
-	//Button
-	control_tile.toggle_button.set_frame(FrameType::OFlatFrame);
-	control_tile.toggle_button.set_color(Color::from_u32(WHITE));
-
-	//Inputs
-	fn theme_input(input: &mut IntInput, color: BaseColor) {
-		match color {
-			BaseColor::Red => input.set_label_color(Color::from_u32(RED)),
-			BaseColor::Green => input.set_label_color(Color::from_u32(GREEN)),
-			BaseColor::Blue => input.set_label_color(Color::from_u32(BLUE)),
-		}
-		input.set_frame(FrameType::FlatBox);
-		input.set_color(Color::from_u32(DARK_GRAY));
-		input.set_selection_color(Color::White);
-		input.set_text_color(Color::from_u32(WHITE));
-		input.set_text_size(30);
-		input.set_label_size(30);
-		input.set_value("0");
-	}
-
-	//Red
-	theme_input(&mut control_tile.red_input, BaseColor::Red);
-
-	//Green
-	theme_input(&mut control_tile.green_input, BaseColor::Green);
-
-	//Blue
-	theme_input(&mut control_tile.blue_input, BaseColor::Blue);
-
-	control_tile
-}
-
 pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::window::Window {
 	//Keyboard
 	let stop_signal = Arc::new(AtomicBool::new(true));
@@ -214,14 +153,7 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	//UI
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion 5 Pro Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
-	let master = new_zone_control_tile(true);
-	let zones: KeyboardZoneTiles = KeyboardZoneTiles {
-		left: (new_zone_control_tile(false)),
-		center_left: (new_zone_control_tile(false)),
-		center_right: (new_zone_control_tile(false)),
-		right: (new_zone_control_tile(false)),
-	};
-	let mut control_tiles = ControlTiles { master, zones };
+	let mut control_tiles = create_control_tiles(keyboard.clone(), stop_signal.clone());
 
 	color_picker_pack.add(&control_tiles.zones.left.exterior_tile);
 	color_picker_pack.add(&control_tiles.zones.center_left.exterior_tile);
@@ -299,12 +231,6 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	brightness_choice.set_value(0);
 
 	//Begin app logic
-	add_zone_control_tile_handle(&mut control_tiles.zones.left, keyboard.clone(), 0, stop_signal.clone());
-	add_zone_control_tile_handle(&mut control_tiles.zones.center_left, keyboard.clone(), 1, stop_signal.clone());
-	add_zone_control_tile_handle(&mut control_tiles.zones.center_right, keyboard.clone(), 2, stop_signal.clone());
-	add_zone_control_tile_handle(&mut control_tiles.zones.right, keyboard.clone(), 3, stop_signal.clone());
-	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), stop_signal.clone());
-
 	// Effect choice
 	effect_browser.set_callback({
 		let keyboard = keyboard.clone();
@@ -620,68 +546,84 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	win
 }
 
-fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
-	//Button
-	control_tile.toggle_button.handle({
-		let keyboard = keyboard.clone();
-		let mut control_tile = control_tile.clone();
-		move |button, event| match event {
-			Event::Released => {
-				match button.is_toggled() {
-					true => {
-						keyboard.lock().set_zone_by_index(zone_index, [0.0; 3]);
-						control_tile.red_input.deactivate();
-						control_tile.green_input.deactivate();
-						control_tile.blue_input.deactivate();
-					}
-					false => {
-						keyboard.lock().set_zone_by_index(
-							zone_index,
-							[
-								control_tile.red_input.value().parse::<f32>().unwrap(),
-								control_tile.green_input.value().parse::<f32>().unwrap(),
-								control_tile.blue_input.value().parse::<f32>().unwrap(),
-							],
-						);
-						control_tile.red_input.activate();
-						control_tile.green_input.activate();
-						control_tile.blue_input.activate();
-					}
-				}
-				true
-			}
-			_ => false,
-		}
-	});
-
-	fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
-		let triplet_index = zone_index * 3;
-		let color_index = match color {
-			BaseColor::Red => 0,
-			BaseColor::Green => 1,
-			BaseColor::Blue => 2,
+fn create_control_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) -> ControlTiles {
+	fn new_zone_control_tile(master_tile: bool) -> ZoneControlTile {
+		let center_x = 540 / 2;
+		let center_y = 90 / 2 - 20;
+		let offset = 120;
+		//Begin tile
+		let mut control_tile = ZoneControlTile {
+			exterior_tile: Tile::new(0, 0, 540, 90, ""),
+			toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
+			red_input: IntInput::new(center_x - offset, center_y, 60, 40, "R:"),
+			green_input: IntInput::new(center_x, center_y, 60, 40, "G:"),
+			blue_input: IntInput::new(center_x + offset, center_y, 60, 40, "B:"),
 		};
-		input.handle({
-			let keyboard = keyboard;
-			let stop_signal = Arc::clone(&stop_signal);
-			move |input, event| match event {
-				Event::KeyUp => {
-					match input.value().parse::<f32>() {
-						Ok(val) => {
-							input.set_value(&val.to_string());
-							if val > 255.0 {
-								input.set_value("255");
-								if stop_signal.load(Ordering::Relaxed) {
-									keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
-								}
-							} else {
-								if stop_signal.load(Ordering::Relaxed) {
-									keyboard.lock().set_value_by_index(triplet_index + color_index, val);
-								}
-							}
+		control_tile.exterior_tile.add(&control_tile.toggle_button);
+		control_tile.exterior_tile.add(&control_tile.red_input);
+		control_tile.exterior_tile.add(&control_tile.green_input);
+		control_tile.exterior_tile.add(&control_tile.blue_input);
+		control_tile.exterior_tile.end();
+		//Themeing
+		control_tile.exterior_tile.set_frame(FrameType::FlatBox);
+		if master_tile {
+			control_tile.exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
+		} else {
+			control_tile.exterior_tile.set_color(Color::from_u32(GRAY));
+		}
+		//Button
+		control_tile.toggle_button.set_frame(FrameType::OFlatFrame);
+		control_tile.toggle_button.set_color(Color::from_u32(WHITE));
+		//Inputs
+		fn theme_input(input: &mut IntInput, color: BaseColor) {
+			match color {
+				BaseColor::Red => input.set_label_color(Color::from_u32(RED)),
+				BaseColor::Green => input.set_label_color(Color::from_u32(GREEN)),
+				BaseColor::Blue => input.set_label_color(Color::from_u32(BLUE)),
+			}
+			input.set_frame(FrameType::FlatBox);
+			input.set_color(Color::from_u32(DARK_GRAY));
+			input.set_selection_color(Color::White);
+			input.set_text_color(Color::from_u32(WHITE));
+			input.set_text_size(30);
+			input.set_label_size(30);
+			input.set_value("0");
+		}
+		//Red
+		theme_input(&mut control_tile.red_input, BaseColor::Red);
+		//Green
+		theme_input(&mut control_tile.green_input, BaseColor::Green);
+		//Blue
+		theme_input(&mut control_tile.blue_input, BaseColor::Blue);
+		control_tile
+	}
+
+	fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
+		//Button
+		control_tile.toggle_button.handle({
+			let keyboard = keyboard.clone();
+			let mut control_tile = control_tile.clone();
+			move |button, event| match event {
+				Event::Released => {
+					match button.is_toggled() {
+						true => {
+							keyboard.lock().set_zone_by_index(zone_index, [0.0; 3]);
+							control_tile.red_input.deactivate();
+							control_tile.green_input.deactivate();
+							control_tile.blue_input.deactivate();
 						}
-						Err(_) => {
-							input.set_value("0");
+						false => {
+							keyboard.lock().set_zone_by_index(
+								zone_index,
+								[
+									control_tile.red_input.value().parse::<f32>().unwrap(),
+									control_tile.green_input.value().parse::<f32>().unwrap(),
+									control_tile.blue_input.value().parse::<f32>().unwrap(),
+								],
+							);
+							control_tile.red_input.activate();
+							control_tile.green_input.activate();
+							control_tile.blue_input.activate();
 						}
 					}
 					true
@@ -689,79 +631,73 @@ fn add_zone_control_tile_handle(control_tile: &mut ZoneControlTile, keyboard: Ar
 				_ => false,
 			}
 		});
-	}
-
-	//Red
-	add_input_handle(&mut control_tile.red_input, BaseColor::Red, keyboard.clone(), zone_index, stop_signal.clone());
-	//Green
-	add_input_handle(&mut control_tile.green_input, BaseColor::Green, keyboard.clone(), zone_index, stop_signal.clone());
-	//Blue
-	add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, zone_index, stop_signal);
-}
-
-fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) {
-	let mut master_tile = control_tiles.master.clone();
-
-	//Button
-	master_tile.toggle_button.handle({
-		let keyboard = keyboard.clone();
-		let mut control_tiles = control_tiles.clone();
-		let mut master_tile = master_tile.clone();
-		move |button, event| match event {
-			Event::Released => {
-				match button.is_toggled() {
-					true => {
-						keyboard.lock().set_colors_to(&[0.0; 12]);
-						master_tile.red_input.deactivate();
-						master_tile.green_input.deactivate();
-						master_tile.blue_input.deactivate();
-						control_tiles.zones.deactivate();
-					}
-					false => {
-						force_update_colors(&control_tiles.zones, &keyboard);
-						master_tile.red_input.activate();
-						master_tile.green_input.activate();
-						master_tile.blue_input.activate();
-						control_tiles.zones.activate();
-					}
-				}
-				true
-			}
-			_ => false,
-		}
-	});
-
-	fn add_master_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, control_tiles: ControlTiles, stop_signal: Arc<AtomicBool>) {
-		let index = match color {
-			BaseColor::Red => 0,
-			BaseColor::Green => 1,
-			BaseColor::Blue => 2,
-		};
-		input.handle({
-			let keyboard = keyboard;
-			let mut control_tiles = control_tiles;
-			let stop_signal = Arc::clone(&stop_signal);
-			move |input, event| match event {
-				Event::KeyUp => {
-					match input.value().parse::<f32>() {
-						Ok(val) => {
-							input.set_value(&val.to_string());
-							if val > 255.0 {
-								input.set_value("255");
-								if stop_signal.load(Ordering::Relaxed) {
-									keyboard.lock().solid_set_value_by_index(index, 255.0);
+		fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
+			let triplet_index = zone_index * 3;
+			let color_index = match color {
+				BaseColor::Red => 0,
+				BaseColor::Green => 1,
+				BaseColor::Blue => 2,
+			};
+			input.handle({
+				let keyboard = keyboard;
+				let stop_signal = Arc::clone(&stop_signal);
+				move |input, event| match event {
+					Event::KeyUp => {
+						match input.value().parse::<f32>() {
+							Ok(val) => {
+								input.set_value(&val.to_string());
+								if val > 255.0 {
+									input.set_value("255");
+									if stop_signal.load(Ordering::Relaxed) {
+										keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
+									}
+								} else {
+									if stop_signal.load(Ordering::Relaxed) {
+										keyboard.lock().set_value_by_index(triplet_index + color_index, val);
+									}
 								}
-								control_tiles.zones.change_color_value(color, 255.0);
-							} else {
-								if stop_signal.load(Ordering::Relaxed) {
-									keyboard.lock().solid_set_value_by_index(index, val);
-								}
-								control_tiles.zones.change_color_value(color, val);
+							}
+							Err(_) => {
+								input.set_value("0");
 							}
 						}
-						Err(_) => {
-							input.set_value("0");
-							control_tiles.zones.change_color_value(color, 0.0);
+						true
+					}
+					_ => false,
+				}
+			});
+		}
+		//Red
+		add_input_handle(&mut control_tile.red_input, BaseColor::Red, keyboard.clone(), zone_index, stop_signal.clone());
+		//Green
+		add_input_handle(&mut control_tile.green_input, BaseColor::Green, keyboard.clone(), zone_index, stop_signal.clone());
+		//Blue
+		add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, zone_index, stop_signal);
+	}
+
+	fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) {
+		let mut master_tile = control_tiles.master.clone();
+		//Button
+		master_tile.toggle_button.handle({
+			let keyboard = keyboard.clone();
+			let mut control_tiles = control_tiles.clone();
+			let mut master_tile = master_tile.clone();
+			move |button, event| match event {
+				Event::Released => {
+					match button.is_toggled() {
+						true => {
+							keyboard.lock().set_colors_to(&[0.0; 12]);
+							master_tile.red_input.deactivate();
+							master_tile.green_input.deactivate();
+							master_tile.blue_input.deactivate();
+							control_tiles.zones.deactivate();
+						}
+						false => {
+							force_update_colors(&control_tiles.zones, &keyboard);
+							master_tile.red_input.activate();
+							master_tile.green_input.activate();
+							master_tile.blue_input.activate();
+							control_tiles.zones.activate();
 						}
 					}
 					true
@@ -769,14 +705,73 @@ fn add_master_control_tile_handle(control_tiles: &mut ControlTiles, keyboard: Ar
 				_ => false,
 			}
 		});
+		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, control_tiles: ControlTiles, stop_signal: Arc<AtomicBool>) {
+			let index = match color {
+				BaseColor::Red => 0,
+				BaseColor::Green => 1,
+				BaseColor::Blue => 2,
+			};
+			input.handle({
+				let keyboard = keyboard;
+				let mut control_tiles = control_tiles;
+				let stop_signal = Arc::clone(&stop_signal);
+				move |input, event| match event {
+					Event::KeyUp => {
+						match input.value().parse::<f32>() {
+							Ok(val) => {
+								input.set_value(&val.to_string());
+								if val > 255.0 {
+									input.set_value("255");
+									if stop_signal.load(Ordering::Relaxed) {
+										keyboard.lock().solid_set_value_by_index(index, 255.0);
+									}
+									control_tiles.zones.change_color_value(color, 255.0);
+								} else {
+									if stop_signal.load(Ordering::Relaxed) {
+										keyboard.lock().solid_set_value_by_index(index, val);
+									}
+									control_tiles.zones.change_color_value(color, val);
+								}
+							}
+							Err(_) => {
+								input.set_value("0");
+								control_tiles.zones.change_color_value(color, 0.0);
+							}
+						}
+						true
+					}
+					_ => false,
+				}
+			});
+		}
+		//Red
+		add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, keyboard.clone(), control_tiles.clone(), stop_signal.clone());
+		//Green
+		add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, keyboard.clone(), control_tiles.clone(), stop_signal.clone());
+		//Blue
+		add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, keyboard, control_tiles.clone(), stop_signal);
 	}
 
-	//Red
-	add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, keyboard.clone(), control_tiles.clone(), stop_signal.clone());
-	//Green
-	add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, keyboard.clone(), control_tiles.clone(), stop_signal.clone());
-	//Blue
-	add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, keyboard, control_tiles.clone(), stop_signal);
+	let mut zones = KeyboardZoneTiles {
+		left: (new_zone_control_tile(false)),
+		center_left: (new_zone_control_tile(false)),
+		center_right: (new_zone_control_tile(false)),
+		right: (new_zone_control_tile(false)),
+	};
+
+	add_zone_control_tile_handle(&mut zones.left, keyboard.clone(), 0, stop_signal.clone());
+	add_zone_control_tile_handle(&mut zones.center_left, keyboard.clone(), 1, stop_signal.clone());
+	add_zone_control_tile_handle(&mut zones.center_right, keyboard.clone(), 2, stop_signal.clone());
+	add_zone_control_tile_handle(&mut zones.right, keyboard.clone(), 3, stop_signal.clone());
+
+	let control_tiles = ControlTiles {
+		master: (new_zone_control_tile(true)),
+		zones,
+	};
+
+	add_master_control_tile_handle(&mut control_tiles.clone(), keyboard.clone(), stop_signal.clone());
+
+	control_tiles
 }
 
 fn force_update_colors(zones: &KeyboardZoneTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
