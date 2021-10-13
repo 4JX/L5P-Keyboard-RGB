@@ -4,15 +4,6 @@ A fun little experiment. Probably contains bugs.
 
 **⚠️ Use at your own risk, the developer is not responsible for any damages that may arise as a result of using this program.**
 
-## Compatibility
-
-This program has been tested to work on the 4 zone keyboard of the 2021 Legion 5 and Legion 5 Pro models.
-
-### "How about X model"
-
-- **Legion 7(i):** Won't work, the backlight on these is per-key and uses a different way of communicating.
-- **Any variant with a white backlight:** Havent figured out how to talk to this one yet, but given the limited number of states (off, low, high) there's not many effects I'd be able to add anyways.
-
 ## Download
 
 Builds will be periodically uploaded to the [releases tab](https://github.com/4JX/L5P-Keyboard-RGB/releases).
@@ -27,6 +18,15 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 - **AmbientLight:** Reacts to content on your screen.
 - **Smooth(Left/Right)Wave:** An implementation of the classic wave effect.
 - **(Left/Right)Swipe:** Transitions the selected colors from side to side, useful for custom waves.
+
+## Compatibility
+
+This program has been tested to work on the 4 zone keyboard of the **2021** Legion 5 and Legion 5 Pro models on both Windows and Linux.
+
+### "How about X model"
+
+- **Legion 7(i):** Won't work, the backlight on these is per-key and uses a different way of communicating.
+- **Any variant with a white backlight:** Havent figured out how to talk to this one yet, but given the limited number of states (off, low, high) there's not many effects I'd be able to add anyways.
 
 ## Crashes, freezes, errrors, etc
 
