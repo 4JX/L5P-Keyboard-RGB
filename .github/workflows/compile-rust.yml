@@ -18,16 +18,16 @@ jobs:
         include:
           - name: linux
             os: ubuntu-latest
-            artifact_name: target/debug/l5p-kb-rgb
-            asset_name: l5p-kb-rgb-linux
+            artifact_name: target/debug/legion-kb-rgb
+            asset_name: legion-kb-rgb-linux
           - name: windows
             os: windows-latest
-            artifact_name: target/debug/l5p-kb-rgb.exe
-            asset_name: l5p-kb-rgb-windows
+            artifact_name: target/debug/legion-kb-rgb.exe
+            asset_name: legion-kb-rgb-windows
           - name: macos
             os: macos-latest
-            artifact_name: target/debug/l5p-kb-rgb
-            asset_name: l5p-kb-rgb-macos
+            artifact_name: target/debug/legion-kb-rgb
+            asset_name: legion-kb-rgb-macos
 
     steps:
       - uses: actions/cache@v2
