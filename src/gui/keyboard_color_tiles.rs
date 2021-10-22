@@ -109,16 +109,16 @@ impl ColorTile {
 }
 
 #[derive(Clone)]
-pub struct KeyboardColorTiles {
+pub struct ZoneColorTiles {
 	pub left: ColorTile,
 	pub center_left: ColorTile,
 	pub center_right: ColorTile,
 	pub right: ColorTile,
 }
 
-impl KeyboardColorTiles {
+impl ZoneColorTiles {
 	pub fn new() -> Self {
-		Self {
+		ZoneColorTiles {
 			left: ColorTile::new(false),
 			center_left: ColorTile::new(false),
 			center_right: ColorTile::new(false),
@@ -165,13 +165,13 @@ impl KeyboardColorTiles {
 }
 
 #[derive(Clone)]
-pub struct GuiColorTiles {
+pub struct KeyboardColorTiles {
 	pub master: ColorTile,
-	pub zones: KeyboardColorTiles,
+	pub zones: ZoneColorTiles,
 }
 
 #[allow(dead_code)]
-impl GuiColorTiles {
+impl KeyboardColorTiles {
 	pub fn activate(&mut self) {
 		self.master.activate();
 		self.zones.activate();
