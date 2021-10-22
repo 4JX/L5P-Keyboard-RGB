@@ -67,7 +67,7 @@ fn main() {
 
 	#[cfg(not(target_os = "windows"))]
 	{
-		gui::start_ui(keyboard);
+		gui::gui_builder::start_ui(keyboard);
 		app.run().unwrap();
 	}
 }
