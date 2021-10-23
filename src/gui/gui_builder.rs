@@ -2,10 +2,9 @@ use crate::gui::keyboard_color_tiles;
 
 use fltk::{
 	app,
-	enums::{Color, Event, Font, FrameType},
-	group::{Pack, Tile},
+	enums::{Event, Font},
+	group::Pack,
 	input::IntInput,
-	menu::Choice,
 	prelude::*,
 	window::Window,
 };
@@ -31,10 +30,6 @@ const DISP_HEIGHT: u32 = 1600;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 450;
-
-const WHITE: u32 = 0xffffff;
-
-const DARK_GRAY: u32 = 0x333333;
 
 #[derive(Copy, Clone)]
 pub enum BaseColor {
@@ -73,16 +68,12 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 		"LeftSwipe",
 		"RightSwipe",
 	];
-	let mut effect_type_tile = Tile::new(540, 0, 360, 360, "");
-	let mut effect_browser = crate::gui::effect_browser::EffectBrowser::new(&effects_list);
-	effect_type_tile.end();
+	let effect_browser_tile = crate::gui::effect_browser::EffectBrowserTile::new(&effects_list);
+	let mut effect_browser = effect_browser_tile.effect_browser;
 
-	let mut options_tile = Tile::new(540, 360, 360, 90, "");
-	let mut speed_choice = Choice::new(540 + 100, 385, 40, 40, "Speed:");
-	speed_choice.add_choice("1|2|3|4");
-	let mut brightness_choice = Choice::new(0, 0, 40, 40, "Brightness:").right_of(&speed_choice, 140);
-	brightness_choice.add_choice("1|2");
-	options_tile.end();
+	let options_tile = crate::gui::options_tile::OptionsTile::new();
+	let mut speed_choice = options_tile.speed_choice;
+	let mut brightness_choice = options_tile.brightness_choice;
 
 	win.end();
 	win.make_resizable(false);
@@ -92,33 +83,6 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	app::background(51, 51, 51);
 	app::set_visible_focus(false);
 	app::set_font(Font::HelveticaBold);
-
-	effect_type_tile.set_frame(FrameType::FlatBox);
-	effect_type_tile.set_color(Color::from_u32(0x222222));
-
-	// Options tile
-	options_tile.set_frame(FrameType::FlatBox);
-	// options_tile.set_color(Color::from_u32(0xf00000));
-
-	//Speed choice
-	speed_choice.set_frame(FrameType::FlatBox);
-	speed_choice.set_color(Color::from_u32(DARK_GRAY));
-	speed_choice.set_label_color(Color::from_u32(WHITE));
-	speed_choice.set_selection_color(Color::White);
-	speed_choice.set_text_color(Color::from_u32(WHITE));
-	speed_choice.set_text_size(20);
-	speed_choice.set_label_size(20);
-	speed_choice.set_value(0);
-
-	//Brightness choice
-	brightness_choice.set_frame(FrameType::FlatBox);
-	brightness_choice.set_color(Color::from_u32(DARK_GRAY));
-	brightness_choice.set_label_color(Color::from_u32(WHITE));
-	brightness_choice.set_selection_color(Color::White);
-	brightness_choice.set_text_color(Color::from_u32(WHITE));
-	brightness_choice.set_text_size(20);
-	brightness_choice.set_label_size(20);
-	brightness_choice.set_value(0);
 
 	//Begin app logic
 	// Effect choice
