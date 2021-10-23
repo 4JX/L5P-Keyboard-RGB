@@ -1,4 +1,7 @@
-use crate::gui::{custom_effect_manager, effect_browser_tile, keyboard_color_tiles, options_tile};
+use crate::{
+	gui::{custom_effect_manager, effect_browser_tile, keyboard_color_tiles, options_tile},
+	keyboard_utils,
+};
 
 use fltk::{
 	app,
@@ -24,7 +27,7 @@ pub enum BaseColor {
 	Blue,
 }
 
-pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::window::Window {
+pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window::Window {
 	//Keyboard
 	let stop_signal = Arc::new(AtomicBool::new(true));
 	let thread_ended_signal = Arc::new(AtomicBool::new(true));
@@ -91,29 +94,29 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 				"Static" => {
 					keyboard_color_tiles.activate();
 					stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Static);
 					force_update_colors(&keyboard_color_tiles.zones, &keyboard);
 				}
 				"Breath" => {
 					keyboard_color_tiles.activate();
 					stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Breath);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Breath);
 					force_update_colors(&keyboard_color_tiles.zones, &keyboard);
 				}
 				"Smooth" => {
 					keyboard_color_tiles.deactivate();
 					stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Smooth);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Smooth);
 				}
 				"LeftWave" => {
 					keyboard_color_tiles.deactivate();
 					stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::LeftWave);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::LeftWave);
 				}
 				"RightWave" => {
 					keyboard_color_tiles.deactivate();
 					stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::RightWave);
+					keyboard.lock().set_effect(keyboard_utils::LightingEffects::RightWave);
 				}
 				"Lightning" => {
 					custom_effect_manager.change_effect(custom_effect_manager::CustomEffects::Lightning);
@@ -165,8 +168,8 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	win
 }
 
-fn create_keyboard_color_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) -> keyboard_color_tiles::KeyboardColorTiles {
-	fn add_zone_tile_handle(control_tile: &mut keyboard_color_tiles::ColorTile, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
+fn create_keyboard_color_tiles(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) -> keyboard_color_tiles::KeyboardColorTiles {
+	fn add_zone_tile_handle(control_tile: &mut keyboard_color_tiles::ColorTile, keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
 		//Button
 		control_tile.toggle_button.handle({
 			let keyboard = keyboard.clone();
@@ -199,7 +202,7 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboa
 				_ => false,
 			}
 		});
-		fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
+		fn add_input_handle(input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
 			let triplet_index = zone_index * 3;
 			let color_index = match color {
 				BaseColor::Red => 0,
@@ -241,7 +244,7 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboa
 		add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, zone_index, stop_signal);
 	}
 
-	fn add_master_tile_handle(keyboard_color_tiles: &mut keyboard_color_tiles::KeyboardColorTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) {
+	fn add_master_tile_handle(keyboard_color_tiles: &mut keyboard_color_tiles::KeyboardColorTiles, keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) {
 		let mut master_tile = keyboard_color_tiles.master.clone();
 		//Button
 		master_tile.toggle_button.handle({
@@ -272,7 +275,7 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboa
 			}
 		});
 		fn add_master_input_handle(
-			input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, keyboard_color_tiles: keyboard_color_tiles::KeyboardColorTiles, stop_signal: Arc<AtomicBool>,
+			input: &mut IntInput, color: BaseColor, keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, keyboard_color_tiles: keyboard_color_tiles::KeyboardColorTiles, stop_signal: Arc<AtomicBool>,
 		) {
 			let index = match color {
 				BaseColor::Red => 0,
@@ -334,7 +337,7 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboa
 	keyboard_color_tiles
 }
 
-fn force_update_colors(zones: &keyboard_color_tiles::ZoneColorTiles, keyboard: &Arc<Mutex<crate::keyboard_utils::Keyboard>>) {
+fn force_update_colors(zones: &keyboard_color_tiles::ZoneColorTiles, keyboard: &Arc<Mutex<keyboard_utils::Keyboard>>) {
 	let target = [
 		zones.left.red_input.value().parse::<f32>().unwrap(),
 		zones.left.green_input.value().parse::<f32>().unwrap(),
