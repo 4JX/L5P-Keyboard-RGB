@@ -2,7 +2,6 @@ use crate::gui::keyboard_color_tiles;
 
 use fltk::{
 	app,
-	browser::HoldBrowser,
 	enums::{Color, Event, Font, FrameType},
 	group::{Pack, Tile},
 	input::IntInput,
@@ -36,7 +35,6 @@ const HEIGHT: i32 = 450;
 const WHITE: u32 = 0xffffff;
 
 const DARK_GRAY: u32 = 0x333333;
-const LIGHTER_GRAY: u32 = 0xcccccc;
 
 #[derive(Copy, Clone)]
 pub enum BaseColor {
@@ -62,8 +60,6 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	color_picker_pack.add(&keyboard_color_tiles.master.exterior_tile);
 	color_picker_pack.end();
 
-	let mut effect_type_tile = Tile::new(540, 0, 360, 360, "");
-	let mut effect_browser = HoldBrowser::new(0, 0, 310, 310, "").center_of_parent();
 	let effects_list: Vec<&str> = vec![
 		"Static",
 		"Breath",
@@ -77,16 +73,17 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 		"LeftSwipe",
 		"RightSwipe",
 	];
-	for effect in effects_list.iter() {
-		effect_browser.add(effect);
-	}
+	let mut effect_type_tile = Tile::new(540, 0, 360, 360, "");
+	let mut effect_browser = crate::gui::effect_browser::EffectBrowser::new(&effects_list);
 	effect_type_tile.end();
+
 	let mut options_tile = Tile::new(540, 360, 360, 90, "");
 	let mut speed_choice = Choice::new(540 + 100, 385, 40, 40, "Speed:");
 	speed_choice.add_choice("1|2|3|4");
 	let mut brightness_choice = Choice::new(0, 0, 40, 40, "Brightness:").right_of(&speed_choice, 140);
 	brightness_choice.add_choice("1|2");
 	options_tile.end();
+
 	win.end();
 	win.make_resizable(false);
 	win.show();
@@ -98,13 +95,6 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 
 	effect_type_tile.set_frame(FrameType::FlatBox);
 	effect_type_tile.set_color(Color::from_u32(0x222222));
-
-	// Effect choice
-	effect_browser.set_frame(FrameType::FlatBox);
-	effect_browser.set_color(Color::from_u32(LIGHTER_GRAY));
-	effect_browser.set_selection_color(Color::from_u32(WHITE));
-	effect_browser.set_text_size(20);
-	effect_browser.select(1);
 
 	// Options tile
 	options_tile.set_frame(FrameType::FlatBox);
@@ -132,6 +122,8 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 
 	//Begin app logic
 	// Effect choice
+	//TODO: Move each custom effect to its own file in a directory
+	//TODO: Also check out todo extentions
 	effect_browser.set_callback({
 		let keyboard = keyboard.clone();
 		let thread_ended_signal = Arc::clone(&thread_ended_signal);
