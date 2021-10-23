@@ -452,7 +452,6 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboa
 								input.set_value(&val.to_string());
 								if stop_signal.load(Ordering::Relaxed) {
 									if val > 255.0 {
-										println!("Val exceeded 255");
 										input.set_value("255");
 										keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
 									} else {
