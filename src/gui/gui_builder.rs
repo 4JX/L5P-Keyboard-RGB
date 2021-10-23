@@ -89,7 +89,6 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	//TODO: Move each custom effect to its own file in a directory
 	effect_browser.set_callback({
 		let keyboard = keyboard.clone();
-		let thread_ended_signal = Arc::clone(&thread_ended_signal);
 		let speed_choice = speed_choice.clone();
 		move |browser| match browser.value() {
 			0 => {
