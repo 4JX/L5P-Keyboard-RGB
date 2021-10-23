@@ -128,9 +128,9 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
-					keyboard_color_tiles.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+					keyboard_color_tiles.deactivate();
 
 					//Create necessary clones to be passed into thread
 					let stop_signal = Arc::clone(&stop_signal);
@@ -157,9 +157,9 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
-					keyboard_color_tiles.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+					keyboard_color_tiles.deactivate();
 
 					//Create necessary clones to be passed into thread
 					let stop_signal = Arc::clone(&stop_signal);
@@ -217,9 +217,9 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
-					keyboard_color_tiles.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+					keyboard_color_tiles.deactivate();
 
 					//Create necessary clones to be passed into thread
 					let stop_signal = Arc::clone(&stop_signal);
@@ -246,9 +246,9 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
-					keyboard_color_tiles.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+					keyboard_color_tiles.deactivate();
 
 					//Create necessary clones to be passed into thread
 					let stop_signal = Arc::clone(&stop_signal);
@@ -275,10 +275,10 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
-					keyboard_color_tiles.activate();
-					keyboard_color_tiles.master.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+					keyboard_color_tiles.activate();
+					keyboard_color_tiles.master.deactivate();
 
 					//Create necessary clones to be passed into thread
 					let stop_signal = Arc::clone(&stop_signal);
@@ -324,10 +324,10 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 					//Preparations
 					stop_signal.store(true, Ordering::Relaxed);
 					wait_thread_end(&thread_ended_signal);
-					keyboard_color_tiles.activate();
-					keyboard_color_tiles.master.deactivate();
 					stop_signal.store(false, Ordering::Relaxed);
 					keyboard.lock().set_effect(crate::keyboard_utils::LightingEffects::Static);
+					keyboard_color_tiles.activate();
+					keyboard_color_tiles.master.deactivate();
 
 					//Create necessary clones to be passed into thread
 					let stop_signal = Arc::clone(&stop_signal);
