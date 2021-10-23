@@ -87,7 +87,6 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 	//Begin app logic
 	// Effect choice
 	//TODO: Move each custom effect to its own file in a directory
-	//TODO: Also check out todo extentions
 	effect_browser.set_callback({
 		let keyboard = keyboard.clone();
 		let thread_ended_signal = Arc::clone(&thread_ended_signal);
@@ -479,7 +478,7 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboa
 		add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, keyboard, zone_index, stop_signal);
 	}
 
-	fn add_master_control_tile_handle(keyboard_color_tiles: &mut keyboard_color_tiles::KeyboardColorTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) {
+	fn add_master_tile_handle(keyboard_color_tiles: &mut keyboard_color_tiles::KeyboardColorTiles, keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>, stop_signal: Arc<AtomicBool>) {
 		let mut master_tile = keyboard_color_tiles.master.clone();
 		//Button
 		master_tile.toggle_button.handle({
@@ -567,7 +566,7 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboa
 	add_zone_tile_handle(&mut keyboard_color_tiles.zones.center_left, keyboard.clone(), 1, stop_signal.clone());
 	add_zone_tile_handle(&mut keyboard_color_tiles.zones.center_right, keyboard.clone(), 2, stop_signal.clone());
 	add_zone_tile_handle(&mut keyboard_color_tiles.zones.right, keyboard.clone(), 3, stop_signal.clone());
-	add_master_control_tile_handle(&mut keyboard_color_tiles.clone(), keyboard, stop_signal);
+	add_master_tile_handle(&mut keyboard_color_tiles.clone(), keyboard, stop_signal);
 
 	keyboard_color_tiles
 }
