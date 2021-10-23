@@ -55,9 +55,7 @@ impl CustomEffectManager {
 				let keyboard = Arc::clone(&self.keyboard);
 				let speed_choice = Arc::from(Mutex::from(self.speed_choice.clone()));
 				let thread_ended_signal = Arc::clone(&self.thread_ended_signal);
-				println!("onto thread");
 				thread::spawn(move || {
-					println!("thread");
 					thread_ended_signal.store(false, Ordering::Relaxed);
 					while !stop_signal.load(Ordering::Relaxed) {
 						let zone = rand::thread_rng().gen_range(0..4);

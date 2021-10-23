@@ -2,7 +2,6 @@ use crate::{
 	gui::{custom_effect_manager, effect_browser_tile, keyboard_color_tiles, options_tile},
 	keyboard_utils,
 };
-
 use fltk::{
 	app,
 	enums::{Event, Font},
@@ -11,9 +10,7 @@ use fltk::{
 	prelude::*,
 	window::Window,
 };
-
 use parking_lot::Mutex;
-
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -80,12 +77,12 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 		keyboard_color_tiles: keyboard_color_tiles.clone(),
 		speed_choice: speed_choice.clone(),
 		stop_signal: stop_signal.clone(),
-		thread_ended_signal: thread_ended_signal.clone(),
+		thread_ended_signal,
 	};
 
 	effect_browser.set_callback({
 		let keyboard = keyboard.clone();
-		let mut custom_effect_manager = custom_effect_manager.clone();
+		let mut custom_effect_manager = custom_effect_manager;
 		move |browser| match browser.value() {
 			0 => {
 				browser.select(0);
