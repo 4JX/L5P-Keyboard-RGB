@@ -1,4 +1,4 @@
-use crate::gui::keyboard_color_tiles;
+use crate::gui::{effect_browser_tile, keyboard_color_tiles, options_tile};
 
 use fltk::{
 	app,
@@ -68,10 +68,10 @@ pub fn start_ui(keyboard: Arc<Mutex<crate::keyboard_utils::Keyboard>>) -> fltk::
 		"LeftSwipe",
 		"RightSwipe",
 	];
-	let effect_browser_tile = crate::gui::effect_browser_tile::EffectBrowserTile::new(&effects_list);
+	let effect_browser_tile = effect_browser_tile::EffectBrowserTile::new(&effects_list);
 	let mut effect_browser = effect_browser_tile.effect_browser;
 
-	let options_tile = crate::gui::options_tile::OptionsTile::new();
+	let options_tile = options_tile::OptionsTile::new();
 	let mut speed_choice = options_tile.speed_choice;
 	let mut brightness_choice = options_tile.brightness_choice;
 
