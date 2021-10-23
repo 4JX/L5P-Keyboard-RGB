@@ -1,12 +1,10 @@
+use crate::enums::Colors;
 use fltk::{
 	enums::{Color, FrameType},
 	group::Tile,
 	menu::Choice,
 	prelude::*,
 };
-
-const WHITE: u32 = 0xffffff;
-const DARK_GRAY: u32 = 0x333333;
 
 struct OptionsChoice;
 
@@ -17,10 +15,10 @@ impl OptionsChoice {
 
 		//Themeing
 		choice.set_frame(FrameType::FlatBox);
-		choice.set_color(Color::from_u32(DARK_GRAY));
-		choice.set_label_color(Color::from_u32(WHITE));
+		choice.set_color(Color::from_u32(Colors::DarkGray as u32));
+		choice.set_label_color(Color::from_u32(Colors::White as u32));
 		choice.set_selection_color(Color::White);
-		choice.set_text_color(Color::from_u32(WHITE));
+		choice.set_text_color(Color::from_u32(Colors::White as u32));
 		choice.set_text_size(20);
 		choice.set_label_size(20);
 		choice.set_value(0);

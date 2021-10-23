@@ -1,4 +1,4 @@
-use crate::enums::BaseColor;
+use crate::enums::{BaseColor, Colors};
 use fltk::prelude::*;
 use fltk::{
 	button::ToggleButton,
@@ -7,16 +7,6 @@ use fltk::{
 	input::IntInput,
 };
 
-const WHITE: u32 = 0xffffff;
-
-const RED: u32 = 0xff0000;
-const GREEN: u32 = 0x00ff00;
-const BLUE: u32 = 0x0000ff;
-
-const DARK_GRAY: u32 = 0x333333;
-const GRAY: u32 = 0x444444;
-const LIGHT_GRAY: u32 = 0x777777;
-
 pub struct ColorInput;
 
 impl ColorInput {
@@ -24,24 +14,24 @@ impl ColorInput {
 		let mut color_input = match color {
 			BaseColor::Red => {
 				let mut color_input = IntInput::new(x, y, width, height, "R:");
-				color_input.set_label_color(Color::from_u32(RED));
+				color_input.set_label_color(Color::from_u32(Colors::Red as u32));
 				color_input
 			}
 			BaseColor::Green => {
 				let mut color_input = IntInput::new(x, y, width, height, "G:");
-				color_input.set_label_color(Color::from_u32(GREEN));
+				color_input.set_label_color(Color::from_u32(Colors::Green as u32));
 				color_input
 			}
 			BaseColor::Blue => {
 				let mut color_input = IntInput::new(x, y, width, height, "B:");
-				color_input.set_label_color(Color::from_u32(BLUE));
+				color_input.set_label_color(Color::from_u32(Colors::Blue as u32));
 				color_input
 			}
 		};
 		color_input.set_frame(FrameType::FlatBox);
-		color_input.set_color(Color::from_u32(DARK_GRAY));
+		color_input.set_color(Color::from_u32(Colors::DarkGray as u32));
 		color_input.set_selection_color(Color::White);
-		color_input.set_text_color(Color::from_u32(WHITE));
+		color_input.set_text_color(Color::from_u32(Colors::White as u32));
 		color_input.set_text_size(30);
 		color_input.set_label_size(30);
 		color_input.set_value("0");
@@ -96,14 +86,14 @@ impl ColorTile {
 		//Themeing
 		color_tile.exterior_tile.set_frame(FrameType::FlatBox);
 		if master_tile {
-			color_tile.exterior_tile.set_color(Color::from_u32(LIGHT_GRAY));
+			color_tile.exterior_tile.set_color(Color::from_u32(Colors::LightGray as u32));
 		} else {
-			color_tile.exterior_tile.set_color(Color::from_u32(GRAY));
+			color_tile.exterior_tile.set_color(Color::from_u32(Colors::Gray as u32));
 		}
 
 		//Button
 		color_tile.toggle_button.set_frame(FrameType::OFlatFrame);
-		color_tile.toggle_button.set_color(Color::from_u32(WHITE));
+		color_tile.toggle_button.set_color(Color::from_u32(Colors::White as u32));
 		color_tile
 	}
 }
