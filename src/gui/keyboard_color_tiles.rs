@@ -1,4 +1,4 @@
-use crate::gui::gui_builder::BaseColor;
+use crate::enums::BaseColor;
 use fltk::prelude::*;
 use fltk::{
 	button::ToggleButton,

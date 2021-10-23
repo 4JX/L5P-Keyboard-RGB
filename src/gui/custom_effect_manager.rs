@@ -1,5 +1,8 @@
-use crate::gui::keyboard_color_tiles::KeyboardColorTiles;
-use crate::keyboard_utils::{Keyboard, LightingEffects};
+use crate::{
+	enums::CustomEffects,
+	gui::keyboard_color_tiles::KeyboardColorTiles,
+	keyboard_utils::{Keyboard, LightingEffects},
+};
 use fltk::{menu::Choice, prelude::*};
 use image::buffer::ConvertBuffer;
 use parking_lot::Mutex;
@@ -17,15 +20,6 @@ use std::{
 
 const DISP_WIDTH: u32 = 2560;
 const DISP_HEIGHT: u32 = 1600;
-
-pub enum CustomEffects {
-	Lightning,
-	AmbientLight,
-	SmoothLeftWave,
-	SmoothRightWave,
-	LeftSwipe,
-	RightSwipe,
-}
 
 #[derive(Clone)]
 pub struct CustomEffectManager {

@@ -1,4 +1,5 @@
 use crate::{
+	enums::{BaseColor, CustomEffects},
 	gui::{custom_effect_manager, effect_browser_tile, keyboard_color_tiles, options_tile},
 	keyboard_utils,
 };
@@ -16,13 +17,6 @@ use std::sync::Arc;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 450;
-
-#[derive(Copy, Clone)]
-pub enum BaseColor {
-	Red,
-	Green,
-	Blue,
-}
 
 pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window::Window {
 	//Keyboard
@@ -116,22 +110,22 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 					keyboard.lock().set_effect(keyboard_utils::LightingEffects::RightWave);
 				}
 				"Lightning" => {
-					custom_effect_manager.change_effect(custom_effect_manager::CustomEffects::Lightning);
+					custom_effect_manager.change_effect(CustomEffects::Lightning);
 				}
 				"AmbientLight" => {
-					custom_effect_manager.change_effect(custom_effect_manager::CustomEffects::AmbientLight);
+					custom_effect_manager.change_effect(CustomEffects::AmbientLight);
 				}
 				"SmoothLeftWave" => {
-					custom_effect_manager.change_effect(custom_effect_manager::CustomEffects::SmoothLeftWave);
+					custom_effect_manager.change_effect(CustomEffects::SmoothLeftWave);
 				}
 				"SmoothRightWave" => {
-					custom_effect_manager.change_effect(custom_effect_manager::CustomEffects::SmoothRightWave);
+					custom_effect_manager.change_effect(CustomEffects::SmoothRightWave);
 				}
 				"LeftSwipe" => {
-					custom_effect_manager.change_effect(custom_effect_manager::CustomEffects::LeftSwipe);
+					custom_effect_manager.change_effect(CustomEffects::LeftSwipe);
 				}
 				"RightSwipe" => {
-					custom_effect_manager.change_effect(custom_effect_manager::CustomEffects::RightSwipe);
+					custom_effect_manager.change_effect(CustomEffects::RightSwipe);
 				}
 				_ => {}
 			},
