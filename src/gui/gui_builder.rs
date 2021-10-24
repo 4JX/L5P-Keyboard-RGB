@@ -21,7 +21,6 @@ const HEIGHT: i32 = 450;
 pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window::Window {
 	//Keyboard
 	let stop_signal = Arc::new(AtomicBool::new(true));
-	let thread_ended_signal = Arc::new(AtomicBool::new(true));
 
 	//UI
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
@@ -71,7 +70,7 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 		keyboard_color_tiles: keyboard_color_tiles.clone(),
 		speed_choice: speed_choice.clone(),
 		stop_signal: stop_signal.clone(),
-		thread_ended_signal,
+		thread_ended_signal: Arc::new(AtomicBool::new(true)),
 	};
 
 	effect_browser.set_callback({
