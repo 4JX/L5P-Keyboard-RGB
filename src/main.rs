@@ -24,7 +24,7 @@ fn main() {
 
 		static mut WINDOW: HWND = std::ptr::null_mut();
 
-		let mut win = gui::start_ui(keyboard.clone());
+		let mut win = gui::gui_builder::start_ui(keyboard.clone());
 
 		unsafe {
 			WINDOW = win.raw_handle();
