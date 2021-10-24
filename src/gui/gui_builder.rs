@@ -19,13 +19,10 @@ const WIDTH: i32 = 900;
 const HEIGHT: i32 = 450;
 
 pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window::Window {
-	//Keyboard
-	let stop_signal = Arc::new(AtomicBool::new(true));
-
 	//UI
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
-	let mut keyboard_color_tiles = create_keyboard_color_tiles(keyboard.clone(), stop_signal.clone());
+	let mut keyboard_color_tiles = create_keyboard_color_tiles(keyboard.clone(), keyboard.lock().stop_signal.clone());
 
 	color_picker_pack.add(&keyboard_color_tiles.zones.left.exterior_tile);
 	color_picker_pack.add(&keyboard_color_tiles.zones.center_left.exterior_tile);
@@ -69,7 +66,6 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 		keyboard: keyboard.clone(),
 		keyboard_color_tiles: keyboard_color_tiles.clone(),
 		speed_choice: speed_choice.clone(),
-		stop_signal: stop_signal.clone(),
 		thread_ended_signal: Arc::new(AtomicBool::new(true)),
 	};
 
@@ -83,29 +79,29 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 			_ => match effects_list[(browser.value() - 1) as usize] {
 				"Static" => {
 					keyboard_color_tiles.activate();
-					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Static);
 					force_update_colors(&keyboard_color_tiles.zones, &keyboard);
 				}
 				"Breath" => {
 					keyboard_color_tiles.activate();
-					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Breath);
 					force_update_colors(&keyboard_color_tiles.zones, &keyboard);
 				}
 				"Smooth" => {
 					keyboard_color_tiles.deactivate();
-					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Smooth);
 				}
 				"LeftWave" => {
 					keyboard_color_tiles.deactivate();
-					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(keyboard_utils::LightingEffects::LeftWave);
 				}
 				"RightWave" => {
 					keyboard_color_tiles.deactivate();
-					stop_signal.store(true, Ordering::Relaxed);
+					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
 					keyboard.lock().set_effect(keyboard_utils::LightingEffects::RightWave);
 				}
 				"Lightning" => {
@@ -207,13 +203,13 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, s
 						match input.value().parse::<f32>() {
 							Ok(val) => {
 								input.set_value(&val.to_string());
-								if stop_signal.load(Ordering::Relaxed) {
-									if val > 255.0 {
-										input.set_value("255");
+								if val > 255.0 {
+									input.set_value("255");
+									if stop_signal.load(Ordering::Relaxed) {
 										keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
-									} else {
-										keyboard.lock().set_value_by_index(triplet_index + color_index, val);
 									}
+								} else if stop_signal.load(Ordering::Relaxed) {
+									keyboard.lock().set_value_by_index(triplet_index + color_index, val);
 								}
 							}
 							Err(_) => {
@@ -287,10 +283,8 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, s
 										keyboard.lock().solid_set_value_by_index(index, 255.0);
 									}
 									keyboard_color_tiles.zones.change_color_value(color, 255.0);
-								} else {
-									if stop_signal.load(Ordering::Relaxed) {
-										keyboard.lock().solid_set_value_by_index(index, val);
-									}
+								} else if stop_signal.load(Ordering::Relaxed) {
+									keyboard.lock().solid_set_value_by_index(index, val);
 									keyboard_color_tiles.zones.change_color_value(color, val);
 								}
 							}

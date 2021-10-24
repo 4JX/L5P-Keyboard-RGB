@@ -1,6 +1,12 @@
 use hidapi::{HidApi, HidDevice};
 
-use std::{thread, time};
+use std::{
+	sync::{
+		atomic::{AtomicBool, Ordering},
+		Arc,
+	},
+	thread, time,
+};
 
 use std::error::Error;
 
@@ -31,6 +37,7 @@ pub struct LightingState {
 pub struct Keyboard {
 	keyboard_hid: HidDevice,
 	current_state: LightingState,
+	pub stop_signal: Arc<AtomicBool>,
 }
 
 #[allow(dead_code)]
@@ -135,19 +142,26 @@ impl Keyboard {
 				for index in 0..12 {
 					color_differences[index] = (target_colors[index] - self.current_state.rgb_values[index]) / steps as f32
 				}
-				for _step_num in 1..=steps {
-					for (index, _) in color_differences.iter().enumerate() {
-						self.current_state.rgb_values[index] += color_differences[index];
-						if self.current_state.rgb_values[index] > 255.0 {
-							self.current_state.rgb_values[index] = 255.0
-						} else if self.current_state.rgb_values[index] < 0.0 {
-							self.current_state.rgb_values[index] = 0.0
+				if !self.stop_signal.load(Ordering::Relaxed) {
+					for _step_num in 1..=steps {
+						if !self.stop_signal.load(Ordering::Relaxed) {
+							for (index, _) in color_differences.iter().enumerate() {
+								self.current_state.rgb_values[index] += color_differences[index];
+								if self.current_state.rgb_values[index] > 255.0 {
+									self.current_state.rgb_values[index] = 255.0
+								} else if self.current_state.rgb_values[index] < 0.0 {
+									self.current_state.rgb_values[index] = 0.0
+								}
+							}
+
+							self.refresh();
+							thread::sleep(time::Duration::from_millis(delay_between_steps));
+						} else {
+							break;
 						}
 					}
-					self.refresh();
-					thread::sleep(time::Duration::from_millis(delay_between_steps));
+					self.set_colors_to(target_colors)
 				}
-				self.set_colors_to(target_colors)
 			}
 			_ => {}
 		}
@@ -170,7 +184,11 @@ pub fn get_keyboard() -> Result<Keyboard, Box<dyn Error>> {
 		rgb_values: [0.0; 12],
 	};
 
-	let mut keyboard = Keyboard { keyboard_hid, current_state };
+	let mut keyboard = Keyboard {
+		keyboard_hid,
+		current_state,
+		stop_signal: Arc::new(AtomicBool::new(true)),
+	};
 
 	keyboard.refresh();
 	Ok(keyboard)

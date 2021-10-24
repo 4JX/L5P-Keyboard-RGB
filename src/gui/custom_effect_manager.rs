@@ -26,18 +26,17 @@ pub struct CustomEffectManager {
 	pub keyboard: Arc<Mutex<Keyboard>>,
 	pub keyboard_color_tiles: KeyboardColorTiles,
 	pub speed_choice: Choice,
-	pub stop_signal: Arc<AtomicBool>,
 	pub thread_ended_signal: Arc<AtomicBool>,
 }
 
 #[allow(dead_code)]
 impl CustomEffectManager {
 	pub fn change_effect(&mut self, effect: CustomEffects) {
-		self.stop_signal.store(true, Ordering::Relaxed);
+		self.keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
 		while !self.thread_ended_signal.load(Ordering::Relaxed) {
 			thread::sleep(Duration::from_millis(100));
 		}
-		self.stop_signal.store(false, Ordering::Relaxed);
+		self.keyboard.lock().stop_signal.store(false, Ordering::Relaxed);
 		self.keyboard.lock().set_effect(LightingEffects::Static);
 
 		match effect {
@@ -45,13 +44,17 @@ impl CustomEffectManager {
 				self.keyboard_color_tiles.deactivate();
 
 				//Create necessary clones to be passed into thread
-				let stop_signal = Arc::clone(&self.stop_signal);
+				let stop_signal = Arc::clone(&self.keyboard.lock().stop_signal);
 				let keyboard = Arc::clone(&self.keyboard);
 				let speed_choice = Arc::from(Mutex::from(self.speed_choice.clone()));
 				let thread_ended_signal = Arc::clone(&self.thread_ended_signal);
+
 				thread::spawn(move || {
 					thread_ended_signal.store(false, Ordering::Relaxed);
 					while !stop_signal.load(Ordering::Relaxed) {
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
+						}
 						let zone = rand::thread_rng().gen_range(0..4);
 						let steps = rand::thread_rng().gen_range(50..=200);
 						keyboard.lock().set_zone_by_index(zone, [255.0; 3]);
@@ -69,9 +72,10 @@ impl CustomEffectManager {
 				self.keyboard_color_tiles.deactivate();
 
 				//Create necessary clones to be passed into thread
-				let stop_signal = Arc::clone(&self.stop_signal);
+				let stop_signal = Arc::clone(&self.keyboard.lock().stop_signal);
 				let keyboard = Arc::clone(&self.keyboard);
 				let thread_ended_signal = Arc::clone(&self.thread_ended_signal);
+
 				thread::spawn(move || {
 					thread_ended_signal.store(false, Ordering::Relaxed);
 
@@ -86,6 +90,9 @@ impl CustomEffectManager {
 							let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
 							type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
 							while !stop_signal.load(Ordering::Relaxed) {
+								if stop_signal.load(Ordering::Relaxed) {
+									break;
+								}
 								if let Ok(frame) = capturer.frame(0) {
 									let now = Instant::now();
 									let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
@@ -124,7 +131,7 @@ impl CustomEffectManager {
 				self.keyboard_color_tiles.deactivate();
 
 				//Create necessary clones to be passed into thread
-				let stop_signal = Arc::clone(&self.stop_signal);
+				let stop_signal = Arc::clone(&self.keyboard.lock().stop_signal);
 				let keyboard = Arc::clone(&self.keyboard);
 				let speed_choice = Arc::from(Mutex::from(self.speed_choice.clone()));
 				let thread_ended_signal = Arc::clone(&self.thread_ended_signal);
@@ -133,6 +140,9 @@ impl CustomEffectManager {
 					let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 					thread_ended_signal.store(false, Ordering::Relaxed);
 					while !stop_signal.load(Ordering::Relaxed) {
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
+						}
 						shift_vec(&mut gradient, 3);
 						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 						keyboard.lock().transition_colors_to(&colors, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
@@ -148,7 +158,7 @@ impl CustomEffectManager {
 				self.keyboard_color_tiles.deactivate();
 
 				//Create necessary clones to be passed into thread
-				let stop_signal = Arc::clone(&self.stop_signal);
+				let stop_signal = Arc::clone(&self.keyboard.lock().stop_signal);
 				let keyboard = Arc::clone(&self.keyboard);
 				let speed_choice = Arc::from(Mutex::from(self.speed_choice.clone()));
 				let thread_ended_signal = Arc::clone(&self.thread_ended_signal);
@@ -157,6 +167,9 @@ impl CustomEffectManager {
 					let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 					thread_ended_signal.store(false, Ordering::Relaxed);
 					while !stop_signal.load(Ordering::Relaxed) {
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
+						}
 						shift_vec(&mut gradient, 9);
 						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 						keyboard.lock().transition_colors_to(&colors, 70 / speed_choice.lock().choice().unwrap().parse::<u8>().unwrap(), 10);
@@ -173,15 +186,19 @@ impl CustomEffectManager {
 				self.keyboard_color_tiles.master.deactivate();
 
 				//Create necessary clones to be passed into thread
-				let stop_signal = Arc::clone(&self.stop_signal);
+				let stop_signal = Arc::clone(&self.keyboard.lock().stop_signal);
 				let keyboard = Arc::clone(&self.keyboard);
 				let speed_choice = Arc::from(Mutex::from(self.speed_choice.clone()));
 				let thread_ended_signal = Arc::clone(&self.thread_ended_signal);
-				let keyboard_color_tiles = Arc::from(Mutex::from(self.keyboard_color_tiles.clone()));
+				let zones = Arc::from(Mutex::from(self.keyboard_color_tiles.zones.clone()));
+
 				thread::spawn(move || {
 					thread_ended_signal.store(false, Ordering::Relaxed);
 					while !stop_signal.load(Ordering::Relaxed) {
-						let zones_lock = &keyboard_color_tiles.lock().zones;
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
+						}
+						let zones_lock = zones.lock();
 						let mut gradient = vec![
 							zones_lock.left.red_input.value().parse::<f32>().unwrap(),
 							zones_lock.left.green_input.value().parse::<f32>().unwrap(),
@@ -217,15 +234,18 @@ impl CustomEffectManager {
 				self.keyboard_color_tiles.master.deactivate();
 
 				//Create necessary clones to be passed into thread
-				let stop_signal = Arc::clone(&self.stop_signal);
+				let stop_signal = Arc::clone(&self.keyboard.lock().stop_signal);
 				let keyboard = Arc::clone(&self.keyboard);
 				let speed_choice = Arc::from(Mutex::from(self.speed_choice.clone()));
 				let thread_ended_signal = Arc::clone(&self.thread_ended_signal);
-				let keyboard_color_tiles = Arc::from(Mutex::from(self.keyboard_color_tiles.clone()));
+				let zones = Arc::from(Mutex::from(self.keyboard_color_tiles.zones.clone()));
 				thread::spawn(move || {
 					thread_ended_signal.store(false, Ordering::Relaxed);
 					while !stop_signal.load(Ordering::Relaxed) {
-						let zones_lock = &keyboard_color_tiles.lock().zones;
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
+						}
+						let zones_lock = zones.lock();
 						let mut gradient = vec![
 							zones_lock.left.red_input.value().parse::<f32>().unwrap(),
 							zones_lock.left.green_input.value().parse::<f32>().unwrap(),
