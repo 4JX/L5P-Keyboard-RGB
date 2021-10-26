@@ -1,7 +1,7 @@
 use super::{
-	custom_effect_manager, effect_browser_tile,
-	enums::{BaseColor, CustomEffects},
-	keyboard_color_tiles, options_tile,
+	effect_browser_tile,
+	enums::{BaseColor, Effects},
+	keyboard_color_tiles, keyboard_effect_manager, options_tile,
 };
 use crate::keyboard_utils;
 use fltk::{
@@ -23,7 +23,7 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 	//UI
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
-	let mut keyboard_color_tiles = create_keyboard_color_tiles(keyboard.clone(), keyboard.lock().stop_signal.clone());
+	let keyboard_color_tiles = create_keyboard_color_tiles(keyboard.clone(), keyboard.lock().stop_signal.clone());
 
 	color_picker_pack.add(&keyboard_color_tiles.zones.left.exterior_tile);
 	color_picker_pack.add(&keyboard_color_tiles.zones.center_left.exterior_tile);
@@ -63,7 +63,7 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 
 	//Begin app logic
 	// Effect choice
-	let custom_effect_manager = custom_effect_manager::CustomEffectManager {
+	let mut effect_manager = keyboard_effect_manager::EffectManager {
 		keyboard: keyboard.clone(),
 		keyboard_color_tiles: keyboard_color_tiles.clone(),
 		speed_choice: speed_choice.clone(),
@@ -71,57 +71,43 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 	};
 
 	effect_browser.set_callback({
-		let keyboard = keyboard.clone();
-		let mut custom_effect_manager = custom_effect_manager;
 		move |browser| match browser.value() {
 			0 => {
 				browser.select(0);
 			}
 			_ => match effects_list[(browser.value() - 1) as usize] {
 				"Static" => {
-					keyboard_color_tiles.activate();
-					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::BaseEffects::Static);
-					force_update_colors(&keyboard_color_tiles.zones, &keyboard);
+					effect_manager.change_effect(Effects::Static);
 				}
 				"Breath" => {
-					keyboard_color_tiles.activate();
-					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::BaseEffects::Breath);
-					force_update_colors(&keyboard_color_tiles.zones, &keyboard);
+					effect_manager.change_effect(Effects::Breath);
 				}
 				"Smooth" => {
-					keyboard_color_tiles.deactivate();
-					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::BaseEffects::Smooth);
+					effect_manager.change_effect(Effects::Smooth);
 				}
 				"LeftWave" => {
-					keyboard_color_tiles.deactivate();
-					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::BaseEffects::LeftWave);
+					effect_manager.change_effect(Effects::LeftWave);
 				}
 				"RightWave" => {
-					keyboard_color_tiles.deactivate();
-					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::BaseEffects::RightWave);
+					effect_manager.change_effect(Effects::RightWave);
 				}
 				"Lightning" => {
-					custom_effect_manager.change_effect(CustomEffects::Lightning);
+					effect_manager.change_effect(Effects::Lightning);
 				}
 				"AmbientLight" => {
-					custom_effect_manager.change_effect(CustomEffects::AmbientLight);
+					effect_manager.change_effect(Effects::AmbientLight);
 				}
 				"SmoothLeftWave" => {
-					custom_effect_manager.change_effect(CustomEffects::SmoothLeftWave);
+					effect_manager.change_effect(Effects::SmoothLeftWave);
 				}
 				"SmoothRightWave" => {
-					custom_effect_manager.change_effect(CustomEffects::SmoothRightWave);
+					effect_manager.change_effect(Effects::SmoothRightWave);
 				}
 				"LeftSwipe" => {
-					custom_effect_manager.change_effect(CustomEffects::LeftSwipe);
+					effect_manager.change_effect(Effects::LeftSwipe);
 				}
 				"RightSwipe" => {
-					custom_effect_manager.change_effect(CustomEffects::RightSwipe);
+					effect_manager.change_effect(Effects::RightSwipe);
 				}
 				_ => {}
 			},
@@ -206,10 +192,10 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, s
 								input.set_value(&val.to_string());
 								if val > 255.0 {
 									input.set_value("255");
-									if stop_signal.load(Ordering::Relaxed) {
+									if !stop_signal.load(Ordering::Relaxed) {
 										keyboard.lock().set_value_by_index(triplet_index + color_index, 255.0);
 									}
-								} else if stop_signal.load(Ordering::Relaxed) {
+								} else if !stop_signal.load(Ordering::Relaxed) {
 									keyboard.lock().set_value_by_index(triplet_index + color_index, val);
 								}
 							}
@@ -280,11 +266,11 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, s
 								input.set_value(&val.to_string());
 								if val > 255.0 {
 									input.set_value("255");
-									if stop_signal.load(Ordering::Relaxed) {
+									if !stop_signal.load(Ordering::Relaxed) {
 										keyboard.lock().solid_set_value_by_index(index, 255.0);
 									}
 									keyboard_color_tiles.zones.change_color_value(color, 255.0);
-								} else if stop_signal.load(Ordering::Relaxed) {
+								} else if !stop_signal.load(Ordering::Relaxed) {
 									keyboard.lock().solid_set_value_by_index(index, val);
 									keyboard_color_tiles.zones.change_color_value(color, val);
 								}
@@ -322,7 +308,7 @@ fn create_keyboard_color_tiles(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>, s
 	keyboard_color_tiles
 }
 
-fn force_update_colors(zones: &keyboard_color_tiles::ZoneColorTiles, keyboard: &Arc<Mutex<keyboard_utils::Keyboard>>) {
+pub fn force_update_colors(zones: &keyboard_color_tiles::ZoneColorTiles, keyboard: &Arc<Mutex<keyboard_utils::Keyboard>>) {
 	let target = [
 		zones.left.red_input.value().parse::<f32>().unwrap(),
 		zones.left.green_input.value().parse::<f32>().unwrap(),

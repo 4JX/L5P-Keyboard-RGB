@@ -187,7 +187,7 @@ pub fn get_keyboard() -> Result<Keyboard, Box<dyn Error>> {
 	let mut keyboard = Keyboard {
 		keyboard_hid,
 		current_state,
-		stop_signal: Arc::new(AtomicBool::new(true)),
+		stop_signal: Arc::new(AtomicBool::new(false)),
 	};
 
 	keyboard.refresh();

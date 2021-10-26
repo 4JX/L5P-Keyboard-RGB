@@ -1,4 +1,4 @@
-use super::{enums::CustomEffects, keyboard_color_tiles::KeyboardColorTiles};
+use super::{enums::Effects, gui_builder::force_update_colors, keyboard_color_tiles::KeyboardColorTiles};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
 use fltk::{menu::Choice, prelude::*};
 use image::buffer::ConvertBuffer;
@@ -19,7 +19,7 @@ const DISP_WIDTH: u32 = 2560;
 const DISP_HEIGHT: u32 = 1600;
 
 #[derive(Clone)]
-pub struct CustomEffectManager {
+pub struct EffectManager {
 	pub keyboard: Arc<Mutex<Keyboard>>,
 	pub keyboard_color_tiles: KeyboardColorTiles,
 	pub speed_choice: Choice,
@@ -27,8 +27,8 @@ pub struct CustomEffectManager {
 }
 
 #[allow(dead_code)]
-impl CustomEffectManager {
-	pub fn change_effect(&mut self, effect: CustomEffects) {
+impl EffectManager {
+	pub fn change_effect(&mut self, effect: Effects) {
 		self.keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
 		while !self.thread_ended_signal.load(Ordering::Relaxed) {
 			thread::sleep(Duration::from_millis(100));
@@ -37,7 +37,29 @@ impl CustomEffectManager {
 		self.keyboard.lock().set_effect(BaseEffects::Static);
 
 		match effect {
-			CustomEffects::Lightning => {
+			Effects::Static => {
+				self.keyboard.lock().set_effect(BaseEffects::Static);
+				self.keyboard_color_tiles.activate();
+				force_update_colors(&self.keyboard_color_tiles.zones, &self.keyboard);
+			}
+			Effects::Breath => {
+				self.keyboard.lock().set_effect(BaseEffects::Breath);
+				self.keyboard_color_tiles.activate();
+				force_update_colors(&self.keyboard_color_tiles.zones, &self.keyboard);
+			}
+			Effects::Smooth => {
+				self.keyboard_color_tiles.deactivate();
+				self.keyboard.lock().set_effect(BaseEffects::Smooth);
+			}
+			Effects::LeftWave => {
+				self.keyboard_color_tiles.deactivate();
+				self.keyboard.lock().set_effect(BaseEffects::LeftWave);
+			}
+			Effects::RightWave => {
+				self.keyboard_color_tiles.deactivate();
+				self.keyboard.lock().set_effect(BaseEffects::RightWave);
+			}
+			Effects::Lightning => {
 				self.keyboard_color_tiles.deactivate();
 
 				//Create necessary clones to be passed into thread
@@ -65,7 +87,7 @@ impl CustomEffectManager {
 					thread_ended_signal.store(true, Ordering::Relaxed);
 				});
 			}
-			CustomEffects::AmbientLight => {
+			Effects::AmbientLight => {
 				self.keyboard_color_tiles.deactivate();
 
 				//Create necessary clones to be passed into thread
@@ -124,7 +146,7 @@ impl CustomEffectManager {
 					}
 				});
 			}
-			CustomEffects::SmoothLeftWave => {
+			Effects::SmoothLeftWave => {
 				self.keyboard_color_tiles.deactivate();
 
 				//Create necessary clones to be passed into thread
@@ -151,7 +173,7 @@ impl CustomEffectManager {
 					thread_ended_signal.store(true, Ordering::Relaxed);
 				});
 			}
-			CustomEffects::SmoothRightWave => {
+			Effects::SmoothRightWave => {
 				self.keyboard_color_tiles.deactivate();
 
 				//Create necessary clones to be passed into thread
@@ -178,7 +200,7 @@ impl CustomEffectManager {
 					thread_ended_signal.store(true, Ordering::Relaxed);
 				});
 			}
-			CustomEffects::LeftSwipe => {
+			Effects::LeftSwipe => {
 				self.keyboard_color_tiles.activate();
 				self.keyboard_color_tiles.master.deactivate();
 
@@ -226,7 +248,7 @@ impl CustomEffectManager {
 					thread_ended_signal.store(true, Ordering::Relaxed);
 				});
 			}
-			CustomEffects::RightSwipe => {
+			Effects::RightSwipe => {
 				self.keyboard_color_tiles.activate();
 				self.keyboard_color_tiles.master.deactivate();
 

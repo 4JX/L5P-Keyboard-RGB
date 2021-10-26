@@ -5,7 +5,12 @@ pub enum BaseColor {
 	Blue,
 }
 
-pub enum CustomEffects {
+pub enum Effects {
+	Static,
+	Breath,
+	Smooth,
+	LeftWave,
+	RightWave,
 	Lightning,
 	AmbientLight,
 	SmoothLeftWave,
