@@ -1,8 +1,9 @@
-use crate::{
+use super::{
+	custom_effect_manager, effect_browser_tile,
 	enums::{BaseColor, CustomEffects},
-	gui::{custom_effect_manager, effect_browser_tile, keyboard_color_tiles, options_tile},
-	keyboard_utils,
+	keyboard_color_tiles, options_tile,
 };
+use crate::keyboard_utils;
 use fltk::{
 	app,
 	enums::{Event, Font},

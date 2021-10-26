@@ -1,4 +1,4 @@
-use crate::enums::{BaseColor, Colors};
+use super::enums::{BaseColor, Colors};
 use fltk::prelude::*;
 use fltk::{
 	button::ToggleButton,

@@ -1,4 +1,4 @@
-use crate::enums::Colors;
+use super::enums::Colors;
 use fltk::{
 	enums::{Color, FrameType},
 	group::Tile,

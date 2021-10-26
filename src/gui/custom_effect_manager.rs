@@ -1,8 +1,5 @@
-use crate::{
-	enums::CustomEffects,
-	gui::keyboard_color_tiles::KeyboardColorTiles,
-	keyboard_utils::{Keyboard, LightingEffects},
-};
+use super::{enums::CustomEffects, keyboard_color_tiles::KeyboardColorTiles};
+use crate::keyboard_utils::{Keyboard, LightingEffects};
 use fltk::{menu::Choice, prelude::*};
 use image::buffer::ConvertBuffer;
 use parking_lot::Mutex;

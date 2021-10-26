@@ -3,7 +3,6 @@ use fltk::app;
 use parking_lot::Mutex;
 use std::sync::Arc;
 
-mod enums;
 mod gui;
 mod keyboard_utils;
 
