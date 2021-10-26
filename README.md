@@ -1,5 +1,7 @@
 # Legion Keyboard RGB Control Program
 
+![Preview](https://github.com/4JX/L5P-Keyboard-RGB/blob/dev/Preview.png)
+
 A fun little experiment. Probably contains bugs.
 
 **⚠️ Use at your own risk, the developer is not responsible for any damages that may arise as a result of using this program.**
