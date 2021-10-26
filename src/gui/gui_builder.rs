@@ -81,29 +81,29 @@ pub fn start_ui(keyboard: Arc<Mutex<keyboard_utils::Keyboard>>) -> fltk::window:
 				"Static" => {
 					keyboard_color_tiles.activate();
 					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Static);
+					keyboard.lock().set_effect(keyboard_utils::BaseEffects::Static);
 					force_update_colors(&keyboard_color_tiles.zones, &keyboard);
 				}
 				"Breath" => {
 					keyboard_color_tiles.activate();
 					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Breath);
+					keyboard.lock().set_effect(keyboard_utils::BaseEffects::Breath);
 					force_update_colors(&keyboard_color_tiles.zones, &keyboard);
 				}
 				"Smooth" => {
 					keyboard_color_tiles.deactivate();
 					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::LightingEffects::Smooth);
+					keyboard.lock().set_effect(keyboard_utils::BaseEffects::Smooth);
 				}
 				"LeftWave" => {
 					keyboard_color_tiles.deactivate();
 					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::LightingEffects::LeftWave);
+					keyboard.lock().set_effect(keyboard_utils::BaseEffects::LeftWave);
 				}
 				"RightWave" => {
 					keyboard_color_tiles.deactivate();
 					keyboard.lock().stop_signal.store(true, Ordering::Relaxed);
-					keyboard.lock().set_effect(keyboard_utils::LightingEffects::RightWave);
+					keyboard.lock().set_effect(keyboard_utils::BaseEffects::RightWave);
 				}
 				"Lightning" => {
 					custom_effect_manager.change_effect(CustomEffects::Lightning);

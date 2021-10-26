@@ -1,5 +1,5 @@
 use super::{enums::CustomEffects, keyboard_color_tiles::KeyboardColorTiles};
-use crate::keyboard_utils::{Keyboard, LightingEffects};
+use crate::keyboard_utils::{BaseEffects, Keyboard};
 use fltk::{menu::Choice, prelude::*};
 use image::buffer::ConvertBuffer;
 use parking_lot::Mutex;
@@ -34,7 +34,7 @@ impl CustomEffectManager {
 			thread::sleep(Duration::from_millis(100));
 		}
 		self.keyboard.lock().stop_signal.store(false, Ordering::Relaxed);
-		self.keyboard.lock().set_effect(LightingEffects::Static);
+		self.keyboard.lock().set_effect(BaseEffects::Static);
 
 		match effect {
 			CustomEffects::Lightning => {

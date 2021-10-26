@@ -19,7 +19,7 @@ pub const RGB_RANGE: std::ops::RangeInclusive<f32> = 0.0..=255.0;
 const SPEED_RANGE: std::ops::RangeInclusive<u8> = 1..=4;
 const BRIGHTNESS_RANGE: std::ops::RangeInclusive<u8> = 1..=2;
 
-pub enum LightingEffects {
+pub enum BaseEffects {
 	Static,
 	Breath,
 	Smooth,
@@ -28,7 +28,7 @@ pub enum LightingEffects {
 }
 
 pub struct LightingState {
-	effect_type: LightingEffects,
+	effect_type: BaseEffects,
 	speed: u8,
 	brightness: u8,
 	rgb_values: [f32; 12],
@@ -53,7 +53,7 @@ impl Keyboard {
 		};
 	}
 
-	pub fn set_effect(&mut self, effect: LightingEffects) {
+	pub fn set_effect(&mut self, effect: BaseEffects) {
 		self.current_state.effect_type = effect;
 		self.refresh();
 	}
@@ -117,7 +117,7 @@ impl Keyboard {
 
 	pub fn set_colors_to(&mut self, rgb_values: &[f32; 12]) {
 		match self.current_state.effect_type {
-			LightingEffects::Static | LightingEffects::Breath => {
+			BaseEffects::Static | BaseEffects::Breath => {
 				for i in rgb_values {
 					if !RGB_RANGE.contains(i) {
 						panic!("Keyboard colors has value outside accepted range (0-255)");
@@ -137,7 +137,7 @@ impl Keyboard {
 			}
 		}
 		match self.current_state.effect_type {
-			LightingEffects::Static | LightingEffects::Breath => {
+			BaseEffects::Static | BaseEffects::Breath => {
 				let mut color_differences: [f32; 12] = [0.0; 12];
 				for index in 0..12 {
 					color_differences[index] = (target_colors[index] - self.current_state.rgb_values[index]) / steps as f32
@@ -178,7 +178,7 @@ pub fn get_keyboard() -> Result<Keyboard, Box<dyn Error>> {
 
 	let keyboard_hid: HidDevice = info.open_device(&api)?;
 	let current_state: LightingState = LightingState {
-		effect_type: LightingEffects::Static,
+		effect_type: BaseEffects::Static,
 		speed: 1,
 		brightness: 1,
 		rgb_values: [0.0; 12],
@@ -210,14 +210,14 @@ fn build_payload(keyboard_state: &LightingState) -> Result<[u8; 33], &'static st
 	payload[0] = 0xcc;
 	payload[1] = 0x16;
 	payload[2] = match keyboard_state.effect_type {
-		LightingEffects::Static => 0x01,
-		LightingEffects::Breath => 0x03,
-		LightingEffects::Smooth => 0x06,
-		LightingEffects::LeftWave => {
+		BaseEffects::Static => 0x01,
+		BaseEffects::Breath => 0x03,
+		BaseEffects::Smooth => 0x06,
+		BaseEffects::LeftWave => {
 			payload[19] = 0x1;
 			0x04
 		}
-		LightingEffects::RightWave => {
+		BaseEffects::RightWave => {
 			payload[18] = 0x1;
 			0x04
 		}
@@ -227,7 +227,7 @@ fn build_payload(keyboard_state: &LightingState) -> Result<[u8; 33], &'static st
 	payload[4] = keyboard_state.brightness;
 
 	match keyboard_state.effect_type {
-		LightingEffects::Static | LightingEffects::Breath => {
+		BaseEffects::Static | BaseEffects::Breath => {
 			for i in 0..12 {
 				payload[i + 5] = keyboard_state.rgb_values[i] as u8;
 			}
