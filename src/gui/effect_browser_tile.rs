@@ -9,7 +9,7 @@ use fltk::{
 pub struct EffectBrowser;
 
 impl EffectBrowser {
-	pub fn new(effects_list: &[&str]) -> HoldBrowser {
+	pub fn create(effects_list: &[&str]) -> HoldBrowser {
 		let mut effect_browser = HoldBrowser::new(0, 0, 310, 310, "").center_of_parent();
 		for effect in effects_list.iter() {
 			effect_browser.add(effect);
@@ -30,9 +30,9 @@ pub struct EffectBrowserTile {
 }
 
 impl EffectBrowserTile {
-	pub fn new(effects_list: &[&str]) -> EffectBrowserTile {
+	pub fn create(effects_list: &[&str]) -> EffectBrowserTile {
 		let mut effect_browser_tile = Tile::new(540, 0, 360, 360, "");
-		let effect_browser = EffectBrowser::new(effects_list);
+		let effect_browser = EffectBrowser::create(effects_list);
 		effect_browser_tile.end();
 
 		effect_browser_tile.set_frame(FrameType::FlatBox);

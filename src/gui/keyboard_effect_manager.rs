@@ -1,4 +1,4 @@
-use super::{enums::Effects, gui_builder::force_update_colors, keyboard_color_tiles::KeyboardColorTiles};
+use super::{builder::force_update_colors, enums::Effects, keyboard_color_tiles::KeyboardColorTiles};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
 use fltk::{menu::Choice, prelude::*};
 use image::buffer::ConvertBuffer;
@@ -103,11 +103,11 @@ impl EffectManager {
 					for i in 0..displays {
 						let display = Display::all().unwrap().remove(i);
 						if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
+							type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
 							let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
 							let (w, h) = (capturer.width(), capturer.height());
 
 							let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
-							type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
 							while !stop_signal.load(Ordering::Relaxed) {
 								if stop_signal.load(Ordering::Relaxed) {
 									break;

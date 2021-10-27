@@ -10,7 +10,7 @@ use fltk::{
 pub struct ColorInput;
 
 impl ColorInput {
-	pub fn new(x: i32, y: i32, width: i32, height: i32, color: BaseColor) -> IntInput {
+	pub fn create(x: i32, y: i32, width: i32, height: i32, color: BaseColor) -> IntInput {
 		let mut color_input = match color {
 			BaseColor::Red => {
 				let mut color_input = IntInput::new(x, y, width, height, "R:");
@@ -64,7 +64,7 @@ impl ColorTile {
 }
 
 impl ColorTile {
-	pub fn new(master_tile: bool) -> Self {
+	pub fn create(master_tile: bool) -> Self {
 		let center_x = 540 / 2;
 		let center_y = 90 / 2 - 20;
 		let offset = 120;
@@ -72,9 +72,9 @@ impl ColorTile {
 		let mut color_tile = Self {
 			exterior_tile: Tile::new(0, 0, 540, 90, ""),
 			toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
-			red_input: ColorInput::new(center_x - offset, center_y, 60, 40, BaseColor::Red),
-			green_input: ColorInput::new(center_x, center_y, 60, 40, BaseColor::Green),
-			blue_input: ColorInput::new(center_x + offset, center_y, 60, 40, BaseColor::Blue),
+			red_input: ColorInput::create(center_x - offset, center_y, 60, 40, BaseColor::Red),
+			green_input: ColorInput::create(center_x, center_y, 60, 40, BaseColor::Green),
+			blue_input: ColorInput::create(center_x + offset, center_y, 60, 40, BaseColor::Blue),
 		};
 
 		color_tile.exterior_tile.add(&color_tile.toggle_button);
@@ -107,12 +107,12 @@ pub struct ZoneColorTiles {
 }
 
 impl ZoneColorTiles {
-	pub fn new() -> Self {
+	pub fn create() -> Self {
 		ZoneColorTiles {
-			left: ColorTile::new(false),
-			center_left: ColorTile::new(false),
-			center_right: ColorTile::new(false),
-			right: ColorTile::new(false),
+			left: ColorTile::create(false),
+			center_left: ColorTile::create(false),
+			center_right: ColorTile::create(false),
+			right: ColorTile::create(false),
 		}
 	}
 	pub fn activate(&mut self) {

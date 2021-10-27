@@ -5,6 +5,7 @@ pub enum BaseColor {
 	Blue,
 }
 
+#[derive(Clone, Copy)]
 pub enum Effects {
 	Static,
 	Breath,

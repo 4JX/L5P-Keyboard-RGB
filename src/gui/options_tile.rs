@@ -9,7 +9,7 @@ use fltk::{
 struct OptionsChoice;
 
 impl OptionsChoice {
-	fn new(x: i32, y: i32, width: i32, height: i32, title: &str, choices: &str) -> Choice {
+	fn create(x: i32, y: i32, width: i32, height: i32, title: &str, choices: &str) -> Choice {
 		let mut choice = Choice::new(x, y, width, height, "").with_label(title);
 		choice.add_choice(choices);
 
@@ -31,11 +31,11 @@ pub struct OptionsTile {
 }
 
 impl OptionsTile {
-	pub fn new() -> Self {
+	pub fn create() -> Self {
 		let mut options_tile = Tile::new(540, 360, 360, 90, "");
-		let speed_choice = OptionsChoice::new(540 + 100, 385, 40, 40, "Speed:", "1|2|3|4");
+		let speed_choice = OptionsChoice::create(540 + 100, 385, 40, 40, "Speed:", "1|2|3|4");
 
-		let brightness_choice = OptionsChoice::new(540 + 100 + 190, 385, 40, 40, "Brightness:", "1|2");
+		let brightness_choice = OptionsChoice::create(540 + 100 + 190, 385, 40, 40, "Brightness:", "1|2");
 		options_tile.end();
 
 		// Options tile

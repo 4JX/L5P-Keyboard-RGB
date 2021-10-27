@@ -23,7 +23,7 @@ fn main() {
 
 		static mut WINDOW: HWND = std::ptr::null_mut();
 
-		let mut win = gui::gui_builder::start_ui(keyboard.clone());
+		let mut win = gui::builder::start_ui(keyboard.clone());
 
 		unsafe {
 			WINDOW = win.raw_handle();
@@ -67,7 +67,7 @@ fn main() {
 
 	#[cfg(not(target_os = "windows"))]
 	{
-		gui::gui_builder::start_ui(keyboard);
+		gui::builder::start_ui(keyboard);
 		app.run().unwrap();
 	}
 }
