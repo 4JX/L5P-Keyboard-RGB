@@ -90,7 +90,7 @@ $ cd L5P-Keyboard-RGB
 cargo build --release
 ```
 
-# Crashes, freezes, errrors, etc
+# Crashes, freezes, etc
 
 I cannot guarantee this solution will work for anyone but myself. That being said feel free to open an issue if you encounter any of these problems on the [issues tab](https://github.com/4JX/L5P-Keyboard-RGB/issues).
 
