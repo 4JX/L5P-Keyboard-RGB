@@ -1,7 +1,9 @@
 [package]
 name = "legion-kb-rgb"
 version = "0.7.0"
+author = "4JX"
 edition = "2018"
+homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
