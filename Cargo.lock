@@ -378,9 +378,9 @@ dependencies = [
 
 [[package]]
 name = "fltk"
-version = "1.2.10"
+version = "1.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "988a92b85419a5b3408a38aacdbdeb34b152561b7b2a8bab17bc735281a544ec"
+checksum = "b6e19643808aac2a6773d764f8c27d017e4dc0d072e60611c308b24b5975ede3"
 dependencies = [
  "bitflags",
  "fltk-sys",
@@ -389,9 +389,9 @@ dependencies = [
 
 [[package]]
 name = "fltk-sys"
-version = "1.2.9"
+version = "1.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e56d0276900ccd0c76995000dd2d2c9cf0cf5de42a826a6a8b46c4c8fdb5317"
+checksum = "7ce0fcdcd1244a1f28c111583a381309899c66a735ca034a9a01a346d0b25043"
 dependencies = [
  "cmake",
 ]
@@ -1338,9 +1338,9 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "winres"
-version = "0.1.11"
+version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff4fb510bbfe5b8992ff15f77a2e6fe6cf062878f0eda00c0f44963a807ca5dc"
+checksum = "b68db261ef59e9e52806f688020631e987592bd83619edccda9c47d42cde4f6c"
 dependencies = [
  "toml",
 ]

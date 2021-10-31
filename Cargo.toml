@@ -9,7 +9,7 @@ homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
 
 [dependencies]
 parking_lot = "0.11.2"
-fltk = "1.2.8"
+fltk = "1.2.12"
 rand = "0.8.4"
 # https://github.com/rustdesk/rustdesk/tree/master/libs/scrap
 scrap = {path = "libs/scrap"}
@@ -22,4 +22,4 @@ default-features = false
 features=["linux-static-libusb"]
 
 [build-dependencies]
-winres = "0.1"
+winres = "0.1.12"
