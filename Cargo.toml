@@ -8,7 +8,6 @@ homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-parking_lot = "0.11.2"
 fltk = "1.2.12"
 rand = "0.8.4"
 # https://github.com/rustdesk/rustdesk/tree/master/libs/scrap
