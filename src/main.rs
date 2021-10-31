@@ -1,17 +1,23 @@
 #![windows_subsystem = "windows"]
 use fltk::app;
-use parking_lot::Mutex;
+use std::sync::atomic::AtomicBool;
+use std::sync::mpsc;
 use std::sync::Arc;
-
 mod gui;
+use gui::keyboard_manager;
 mod keyboard_utils;
+use gui::enums::Message;
 
 fn main() {
 	let app = app::App::default();
-	let keyboard = match keyboard_utils::get_keyboard() {
-		Ok(keyboard) => Arc::from(Mutex::from(keyboard)),
+
+	let (tx, rx) = mpsc::channel::<Message>();
+	let stop_signal = Arc::new(AtomicBool::new(false));
+	let keyboard = match keyboard_utils::get_keyboard(stop_signal.clone()) {
+		Ok(keyboard) => keyboard,
 		Err(err) => panic!("{}", err),
 	};
+	let manager = keyboard_manager::KeyboardManager { keyboard, rx };
 
 	//Windows tray logic
 	#[cfg(target_os = "windows")]
@@ -67,7 +73,7 @@ fn main() {
 
 	#[cfg(not(target_os = "windows"))]
 	{
-		gui::builder::start_ui(keyboard);
+		gui::builder::start_ui(manager, tx, stop_signal);
 		app.run().unwrap();
 	}
 }

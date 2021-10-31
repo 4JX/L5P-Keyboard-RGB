@@ -167,7 +167,7 @@ impl Keyboard {
 	}
 }
 
-pub fn get_keyboard() -> Result<Keyboard, Box<dyn Error>> {
+pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard, Box<dyn Error>> {
 	let api: HidApi = HidApi::new()?;
 
 	let info = api
@@ -186,7 +186,7 @@ pub fn get_keyboard() -> Result<Keyboard, Box<dyn Error>> {
 	let mut keyboard = Keyboard {
 		keyboard_hid,
 		current_state,
-		stop_signal: Arc::new(AtomicBool::new(false)),
+		stop_signal,
 	};
 
 	keyboard.refresh();

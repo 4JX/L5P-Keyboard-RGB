@@ -1,6 +1,6 @@
 pub mod builder;
 mod effect_browser_tile;
-mod enums;
+pub mod enums;
 mod keyboard_color_tiles;
-mod keyboard_effect_manager;
+pub mod keyboard_manager;
 mod options_tile;

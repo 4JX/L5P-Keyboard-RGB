@@ -31,3 +31,13 @@ pub enum Colors {
 	LighterGray = 0xcccccc,
 	White = 0xffffff,
 }
+
+pub enum Message {
+	UpdateAllValues { value: [f32; 12] },
+	UpdateRGB { index: u8, value: f32 },
+	UpdateZone { zone_index: u8, value: [f32; 3] },
+	UpdateEffect { effect: Effects },
+	UpdateValue { index: u8, value: f32 },
+	UpdateBrightness { brightness: u8 },
+	UpdateSpeed { speed: u8 },
+}
