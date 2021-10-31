@@ -1,28 +1,36 @@
 #![windows_subsystem = "windows"]
-use fltk::{app, prelude::*};
-use parking_lot::Mutex;
+use fltk::app;
+use std::sync::atomic::AtomicBool;
+use std::sync::mpsc;
 use std::sync::Arc;
-use tray_item::{IconSource, TrayItem};
-
 mod gui;
+use gui::keyboard_manager;
 mod keyboard_utils;
-
-type HWND = *mut std::os::raw::c_void;
-
-static mut WINDOW: HWND = std::ptr::null_mut();
+use gui::enums::Message;
 
 fn main() {
 	let app = app::App::default();
-	let keyboard = match keyboard_utils::get_keyboard() {
-		Ok(keyboard) => Arc::from(Mutex::from(keyboard)),
+
+	let (tx, rx) = mpsc::channel::<Message>();
+	let stop_signal = Arc::new(AtomicBool::new(false));
+	let keyboard = match keyboard_utils::get_keyboard(stop_signal.clone()) {
+		Ok(keyboard) => keyboard,
 		Err(err) => panic!("{}", err),
 	};
-
-	let mut win = gui::start_ui(keyboard.clone());
+	let manager = keyboard_manager::KeyboardManager { keyboard, rx };
 
 	//Windows tray logic
 	#[cfg(target_os = "windows")]
 	{
+		use fltk::prelude::*;
+		use tray_item::{IconSource, TrayItem};
+
+		type HWND = *mut std::os::raw::c_void;
+
+		static mut WINDOW: HWND = std::ptr::null_mut();
+
+		let mut win = gui::builder::start_ui(manager, tx, stop_signal);
+
 		unsafe {
 			WINDOW = win.raw_handle();
 		}
@@ -39,10 +47,10 @@ fn main() {
 
 		tray.add_menu_item("Show", move || {
 			extern "C" {
-				pub fn ShowWindow(hwnd: crate::HWND, nCmdShow: i32) -> bool;
+				pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> bool;
 			}
 			unsafe {
-				ShowWindow(crate::WINDOW, 9);
+				ShowWindow(WINDOW, 9);
 			}
 		})
 		.unwrap();
@@ -64,5 +72,8 @@ fn main() {
 	}
 
 	#[cfg(not(target_os = "windows"))]
-	app.run().unwrap();
+	{
+		gui::builder::start_ui(manager, tx, stop_signal);
+		app.run().unwrap();
+	}
 }

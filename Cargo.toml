@@ -1,13 +1,15 @@
 [package]
-name = "l5p-kb-rgb"
-version = "0.7.0"
+name = "legion-kb-rgb"
+version = "0.8.0"
+author = "4JX"
 edition = "2018"
+homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-parking_lot = "0.11.1"
-fltk = "1.1.12"
+parking_lot = "0.11.2"
+fltk = "1.2.12"
 rand = "0.8.4"
 # https://github.com/rustdesk/rustdesk/tree/master/libs/scrap
 scrap = {path = "libs/scrap"}
@@ -20,4 +22,4 @@ default-features = false
 features=["linux-static-libusb"]
 
 [build-dependencies]
-winres = "0.1"
+winres = "0.1.12"
