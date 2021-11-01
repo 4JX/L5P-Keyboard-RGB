@@ -193,7 +193,6 @@ impl KeyboardManager {
 			}
 			Effects::LeftSwipe => {
 				keyboard_color_tiles.activate();
-				keyboard_color_tiles.master.deactivate();
 				app::awake();
 
 				while !stop_signal.load(Ordering::Relaxed) {
@@ -218,7 +217,6 @@ impl KeyboardManager {
 			}
 			Effects::RightSwipe => {
 				keyboard_color_tiles.activate();
-				keyboard_color_tiles.master.deactivate();
 				app::awake();
 
 				while !stop_signal.load(Ordering::Relaxed) {
