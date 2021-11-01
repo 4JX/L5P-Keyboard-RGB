@@ -30,9 +30,6 @@ impl KeyboardManager {
 				match message {
 					Message::UpdateEffect { effect } => {
 						stop_signal.store(true, Ordering::Relaxed);
-						while !stop_signal.load(Ordering::Relaxed) {
-							thread::sleep(Duration::from_millis(100));
-						}
 						self.change_effect(effect, &mut keyboard_color_tiles, &mut speed_choice, stop_signal);
 					}
 					Message::UpdateAllValues { value } => {
@@ -55,6 +52,7 @@ impl KeyboardManager {
 					}
 				}
 				app::awake();
+				thread::sleep(Duration::from_millis(20));
 			}
 		}
 	}
