@@ -1,6 +1,7 @@
 use super::enums::Message;
 use super::{enums::Effects, keyboard_color_tiles::KeyboardColorTiles};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
+use fltk::app;
 use fltk::{menu::Choice, prelude::*};
 use image::buffer::ConvertBuffer;
 use rand::Rng;
@@ -13,6 +14,7 @@ use std::{
 	thread,
 	time::{Duration, Instant},
 };
+
 const DISP_WIDTH: u32 = 2560;
 const DISP_HEIGHT: u32 = 1600;
 
@@ -24,13 +26,10 @@ pub struct KeyboardManager {
 impl KeyboardManager {
 	pub fn start(&mut self, mut keyboard_color_tiles: &mut KeyboardColorTiles, mut speed_choice: &mut Choice, stop_signal: &Arc<AtomicBool>) {
 		loop {
-			if let Ok(message) = self.rx.try_recv() {
+			if let Ok(message) = self.rx.recv() {
 				match message {
 					Message::UpdateEffect { effect } => {
 						stop_signal.store(true, Ordering::Relaxed);
-						while !stop_signal.load(Ordering::Relaxed) {
-							thread::sleep(Duration::from_millis(100));
-						}
 						self.change_effect(effect, &mut keyboard_color_tiles, &mut speed_choice, stop_signal);
 					}
 					Message::UpdateAllValues { value } => {
@@ -52,6 +51,8 @@ impl KeyboardManager {
 						self.keyboard.set_speed(value);
 					}
 				}
+				app::awake();
+				thread::sleep(Duration::from_millis(20));
 			}
 		}
 	}
@@ -86,6 +87,7 @@ impl KeyboardManager {
 			}
 			Effects::Lightning => {
 				keyboard_color_tiles.deactivate();
+				app::awake();
 
 				while !stop_signal.load(Ordering::Relaxed) {
 					if stop_signal.load(Ordering::Relaxed) {
@@ -101,6 +103,7 @@ impl KeyboardManager {
 			}
 			Effects::AmbientLight => {
 				keyboard_color_tiles.deactivate();
+				app::awake();
 
 				//Display setup
 				let displays = Display::all().unwrap().len();
@@ -150,6 +153,7 @@ impl KeyboardManager {
 			}
 			Effects::SmoothLeftWave => {
 				keyboard_color_tiles.deactivate();
+				app::awake();
 
 				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 
@@ -168,6 +172,7 @@ impl KeyboardManager {
 			}
 			Effects::SmoothRightWave => {
 				keyboard_color_tiles.deactivate();
+				app::awake();
 
 				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 
@@ -186,7 +191,7 @@ impl KeyboardManager {
 			}
 			Effects::LeftSwipe => {
 				keyboard_color_tiles.activate();
-				keyboard_color_tiles.master.deactivate();
+				app::awake();
 
 				while !stop_signal.load(Ordering::Relaxed) {
 					if stop_signal.load(Ordering::Relaxed) {
@@ -210,7 +215,7 @@ impl KeyboardManager {
 			}
 			Effects::RightSwipe => {
 				keyboard_color_tiles.activate();
-				keyboard_color_tiles.master.deactivate();
+				app::awake();
 
 				while !stop_signal.load(Ordering::Relaxed) {
 					if stop_signal.load(Ordering::Relaxed) {
