@@ -68,13 +68,14 @@ This program has been tested to work on the 4 zone keyboard of the **2021** Legi
 
 ```sh
 $ sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
-$ vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
+$ vcpkg update && vcpkg install libvpx libyuv
 ```
 
 **EndeavourOS (Arch Linux)**
 
 ```sh
-$ vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
+$ sudo pacman -S nasm
+$ vcpkg update && vcpkg install libvpx libyuv
 ```
 
 - Clone the repository
