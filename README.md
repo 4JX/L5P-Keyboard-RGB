@@ -70,9 +70,16 @@ Works on both Windows and Linux.
 $ cargo install cargo-make
 ```
 
+- Clone the repository
+
+```sh
+$ git clone https://github.com/4JX/L5P-Keyboard-RGB.git
+```
+
 - Build the project
 
 ```sh
+$ cd L5P-Keyboard-RGB/
 $ cargo make build
 # Or
 $ cargo make build-release
@@ -100,7 +107,7 @@ $ cargo make build-release
 - Build the project
 
 ```cmd
-> cd L5P-Keyboard-RGB
+> cd L5P-Keyboard-RGB/
 > cargo build --release
 ```
 
@@ -121,7 +128,7 @@ $ git clone https://github.com/4JX/L5P-Keyboard-RGB.git
 - Build the project
 
 ```sh
-$ cd L5P-Keyboard-RGB
+$ cd L5P-Keyboard-RGB/
 $ cargo build --release
 ```
 
