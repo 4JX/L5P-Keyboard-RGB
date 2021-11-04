@@ -64,6 +64,14 @@ $ sudo pacman -S nasm cmake
 
 Works on both Windows and Linux.
 
+- Install `cargo-make`
+
+```
+$ cargo install cargo-make
+```
+
+- Build the project
+
 ```sh
 $ cargo make build
 # Or
