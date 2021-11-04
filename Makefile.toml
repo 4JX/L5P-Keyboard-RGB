@@ -90,3 +90,9 @@ condition = { files_not_exist = [
 ] }
 command = "./vcpkg/vcpkg"
 args = ["install", "libvpx", "libyuv"]
+
+[tasks.clippy-all]
+env = { VCPKG_INSTALLATION_ROOT = "./vcpkg" }
+script = '''
+clear && cargo clippy -- -W clippy::pedantic
+'''
