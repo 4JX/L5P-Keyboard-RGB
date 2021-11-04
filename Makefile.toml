@@ -22,13 +22,27 @@ dependencies = [
 
 [tasks.install-vcpkg]
 condition = { files_not_exist = [
-        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/",
 ] }
 run_task = [
     { name = ["remove-vcpkg-dir", "git-clone-vcpkg", "bootstrap-vcpkg" ]}
 ]
 
 [tasks.remove-vcpkg-dir]
+windows_alias = "remove-vcpkg-dir-windows"
+linux_alias = "remove-vcpkg-dir-linux"
+
+[tasks.remove-vcpkg-dir-windows]
+condition = { files_exist = [
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/",
+] }
+command = "rm"
+args = ["-r", "-Force", "${CARGO_MAKE_WORKING_DIRECTORY}\\vcpkg"]
+
+[tasks.remove-vcpkg-dir-linux]
+condition = { files_exist = [
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/",
+] }
 command = "rm"
 args = ["-rf", "./vcpkg"]
 
@@ -67,7 +81,7 @@ linux_alias = "install-vcpkg-dependencies-linux"
 condition = { files_not_exist = [
         "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
 ] }
-command = "./vcpkg/vcpkg"
+command = "${CARGO_MAKE_WORKING_DIRECTORY}\\vcpkg\\vcpkg"
 args = ["install", "libvpx:x64-windows-static", "libyuv:x64-windows-static"]
 
 [tasks.install-vcpkg-dependencies-linux]
