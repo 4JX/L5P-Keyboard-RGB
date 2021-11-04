@@ -2,6 +2,15 @@
 
 ![Preview](https://github.com/4JX/L5P-Keyboard-RGB/blob/dev/Preview.png)
 
+# Index
+
+- [Download](#download)
+- [Available effects](#available-effects)
+- [Compatibility](#compatibility)
+- [Building from source](#building-from-source)
+  - [Using `cargo-make`](#using-cargo-make)
+  - [Building manually](#building-manually)
+
 # Download
 
 **⚠️ Use at your own risk, the developer is not responsible for any damages that may arise as a result of using this program.**
@@ -29,6 +38,7 @@ This program has been tested to work on the 4 zone keyboard of the **2021** Legi
 
 - **Legion 7(i):** Won't work, the backlight on these is per-key and uses a different way of communicating.
 - **Any variant with a white backlight:** Havent figured out how to talk to this one yet, but given the limited number of states (off, low, high) there's not many effects I'd be able to add anyways.
+- **2020 Models:** These are not currently supported by the program, but support should be easy enough to add.
 
 # Building from source
 
@@ -36,10 +46,36 @@ This program has been tested to work on the 4 zone keyboard of the **2021** Legi
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Git](https://git-scm.com/downloads)
-- [VCPKG](https://github.com/Microsoft/vcpkg#getting-started)
+- On Linux, you'll need additional dependencies:
+
+**Ubuntu**
+
+```sh
+$ sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
+```
+
+**EndeavourOS (Arch Linux)**
+
+```sh
+$ sudo pacman -S nasm cmake
+```
+
+## Using `cargo-make`
+
+Works on both Windows and Linux.
+
+```sh
+$ cargo make build
+# Or
+$ cargo make build-release
+```
+
+## Building manually
+
+- Download and bootstrap [VCPKG](https://github.com/Microsoft/vcpkg#getting-started)
   - You'll need to set an enviorement variable called `VCPKG_INSTALLATION_ROOT` pointing to the directory where you downloaded and bootstrapped VCPKG.
 
-## Windows
+### Windows
 
 - Download the necessary dependencies
 
@@ -60,21 +96,11 @@ This program has been tested to work on the 4 zone keyboard of the **2021** Legi
 > cargo build --release
 ```
 
-## Linux
+### Linux
 
 - Download the necessary dependencies
 
-**Ubuntu**
-
 ```sh
-$ sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
-$ vcpkg update && vcpkg install libvpx libyuv
-```
-
-**EndeavourOS (Arch Linux)**
-
-```sh
-$ sudo pacman -S nasm
 $ vcpkg update && vcpkg install libvpx libyuv
 ```
 
@@ -88,7 +114,7 @@ $ git clone https://github.com/4JX/L5P-Keyboard-RGB.git
 
 ```sh
 $ cd L5P-Keyboard-RGB
-cargo build --release
+$ cargo build --release
 ```
 
 # Crashes, freezes, etc
