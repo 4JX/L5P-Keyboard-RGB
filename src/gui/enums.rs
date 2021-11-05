@@ -1,3 +1,5 @@
+use strum_macros::EnumString;
+
 #[derive(Clone, Copy)]
 pub enum BaseColor {
 	Red,
@@ -5,7 +7,7 @@ pub enum BaseColor {
 	Blue,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, EnumString)]
 pub enum Effects {
 	Static,
 	Breath,

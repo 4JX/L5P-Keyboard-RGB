@@ -16,8 +16,8 @@ const DEVICE_INFO: (u16, u16, u16, u16) = (0x048d, 0xc965, 0, 0);
 const DEVICE_INFO: (u16, u16, u16, u16) = (0x048d, 0xc965, 0xff89, 0x00cc);
 
 pub const RGB_RANGE: std::ops::RangeInclusive<f32> = 0.0..=255.0;
-const SPEED_RANGE: std::ops::RangeInclusive<u8> = 1..=4;
-const BRIGHTNESS_RANGE: std::ops::RangeInclusive<u8> = 1..=2;
+pub const SPEED_RANGE: std::ops::RangeInclusive<u8> = 1..=4;
+pub const BRIGHTNESS_RANGE: std::ops::RangeInclusive<u8> = 1..=2;
 
 pub enum BaseEffects {
 	Static,

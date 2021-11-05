@@ -1,25 +1,113 @@
 #![windows_subsystem = "windows"]
+mod gui;
+mod keyboard_utils;
+
+use clap::{crate_authors, crate_version, App, Arg, SubCommand};
 use fltk::app;
+use gui::enums::{Effects, Message};
+use gui::keyboard_manager::KeyboardManager;
+use keyboard_utils::{BRIGHTNESS_RANGE, SPEED_RANGE};
+use std::convert::TryInto;
+use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
 use std::sync::Arc;
-mod gui;
-use gui::keyboard_manager;
-mod keyboard_utils;
-use gui::enums::Message;
+use std::{env, process};
 
 fn main() {
-	let app = app::App::default();
-
 	let (tx, rx) = mpsc::channel::<Message>();
 	let stop_signal = Arc::new(AtomicBool::new(false));
 	let keyboard = match keyboard_utils::get_keyboard(stop_signal.clone()) {
 		Ok(keyboard) => keyboard,
 		Err(err) => panic!("{}", err),
 	};
-	let manager = keyboard_manager::KeyboardManager { keyboard, rx };
+	let mut manager = KeyboardManager { keyboard, rx };
 
-	//Windows tray logic
+	let matches = App::new("Legion Keyboard Control")
+		.version(&crate_version!()[..])
+		.author(&crate_authors!()[..])
+		// .about("Placeholder")
+		.arg(Arg::with_name("brightness").help("Possible values: [1, 2], Default: 1").takes_value(true).short("b"))
+		.arg(Arg::with_name("speed").help("Possible values: [1, 2, 3, 4], Default: 1").takes_value(true).short("s"))
+		.subcommand(
+			SubCommand::with_name("Static").about("Static effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
+		.subcommand(
+			SubCommand::with_name("Breath").about("Breath effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
+		.subcommand(SubCommand::with_name("Smooth").about("Smooth effect"))
+		.subcommand(SubCommand::with_name("LeftWave").about("Left Wave effect"))
+		.subcommand(SubCommand::with_name("RightWave").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("Lightning").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("AmbientLight").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("SmoothLeftWave").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("SmoothRightWave").about("Right Wave effect"))
+		.subcommand(
+			SubCommand::with_name("LeftSwipe").about("Swipe effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
+		.subcommand(
+			SubCommand::with_name("RightSwipe").about("Swipe effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
+		.get_matches();
+
+	match matches.subcommand_name() {
+		Some(input) => {
+			let effect: Effects = Effects::from_str(input).unwrap();
+
+			let speed_raw = matches.value_of("speed").unwrap().parse::<u8>().unwrap_or(1);
+			let speed = speed_raw.clamp(SPEED_RANGE.min().unwrap(), SPEED_RANGE.max().unwrap());
+
+			let brightness_raw = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
+			let brightness = brightness_raw.clamp(BRIGHTNESS_RANGE.min().unwrap(), BRIGHTNESS_RANGE.max().unwrap());
+
+			manager.keyboard.set_brightness(brightness);
+
+			let matches = matches.subcommand_matches(input).unwrap();
+			let color_array: [f32; 12] = match parse_bytes_arg(matches.value_of("colors").unwrap_or_default()).unwrap_or(vec![0.0; 12]).try_into() {
+				Ok(color_array) => color_array,
+				Err(_) => {
+					println!("Invalid input, please check you used the correct format for the colors");
+					process::exit(0);
+				}
+			};
+
+			manager.set_effect_cli(effect, color_array, speed, &stop_signal);
+		}
+		None => {
+			let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
+			println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
+			start_with_gui(manager, tx, stop_signal);
+		}
+	}
+	fn parse_bytes_arg(arg: &str) -> Result<Vec<f32>, <f32 as FromStr>::Err> {
+		arg.split(',').map(|b| b.parse::<f32>()).collect()
+	}
+}
+
+fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
+	let app = app::App::default();
+
+	//Windows logic
 	#[cfg(target_os = "windows")]
 	{
 		use fltk::prelude::*;
