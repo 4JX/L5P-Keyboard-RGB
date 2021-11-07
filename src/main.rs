@@ -13,9 +13,30 @@ use std::sync::Arc;
 use std::{env, process};
 
 fn main() {
-	//Clear/Hide console if not running via one
-	if !is_console() {
-		free_console();
+	// Clear/Hide console if not running via one (Windows specific)
+	#[cfg(target_os = "windows")]
+	{
+		#[link(name = "Kernel32")]
+		extern "system" {
+			fn GetConsoleProcessList(processList: *mut u32, count: u32) -> u32;
+			fn FreeConsole() -> i32;
+		}
+
+		fn free_console() -> bool {
+			unsafe { FreeConsole() == 0 }
+		}
+
+		fn is_console() -> bool {
+			unsafe {
+				let mut buffer = [0u32; 1];
+				let count = GetConsoleProcessList(buffer.as_mut_ptr(), 1);
+				count != 1
+			}
+		}
+
+		if !is_console() {
+			free_console();
+		}
 	}
 
 	let (tx, rx) = mpsc::channel::<Message>();
@@ -162,23 +183,5 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_sign
 	{
 		gui::builder::start_ui(manager, tx, stop_signal);
 		app.run().unwrap();
-	}
-}
-
-#[link(name = "Kernel32")]
-extern "system" {
-	fn GetConsoleProcessList(processList: *mut u32, count: u32) -> u32;
-	fn FreeConsole() -> i32;
-}
-
-fn free_console() -> bool {
-	unsafe { FreeConsole() == 0 }
-}
-
-fn is_console() -> bool {
-	unsafe {
-		let mut buffer = [0u32; 1];
-		let count = GetConsoleProcessList(buffer.as_mut_ptr(), 1);
-		count != 1
 	}
 }
