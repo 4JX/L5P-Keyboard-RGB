@@ -6,7 +6,6 @@ use clap::{crate_authors, crate_version, App, Arg, SubCommand};
 use fltk::app;
 use gui::enums::{Effects, Message};
 use gui::keyboard_manager::KeyboardManager;
-use keyboard_utils::{BRIGHTNESS_RANGE, SPEED_RANGE};
 use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
@@ -27,8 +26,8 @@ fn main() {
 		.version(&crate_version!()[..])
 		.author(&crate_authors!()[..])
 		// .about("Placeholder")
-		.arg(Arg::with_name("brightness").help("Possible values: [1, 2], Default: 1").takes_value(true).short("b"))
-		.arg(Arg::with_name("speed").help("Possible values: [1, 2, 3, 4], Default: 1").takes_value(true).short("s"))
+		.arg(Arg::with_name("brightness").help("The brightness of the effect").takes_value(true).short("b").possible_values(&["1","2"]).default_value("1"))
+		.arg(Arg::with_name("speed").help("The speed of the effect").takes_value(true).short("s").possible_values(&["1","2", "3", "4"]).default_value("1"))
 		.subcommand(
 			SubCommand::with_name("Static").about("Static effect").arg(
 				Arg::with_name("colors")
@@ -73,12 +72,8 @@ fn main() {
 	match matches.subcommand_name() {
 		Some(input) => {
 			let effect: Effects = Effects::from_str(input).unwrap();
-
-			let speed_raw = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
-			let speed = speed_raw.clamp(SPEED_RANGE.min().unwrap(), SPEED_RANGE.max().unwrap());
-
-			let brightness_raw = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
-			let brightness = brightness_raw.clamp(BRIGHTNESS_RANGE.min().unwrap(), BRIGHTNESS_RANGE.max().unwrap());
+			let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
+			let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
 
 			manager.keyboard.set_brightness(brightness);
 
