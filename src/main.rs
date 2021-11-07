@@ -1,4 +1,3 @@
-#![windows_subsystem = "windows"]
 mod gui;
 mod keyboard_utils;
 
@@ -14,6 +13,11 @@ use std::sync::Arc;
 use std::{env, process};
 
 fn main() {
+	//Clear/Hide console if not running via one
+	if !is_console() {
+		free_console();
+	}
+
 	let (tx, rx) = mpsc::channel::<Message>();
 	let stop_signal = Arc::new(AtomicBool::new(false));
 	let keyboard = match keyboard_utils::get_keyboard(stop_signal.clone()) {
@@ -158,5 +162,23 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_sign
 	{
 		gui::builder::start_ui(manager, tx, stop_signal);
 		app.run().unwrap();
+	}
+}
+
+#[link(name = "Kernel32")]
+extern "system" {
+	fn GetConsoleProcessList(processList: *mut u32, count: u32) -> u32;
+	fn FreeConsole() -> i32;
+}
+
+fn free_console() -> bool {
+	unsafe { FreeConsole() == 0 }
+}
+
+fn is_console() -> bool {
+	unsafe {
+		let mut buffer = [0u32; 1];
+		let count = GetConsoleProcessList(buffer.as_mut_ptr(), 1);
+		count != 1
 	}
 }
