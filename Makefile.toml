@@ -3,20 +3,20 @@
 
 [tasks.build]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "./vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg" }
 command = "cargo"
 args = ["build"]
 
 [tasks.build-release]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "./vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg" }
 command = "cargo"
 args = ["build", "--release"]
 
 [tasks.setup-vcpkg]
 dependencies = [
     "install-vcpkg",
-    # "update-vcpkg",
+    "update-vcpkg",
     "install-vcpkg-dependencies",
 ]
 
@@ -44,7 +44,7 @@ condition = { files_exist = [
         "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/",
 ] }
 command = "rm"
-args = ["-rf", "./vcpkg"]
+args = ["-rf", "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg"]
 
 [tasks.git-clone-vcpkg]
 command = "git"
@@ -55,11 +55,11 @@ windows_alias = "bootstrap-vcpkg-windows"
 linux_alias = "bootstrap-vcpkg-linux"
 
 [tasks.bootstrap-vcpkg-windows]
-command = "./vcpkg/bootstrap-vcpkg.bat"
+command = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/bootstrap-vcpkg.bat"
 args = ["-disableMetrics"]
 
 [tasks.bootstrap-vcpkg-linux]
-command = "./vcpkg/bootstrap-vcpkg.sh"
+command = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/bootstrap-vcpkg.sh"
 args = ["-disableMetrics"]
 
 [tasks.update-vcpkg]
@@ -67,10 +67,10 @@ condition = { files_exist = [
         "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
 ] }
 script = '''
-cd ./vcpkg/
+cd ${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/
 git pull
 vcpkg update
-cd ..
+cd ${CARGO_MAKE_WORKING_DIRECTORY}
 '''
 
 [tasks.install-vcpkg-dependencies]
@@ -88,11 +88,11 @@ args = ["install", "libvpx:x64-windows-static", "libyuv:x64-windows-static"]
 condition = { files_not_exist = [
         "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
 ] }
-command = "./vcpkg/vcpkg"
+command = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg"
 args = ["install", "libvpx", "libyuv"]
 
 [tasks.clippy-all]
-env = { VCPKG_INSTALLATION_ROOT = "./vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg" }
 script = '''
 clear && cargo clippy -- -W clippy::pedantic
 '''
