@@ -15,9 +15,6 @@ use std::{
 	time::{Duration, Instant},
 };
 
-const DISP_WIDTH: u32 = 2560;
-const DISP_HEIGHT: u32 = 1600;
-
 pub struct KeyboardManager {
 	pub keyboard: Keyboard,
 	pub rx: Receiver<Message>,
@@ -96,46 +93,44 @@ impl KeyboardManager {
 				let displays = Display::all().unwrap().len();
 				for i in 0..displays {
 					let display = Display::all().unwrap().remove(i);
-					if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
-						type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
-						let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-						let (w, h) = (capturer.width(), capturer.height());
 
-						let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
-						while !stop_signal.load(Ordering::Relaxed) {
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							if let Ok(frame) = capturer.frame(0) {
-								let now = Instant::now();
-								let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
-								let rgb_img: image::RgbImage = bgra_img.convert();
-								let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
-								let dst = resized.into_vec();
+					type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
+					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+					let (w, h) = (capturer.width(), capturer.height());
 
-								let mut result: [f32; 12] = [0.0; 12];
-								for i in 0..12 {
-									result[i] = dst[i] as f32;
-								}
-								self.keyboard.transition_colors_to(&result, 4, 1);
-								let elapsed_time = now.elapsed();
-								if elapsed_time < seconds_per_frame {
-									thread::sleep(seconds_per_frame - elapsed_time);
-								}
-							} else {
-								//Janky recover from error because it does not like admin prompts on windows
-								let displays = Display::all().unwrap().len();
-								for i in 0..displays {
-									let display = Display::all().unwrap().remove(i);
-									if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
-										capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-									}
-								}
-							}
-							thread::sleep(Duration::from_millis(20));
+					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
+					while !stop_signal.load(Ordering::Relaxed) {
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
 						}
-						drop(capturer);
+						if let Ok(frame) = capturer.frame(0) {
+							let now = Instant::now();
+							let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
+							let rgb_img: image::RgbImage = bgra_img.convert();
+							let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
+							let dst = resized.into_vec();
+
+							let mut result: [f32; 12] = [0.0; 12];
+							for i in 0..12 {
+								result[i] = dst[i] as f32;
+							}
+							self.keyboard.transition_colors_to(&result, 4, 1);
+							let elapsed_time = now.elapsed();
+							if elapsed_time < seconds_per_frame {
+								thread::sleep(seconds_per_frame - elapsed_time);
+							}
+						} else {
+							//Janky recover from error because it does not like admin prompts on windows
+							let displays = Display::all().unwrap().len();
+							for i in 0..displays {
+								let display = Display::all().unwrap().remove(i);
+
+								capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+							}
+						}
+						thread::sleep(Duration::from_millis(20));
 					}
+					drop(capturer);
 				}
 			}
 			Effects::SmoothLeftWave => {
@@ -268,46 +263,43 @@ impl KeyboardManager {
 				let displays = Display::all().unwrap().len();
 				for i in 0..displays {
 					let display = Display::all().unwrap().remove(i);
-					if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
-						type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
-						let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-						let (w, h) = (capturer.width(), capturer.height());
 
-						let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
-						while !stop_signal.load(Ordering::Relaxed) {
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							if let Ok(frame) = capturer.frame(0) {
-								let now = Instant::now();
-								let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
-								let rgb_img: image::RgbImage = bgra_img.convert();
-								let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
-								let dst = resized.into_vec();
+					type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
+					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+					let (w, h) = (capturer.width(), capturer.height());
 
-								let mut result: [f32; 12] = [0.0; 12];
-								for i in 0..12 {
-									result[i] = dst[i] as f32;
-								}
-								self.keyboard.transition_colors_to(&result, 4, 1);
-								let elapsed_time = now.elapsed();
-								if elapsed_time < seconds_per_frame {
-									thread::sleep(seconds_per_frame - elapsed_time);
-								}
-							} else {
-								//Janky recover from error because it does not like admin prompts on windows
-								let displays = Display::all().unwrap().len();
-								for i in 0..displays {
-									let display = Display::all().unwrap().remove(i);
-									if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
-										capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-									}
-								}
-							}
-							thread::sleep(Duration::from_millis(20));
+					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
+					while !stop_signal.load(Ordering::Relaxed) {
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
 						}
-						drop(capturer);
+						if let Ok(frame) = capturer.frame(0) {
+							let now = Instant::now();
+							let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
+							let rgb_img: image::RgbImage = bgra_img.convert();
+							let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
+							let dst = resized.into_vec();
+
+							let mut result: [f32; 12] = [0.0; 12];
+							for i in 0..12 {
+								result[i] = dst[i] as f32;
+							}
+							self.keyboard.transition_colors_to(&result, 4, 1);
+							let elapsed_time = now.elapsed();
+							if elapsed_time < seconds_per_frame {
+								thread::sleep(seconds_per_frame - elapsed_time);
+							}
+						} else {
+							//Janky recover from error because it does not like admin prompts on windows
+							let displays = Display::all().unwrap().len();
+							for i in 0..displays {
+								let display = Display::all().unwrap().remove(i);
+								capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+							}
+						}
+						thread::sleep(Duration::from_millis(20));
 					}
+					drop(capturer);
 				}
 			}
 			Effects::SmoothLeftWave => {
