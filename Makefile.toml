@@ -78,14 +78,14 @@ windows_alias = "install-vcpkg-dependencies-windows"
 linux_alias = "install-vcpkg-dependencies-linux"
 
 [tasks.install-vcpkg-dependencies-windows]
-condition = { files_not_exist = [
+condition = { files_exist = [
         "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
 ] }
 command = "${CARGO_MAKE_WORKING_DIRECTORY}\\vcpkg\\vcpkg"
 args = ["install", "libvpx:x64-windows-static", "libyuv:x64-windows-static"]
 
 [tasks.install-vcpkg-dependencies-linux]
-condition = { files_not_exist = [
+condition = { files_exist = [
         "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
 ] }
 command = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg"
