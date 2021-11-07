@@ -154,18 +154,18 @@ impl ZoneColorTiles {
 	}
 	pub fn get_values(&mut self) -> [f32; 12] {
 		let values = [
-			self.left.red_input.value().parse::<f32>().unwrap(),
-			self.left.green_input.value().parse::<f32>().unwrap(),
-			self.left.blue_input.value().parse::<f32>().unwrap(),
-			self.center_left.red_input.value().parse::<f32>().unwrap(),
-			self.center_left.green_input.value().parse::<f32>().unwrap(),
-			self.center_left.blue_input.value().parse::<f32>().unwrap(),
-			self.center_right.red_input.value().parse::<f32>().unwrap(),
-			self.center_right.green_input.value().parse::<f32>().unwrap(),
-			self.center_right.blue_input.value().parse::<f32>().unwrap(),
-			self.right.red_input.value().parse::<f32>().unwrap(),
-			self.right.green_input.value().parse::<f32>().unwrap(),
-			self.right.blue_input.value().parse::<f32>().unwrap(),
+			self.left.red_input.value().parse::<f32>().unwrap_or(0.0),
+			self.left.green_input.value().parse::<f32>().unwrap_or(0.0),
+			self.left.blue_input.value().parse::<f32>().unwrap_or(0.0),
+			self.center_left.red_input.value().parse::<f32>().unwrap_or(0.0),
+			self.center_left.green_input.value().parse::<f32>().unwrap_or(0.0),
+			self.center_left.blue_input.value().parse::<f32>().unwrap_or(0.0),
+			self.center_right.red_input.value().parse::<f32>().unwrap_or(0.0),
+			self.center_right.green_input.value().parse::<f32>().unwrap_or(0.0),
+			self.center_right.blue_input.value().parse::<f32>().unwrap_or(0.0),
+			self.right.red_input.value().parse::<f32>().unwrap_or(0.0),
+			self.right.green_input.value().parse::<f32>().unwrap_or(0.0),
+			self.right.blue_input.value().parse::<f32>().unwrap_or(0.0),
 		];
 		values
 	}
