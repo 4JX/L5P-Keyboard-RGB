@@ -32,13 +32,12 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 
 # Compatibility
 
-This program has been tested to work on the 4 zone keyboard of the **2021** Legion 5 and Legion 5 Pro models on both Windows and Linux.
+This program has been tested to work on the 4 zone keyboard of the Legion 5 2020, Legion 5 2021 and Legion 5 Pro models on both Windows and Linux.
 
 ### "How about X model"
 
 - **Legion 7(i):** Won't work, the backlight on these is per-key and uses a different way of communicating.
 - **Any variant with a white backlight:** Havent figured out how to talk to this one yet, but given the limited number of states (off, low, high) there's not many effects I'd be able to add anyways.
-- **2020 Models:** These are not currently supported by the program, but support should be easy enough to add.
 
 # Building from source
 
