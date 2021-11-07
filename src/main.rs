@@ -74,7 +74,7 @@ fn main() {
 		Some(input) => {
 			let effect: Effects = Effects::from_str(input).unwrap();
 
-			let speed_raw = matches.value_of("speed").unwrap().parse::<u8>().unwrap_or(1);
+			let speed_raw = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
 			let speed = speed_raw.clamp(SPEED_RANGE.min().unwrap(), SPEED_RANGE.max().unwrap());
 
 			let brightness_raw = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
