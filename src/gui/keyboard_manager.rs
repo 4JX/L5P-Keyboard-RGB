@@ -15,9 +15,6 @@ use std::{
 	time::{Duration, Instant},
 };
 
-const DISP_WIDTH: u32 = 2560;
-const DISP_HEIGHT: u32 = 1600;
-
 pub struct KeyboardManager {
 	pub keyboard: Keyboard,
 	pub rx: Receiver<Message>,
@@ -44,17 +41,174 @@ impl KeyboardManager {
 					Message::UpdateValue { index, value } => {
 						self.keyboard.set_value_by_index(index, value);
 					}
-					Message::UpdateBrightness { brightness: value } => {
-						self.keyboard.set_brightness(value);
+					Message::UpdateBrightness { brightness } => {
+						self.keyboard.set_brightness(brightness);
 					}
-					Message::UpdateSpeed { speed: value } => {
-						self.keyboard.set_speed(value);
+					Message::UpdateSpeed { speed } => {
+						self.keyboard.set_speed(speed);
 					}
 				}
 				app::awake();
 				thread::sleep(Duration::from_millis(20));
 			}
 		}
+	}
+	pub fn set_effect_cli(&mut self, effect: Effects, color_array: [f32; 12], speed: u8, stop_signal: &Arc<AtomicBool>) {
+		stop_signal.store(false, Ordering::Relaxed);
+		self.keyboard.set_effect(BaseEffects::Static);
+
+		match effect {
+			Effects::Static => {
+				self.keyboard.set_colors_to(&color_array);
+				self.keyboard.set_effect(BaseEffects::Static);
+			}
+			Effects::Breath => {
+				self.keyboard.set_colors_to(&color_array);
+				self.keyboard.set_effect(BaseEffects::Breath);
+			}
+			Effects::Smooth => {
+				self.keyboard.set_effect(BaseEffects::Smooth);
+			}
+			Effects::LeftWave => {
+				self.keyboard.set_effect(BaseEffects::LeftWave);
+			}
+			Effects::RightWave => {
+				self.keyboard.set_effect(BaseEffects::RightWave);
+			}
+			Effects::Lightning => {
+				while !stop_signal.load(Ordering::Relaxed) {
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+					let zone = rand::thread_rng().gen_range(0..4);
+					let steps = rand::thread_rng().gen_range(50..=200);
+					self.keyboard.set_zone_by_index(zone, [255.0; 3]);
+					self.keyboard.transition_colors_to(&[0.0; 12], steps / speed, 5);
+					let sleep_time = rand::thread_rng().gen_range(100..=2000);
+					thread::sleep(Duration::from_millis(sleep_time));
+				}
+			}
+			Effects::AmbientLight => {
+				//Display setup
+				let displays = Display::all().unwrap().len();
+				for i in 0..displays {
+					let display = Display::all().unwrap().remove(i);
+
+					type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
+					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+					let (w, h) = (capturer.width(), capturer.height());
+
+					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
+					while !stop_signal.load(Ordering::Relaxed) {
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
+						}
+						if let Ok(frame) = capturer.frame(0) {
+							let now = Instant::now();
+							let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
+							let rgb_img: image::RgbImage = bgra_img.convert();
+							let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
+							let dst = resized.into_vec();
+
+							let mut result: [f32; 12] = [0.0; 12];
+							for i in 0..12 {
+								result[i] = dst[i] as f32;
+							}
+							self.keyboard.transition_colors_to(&result, 4, 1);
+							let elapsed_time = now.elapsed();
+							if elapsed_time < seconds_per_frame {
+								thread::sleep(seconds_per_frame - elapsed_time);
+							}
+						} else {
+							//Janky recover from error because it does not like admin prompts on windows
+							let displays = Display::all().unwrap().len();
+							for i in 0..displays {
+								let display = Display::all().unwrap().remove(i);
+
+								capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+							}
+						}
+						thread::sleep(Duration::from_millis(20));
+					}
+					drop(capturer);
+				}
+			}
+			Effects::SmoothLeftWave => {
+				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
+
+				while !stop_signal.load(Ordering::Relaxed) {
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+					shift_vec(&mut gradient, 3);
+					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+					self.keyboard.transition_colors_to(&colors, 70 / speed, 10);
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+					thread::sleep(Duration::from_millis(20));
+				}
+			}
+			Effects::SmoothRightWave => {
+				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
+
+				while !stop_signal.load(Ordering::Relaxed) {
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+					shift_vec(&mut gradient, 9);
+					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+					self.keyboard.transition_colors_to(&colors, 70 / speed, 10);
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+					thread::sleep(Duration::from_millis(20));
+				}
+			}
+			Effects::LeftSwipe => {
+				while !stop_signal.load(Ordering::Relaxed) {
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+
+					let mut gradient = color_array.to_vec();
+					for _i in 0..4 {
+						shift_vec(&mut gradient, 3);
+						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+						self.keyboard.transition_colors_to(&colors, 150 / speed, 10);
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
+						}
+					}
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+					thread::sleep(Duration::from_millis(20));
+				}
+			}
+			Effects::RightSwipe => {
+				while !stop_signal.load(Ordering::Relaxed) {
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+
+					let mut gradient = color_array.to_vec();
+					for _i in 0..4 {
+						shift_vec(&mut gradient, 9);
+						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+						self.keyboard.transition_colors_to(&colors, 150 / speed, 10);
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
+						}
+					}
+					if stop_signal.load(Ordering::Relaxed) {
+						break;
+					}
+					thread::sleep(Duration::from_millis(20));
+				}
+			}
+		}
+		stop_signal.store(false, Ordering::Relaxed);
 	}
 	pub fn change_effect(&mut self, effect: Effects, keyboard_color_tiles: &mut KeyboardColorTiles, speed_choice: &mut Choice, stop_signal: &Arc<AtomicBool>) {
 		stop_signal.store(false, Ordering::Relaxed);
@@ -109,46 +263,43 @@ impl KeyboardManager {
 				let displays = Display::all().unwrap().len();
 				for i in 0..displays {
 					let display = Display::all().unwrap().remove(i);
-					if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
-						type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
-						let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-						let (w, h) = (capturer.width(), capturer.height());
 
-						let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
-						while !stop_signal.load(Ordering::Relaxed) {
-							if stop_signal.load(Ordering::Relaxed) {
-								break;
-							}
-							if let Ok(frame) = capturer.frame(0) {
-								let now = Instant::now();
-								let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
-								let rgb_img: image::RgbImage = bgra_img.convert();
-								let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
-								let dst = resized.into_vec();
+					type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
+					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+					let (w, h) = (capturer.width(), capturer.height());
 
-								let mut result: [f32; 12] = [0.0; 12];
-								for i in 0..12 {
-									result[i] = dst[i] as f32;
-								}
-								self.keyboard.transition_colors_to(&result, 4, 1);
-								let elapsed_time = now.elapsed();
-								if elapsed_time < seconds_per_frame {
-									thread::sleep(seconds_per_frame - elapsed_time);
-								}
-							} else {
-								//Janky recover from error because it does not like admin prompts on windows
-								let displays = Display::all().unwrap().len();
-								for i in 0..displays {
-									let display = Display::all().unwrap().remove(i);
-									if display.width() == DISP_WIDTH as usize && display.height() == DISP_HEIGHT as usize {
-										capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-									}
-								}
-							}
-							thread::sleep(Duration::from_millis(20));
+					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
+					while !stop_signal.load(Ordering::Relaxed) {
+						if stop_signal.load(Ordering::Relaxed) {
+							break;
 						}
-						drop(capturer);
+						if let Ok(frame) = capturer.frame(0) {
+							let now = Instant::now();
+							let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
+							let rgb_img: image::RgbImage = bgra_img.convert();
+							let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
+							let dst = resized.into_vec();
+
+							let mut result: [f32; 12] = [0.0; 12];
+							for i in 0..12 {
+								result[i] = dst[i] as f32;
+							}
+							self.keyboard.transition_colors_to(&result, 4, 1);
+							let elapsed_time = now.elapsed();
+							if elapsed_time < seconds_per_frame {
+								thread::sleep(seconds_per_frame - elapsed_time);
+							}
+						} else {
+							//Janky recover from error because it does not like admin prompts on windows
+							let displays = Display::all().unwrap().len();
+							for i in 0..displays {
+								let display = Display::all().unwrap().remove(i);
+								capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+							}
+						}
+						thread::sleep(Duration::from_millis(20));
 					}
+					drop(capturer);
 				}
 			}
 			Effects::SmoothLeftWave => {

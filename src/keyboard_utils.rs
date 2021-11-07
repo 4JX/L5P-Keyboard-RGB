@@ -11,13 +11,17 @@ use std::{
 use std::error::Error;
 
 #[cfg(target_os = "linux")]
-const DEVICE_INFO: (u16, u16, u16, u16) = (0x048d, 0xc965, 0, 0);
+const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0, 0);
+#[cfg(target_os = "linux")]
+const DEVICE_INFO_2020: (u16, u16, u16, u16) = (0x048d, 0xc955, 0, 0);
 #[cfg(not(target_os = "linux"))]
-const DEVICE_INFO: (u16, u16, u16, u16) = (0x048d, 0xc965, 0xff89, 0x00cc);
+const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0xff89, 0x00cc);
+#[cfg(not(target_os = "linux"))]
+const DEVICE_INFO_2020: (u16, u16, u16, u16) = (0x048d, 0xc955, 0xff89, 0x00cc);
 
 pub const RGB_RANGE: std::ops::RangeInclusive<f32> = 0.0..=255.0;
-const SPEED_RANGE: std::ops::RangeInclusive<u8> = 1..=4;
-const BRIGHTNESS_RANGE: std::ops::RangeInclusive<u8> = 1..=2;
+pub const SPEED_RANGE: std::ops::RangeInclusive<u8> = 1..=4;
+pub const BRIGHTNESS_RANGE: std::ops::RangeInclusive<u8> = 1..=2;
 
 pub enum BaseEffects {
 	Static,
@@ -172,7 +176,10 @@ pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard, Box<dyn Er
 
 	let info = api
 		.device_list()
-		.find(|d| (d.vendor_id(), d.product_id(), d.usage_page(), d.usage()) == DEVICE_INFO)
+		.find(|d| {
+			let info_tuple = (d.vendor_id(), d.product_id(), d.usage_page(), d.usage());
+			info_tuple == DEVICE_INFO_2021 || info_tuple == DEVICE_INFO_2020
+		})
 		.ok_or("Error: Couldn't find device")?;
 
 	let keyboard_hid: HidDevice = info.open_device(&api)?;

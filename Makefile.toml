@@ -1,0 +1,98 @@
+# Depends on https://github.com/sagiegurari/cargo-make - Install it with "cargo install cargo-make"
+# After that you can run "cargo make build" or "cargo make build-release" to build the project
+
+[tasks.build]
+dependencies = ["setup-vcpkg"]
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg" }
+command = "cargo"
+args = ["build"]
+
+[tasks.build-release]
+dependencies = ["setup-vcpkg"]
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg" }
+command = "cargo"
+args = ["build", "--release"]
+
+[tasks.setup-vcpkg]
+dependencies = [
+    "install-vcpkg",
+    "update-vcpkg",
+    "install-vcpkg-dependencies",
+]
+
+[tasks.install-vcpkg]
+condition = { files_not_exist = [
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/",
+] }
+run_task = [
+    { name = ["remove-vcpkg-dir", "git-clone-vcpkg", "bootstrap-vcpkg" ]}
+]
+
+[tasks.remove-vcpkg-dir]
+windows_alias = "remove-vcpkg-dir-windows"
+linux_alias = "remove-vcpkg-dir-linux"
+
+[tasks.remove-vcpkg-dir-windows]
+condition = { files_exist = [
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/",
+] }
+command = "rm"
+args = ["-r", "-Force", "${CARGO_MAKE_WORKING_DIRECTORY}\\vcpkg"]
+
+[tasks.remove-vcpkg-dir-linux]
+condition = { files_exist = [
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/",
+] }
+command = "rm"
+args = ["-rf", "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg"]
+
+[tasks.git-clone-vcpkg]
+command = "git"
+args = ["clone", "https://github.com/microsoft/vcpkg.git"]
+
+[tasks.bootstrap-vcpkg]
+windows_alias = "bootstrap-vcpkg-windows"
+linux_alias = "bootstrap-vcpkg-linux"
+
+[tasks.bootstrap-vcpkg-windows]
+command = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/bootstrap-vcpkg.bat"
+args = ["-disableMetrics"]
+
+[tasks.bootstrap-vcpkg-linux]
+command = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/bootstrap-vcpkg.sh"
+args = ["-disableMetrics"]
+
+[tasks.update-vcpkg]
+condition = { files_exist = [
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
+] }
+script = '''
+cd ${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/
+git pull
+vcpkg update
+cd ${CARGO_MAKE_WORKING_DIRECTORY}
+'''
+
+[tasks.install-vcpkg-dependencies]
+windows_alias = "install-vcpkg-dependencies-windows"
+linux_alias = "install-vcpkg-dependencies-linux"
+
+[tasks.install-vcpkg-dependencies-windows]
+condition = { files_not_exist = [
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
+] }
+command = "${CARGO_MAKE_WORKING_DIRECTORY}\\vcpkg\\vcpkg"
+args = ["install", "libvpx:x64-windows-static", "libyuv:x64-windows-static"]
+
+[tasks.install-vcpkg-dependencies-linux]
+condition = { files_not_exist = [
+        "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg",
+] }
+command = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg/vcpkg"
+args = ["install", "libvpx", "libyuv"]
+
+[tasks.clippy-all]
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/vcpkg" }
+script = '''
+clear && cargo clippy -- -W clippy::pedantic
+'''

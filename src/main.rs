@@ -1,15 +1,43 @@
-#![windows_subsystem = "windows"]
+mod gui;
+mod keyboard_utils;
+
+use clap::{crate_authors, crate_version, App, Arg, SubCommand};
 use fltk::app;
+use gui::enums::{Effects, Message};
+use gui::keyboard_manager::KeyboardManager;
+use std::convert::TryInto;
+use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
 use std::sync::Arc;
-mod gui;
-use gui::keyboard_manager;
-mod keyboard_utils;
-use gui::enums::Message;
+use std::{env, process};
 
 fn main() {
-	let app = app::App::default();
+	// Clear/Hide console if not running via one (Windows specific)
+	#[cfg(target_os = "windows")]
+	{
+		#[link(name = "Kernel32")]
+		extern "system" {
+			fn GetConsoleProcessList(processList: *mut u32, count: u32) -> u32;
+			fn FreeConsole() -> i32;
+		}
+
+		fn free_console() -> bool {
+			unsafe { FreeConsole() == 0 }
+		}
+
+		fn is_console() -> bool {
+			unsafe {
+				let mut buffer = [0u32; 1];
+				let count = GetConsoleProcessList(buffer.as_mut_ptr(), 1);
+				count != 1
+			}
+		}
+
+		if !is_console() {
+			free_console();
+		}
+	}
 
 	let (tx, rx) = mpsc::channel::<Message>();
 	let stop_signal = Arc::new(AtomicBool::new(false));
@@ -17,9 +45,89 @@ fn main() {
 		Ok(keyboard) => keyboard,
 		Err(err) => panic!("{}", err),
 	};
-	let manager = keyboard_manager::KeyboardManager { keyboard, rx };
+	let mut manager = KeyboardManager { keyboard, rx };
 
-	//Windows tray logic
+	let matches = App::new("Legion Keyboard Control")
+		.version(&crate_version!()[..])
+		.author(&crate_authors!()[..])
+		// .about("Placeholder")
+		.arg(Arg::with_name("brightness").help("The brightness of the effect").takes_value(true).short("b").possible_values(&["1","2"]).default_value("1"))
+		.arg(Arg::with_name("speed").help("The speed of the effect").takes_value(true).short("s").possible_values(&["1","2", "3", "4"]).default_value("1"))
+		.subcommand(
+			SubCommand::with_name("Static").about("Static effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
+		.subcommand(
+			SubCommand::with_name("Breath").about("Breath effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
+		.subcommand(SubCommand::with_name("Smooth").about("Smooth effect"))
+		.subcommand(SubCommand::with_name("LeftWave").about("Left Wave effect"))
+		.subcommand(SubCommand::with_name("RightWave").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("Lightning").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("AmbientLight").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("SmoothLeftWave").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("SmoothRightWave").about("Right Wave effect"))
+		.subcommand(
+			SubCommand::with_name("LeftSwipe").about("Swipe effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
+		.subcommand(
+			SubCommand::with_name("RightSwipe").about("Swipe effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
+		.get_matches();
+
+	match matches.subcommand_name() {
+		Some(input) => {
+			let effect: Effects = Effects::from_str(input).unwrap();
+			let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
+			let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
+
+			manager.keyboard.set_brightness(brightness);
+
+			let matches = matches.subcommand_matches(input).unwrap();
+			let color_array: [f32; 12] = match parse_bytes_arg(matches.value_of("colors").unwrap_or_default()).unwrap_or(vec![0.0; 12]).try_into() {
+				Ok(color_array) => color_array,
+				Err(_) => {
+					println!("Invalid input, please check you used the correct format for the colors");
+					process::exit(0);
+				}
+			};
+
+			manager.set_effect_cli(effect, color_array, speed, &stop_signal);
+		}
+		None => {
+			let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
+			println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
+			start_with_gui(manager, tx, stop_signal);
+		}
+	}
+	fn parse_bytes_arg(arg: &str) -> Result<Vec<f32>, <f32 as FromStr>::Err> {
+		arg.split(',').map(|b| b.parse::<f32>()).collect()
+	}
+}
+
+fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
+	let app = app::App::default();
+
+	//Windows logic
 	#[cfg(target_os = "windows")]
 	{
 		use fltk::prelude::*;
