@@ -40,13 +40,13 @@ args = ["vcpkg", "build"]
 
 # Clippy
 [tasks.clippy-all]
-windows_alias = "clippy-all_windows"
+windows_alias = "clippy-all-windows"
 linux_alias = "clippy-all-linux"
 
 [tasks.clippy-all-windows]
 env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 script = '''
-clear && cargo clippy -- -W clippy::pedantic
+cls && cargo clippy -- -W clippy::pedantic
 '''
 
 [tasks.clippy-all-linux]
