@@ -25,3 +25,13 @@ features=["linux-static-libusb"]
 
 [build-dependencies]
 winres = "0.1.12"
+
+[package.metadata.vcpkg]
+git = "https://github.com/microsoft/vcpkg"
+rev = "356918c"
+
+[package.metadata.vcpkg.target]
+x86_64-unknown-linux-gnu = { dependencies = ["libvpx", "libyuv"] }
+# x86_64-pc-windows-msvc = { dependencies = ["libvpx:x64-windows-static", "libyuv:x64-windows-static"] }
+
+
