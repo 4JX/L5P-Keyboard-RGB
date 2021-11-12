@@ -18,7 +18,7 @@ use std::time::Duration;
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 450;
 
-pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> fltk::window::Window {
+pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: &Arc<AtomicBool>) -> fltk::window::Window {
 	//UI
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
@@ -64,7 +64,9 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	//Speed
 	speed_choice.set_callback({
 		let tx = tx.clone();
+		let stop_signal = stop_signal.clone();
 		move |choice| {
+			stop_signal.store(true, Ordering::Relaxed);
 			if let Some(value) = choice.choice() {
 				let speed = value.parse::<u8>().unwrap();
 				if (1..=4).contains(&speed) {
@@ -77,7 +79,9 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	//Brightness
 	brightness_choice.set_callback({
 		let tx = tx.clone();
+		let stop_signal = stop_signal.clone();
 		move |choice| {
+			stop_signal.store(true, Ordering::Relaxed);
 			if let Some(value) = choice.choice() {
 				let brightness = value.parse::<u8>().unwrap();
 				if (1..=2).contains(&brightness) {
@@ -89,6 +93,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 
 	// Effect choice
 	effect_browser.set_callback({
+		let tx = tx.clone();
 		let stop_signal = stop_signal.clone();
 		move |browser| {
 			stop_signal.store(true, Ordering::Relaxed);
@@ -133,29 +138,41 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 			}
 		}
 	});
+
 	thread::spawn(move || loop {
 		if let Ok(message) = manager.rx.recv() {
 			match message {
 				Message::UpdateEffect { effect } => {
-					manager.change_effect(effect, &mut keyboard_color_tiles, &mut speed_choice, &stop_signal);
+					let color_array = keyboard_color_tiles.zones.get_values();
+					let speed = speed_choice.choice().unwrap().parse::<u8>().unwrap();
+					manager.set_effect(effect, &color_array, speed);
 				}
 				Message::UpdateAllValues { value } => {
 					manager.keyboard.set_colors_to(&value);
+					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateRGB { index, value } => {
 					manager.keyboard.solid_set_value_by_index(index, value);
+					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateZone { zone_index, value } => {
 					manager.keyboard.set_zone_by_index(zone_index, value);
+					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateValue { index, value } => {
 					manager.keyboard.set_value_by_index(index, value);
+					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateBrightness { brightness } => {
 					manager.keyboard.set_brightness(brightness);
+					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateSpeed { speed } => {
 					manager.keyboard.set_speed(speed);
+					tx.send(Message::Restart).unwrap();
+				}
+				Message::Restart => {
+					tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
 				}
 			}
 			app::awake();

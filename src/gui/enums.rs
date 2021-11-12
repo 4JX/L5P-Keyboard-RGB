@@ -42,4 +42,5 @@ pub enum Message {
 	UpdateValue { index: u8, value: f32 },
 	UpdateBrightness { brightness: u8 },
 	UpdateSpeed { speed: u8 },
+	Restart,
 }

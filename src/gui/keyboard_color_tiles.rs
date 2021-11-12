@@ -153,7 +153,7 @@ impl ZoneColorTiles {
 		}
 	}
 	pub fn get_values(&mut self) -> [f32; 12] {
-		let values = [
+		[
 			self.left.red_input.value().parse::<f32>().unwrap_or(0.0),
 			self.left.green_input.value().parse::<f32>().unwrap_or(0.0),
 			self.left.blue_input.value().parse::<f32>().unwrap_or(0.0),
@@ -166,8 +166,7 @@ impl ZoneColorTiles {
 			self.right.red_input.value().parse::<f32>().unwrap_or(0.0),
 			self.right.green_input.value().parse::<f32>().unwrap_or(0.0),
 			self.right.blue_input.value().parse::<f32>().unwrap_or(0.0),
-		];
-		values
+		]
 	}
 }
 
