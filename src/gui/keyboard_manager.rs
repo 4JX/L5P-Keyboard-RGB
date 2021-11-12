@@ -21,38 +21,6 @@ pub struct KeyboardManager {
 }
 
 impl KeyboardManager {
-	pub fn start(&mut self, mut keyboard_color_tiles: &mut KeyboardColorTiles, mut speed_choice: &mut Choice, stop_signal: &Arc<AtomicBool>) {
-		loop {
-			if let Ok(message) = self.rx.recv() {
-				match message {
-					Message::UpdateEffect { effect } => {
-						stop_signal.store(true, Ordering::Relaxed);
-						self.change_effect(effect, &mut keyboard_color_tiles, &mut speed_choice, stop_signal);
-					}
-					Message::UpdateAllValues { value } => {
-						self.keyboard.set_colors_to(&value);
-					}
-					Message::UpdateRGB { index, value } => {
-						self.keyboard.solid_set_value_by_index(index, value);
-					}
-					Message::UpdateZone { zone_index, value } => {
-						self.keyboard.set_zone_by_index(zone_index, value);
-					}
-					Message::UpdateValue { index, value } => {
-						self.keyboard.set_value_by_index(index, value);
-					}
-					Message::UpdateBrightness { brightness } => {
-						self.keyboard.set_brightness(brightness);
-					}
-					Message::UpdateSpeed { speed } => {
-						self.keyboard.set_speed(speed);
-					}
-				}
-				app::awake();
-				thread::sleep(Duration::from_millis(20));
-			}
-		}
-	}
 	pub fn set_effect_cli(&mut self, effect: Effects, color_array: [f32; 12], speed: u8, stop_signal: &Arc<AtomicBool>) {
 		stop_signal.store(false, Ordering::Relaxed);
 		self.keyboard.set_effect(BaseEffects::Static);

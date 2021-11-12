@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
+use std::time::Duration;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 450;
@@ -89,60 +90,77 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	// Effect choice
 	effect_browser.set_callback({
 		let stop_signal = stop_signal.clone();
-		move |browser| match browser.value() {
-			0 => {
-				browser.select(0);
+		move |browser| {
+			stop_signal.store(true, Ordering::Relaxed);
+			match browser.value() {
+				0 => {
+					browser.select(0);
+				}
+				1 => {
+					tx.send(Message::UpdateEffect { effect: Effects::Static }).unwrap();
+				}
+				2 => {
+					tx.send(Message::UpdateEffect { effect: Effects::Breath }).unwrap();
+				}
+				3 => {
+					tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
+				}
+				4 => {
+					tx.send(Message::UpdateEffect { effect: Effects::LeftWave }).unwrap();
+				}
+				5 => {
+					tx.send(Message::UpdateEffect { effect: Effects::RightWave }).unwrap();
+				}
+				6 => {
+					tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
+				}
+				7 => {
+					tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
+				}
+				8 => {
+					tx.send(Message::UpdateEffect { effect: Effects::SmoothLeftWave }).unwrap();
+				}
+				9 => {
+					tx.send(Message::UpdateEffect { effect: Effects::SmoothRightWave }).unwrap();
+				}
+				10 => {
+					tx.send(Message::UpdateEffect { effect: Effects::LeftSwipe }).unwrap();
+				}
+				11 => {
+					tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
+				}
+				_ => {}
 			}
-
-			1 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::Static }).unwrap();
-			}
-			2 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::Breath }).unwrap();
-			}
-			3 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
-			}
-			4 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::LeftWave }).unwrap();
-			}
-			5 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::RightWave }).unwrap();
-			}
-			6 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
-			}
-			7 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
-			}
-			8 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::SmoothLeftWave }).unwrap();
-			}
-			9 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::SmoothRightWave }).unwrap();
-			}
-			10 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::LeftSwipe }).unwrap();
-			}
-			11 => {
-				stop_signal.store(true, Ordering::Relaxed);
-				tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
-			}
-			_ => {}
 		}
 	});
-	thread::spawn(move || {
-		manager.start(&mut keyboard_color_tiles, &mut speed_choice, &stop_signal);
+	thread::spawn(move || loop {
+		if let Ok(message) = manager.rx.recv() {
+			match message {
+				Message::UpdateEffect { effect } => {
+					manager.change_effect(effect, &mut keyboard_color_tiles, &mut speed_choice, &stop_signal);
+				}
+				Message::UpdateAllValues { value } => {
+					manager.keyboard.set_colors_to(&value);
+				}
+				Message::UpdateRGB { index, value } => {
+					manager.keyboard.solid_set_value_by_index(index, value);
+				}
+				Message::UpdateZone { zone_index, value } => {
+					manager.keyboard.set_zone_by_index(zone_index, value);
+				}
+				Message::UpdateValue { index, value } => {
+					manager.keyboard.set_value_by_index(index, value);
+				}
+				Message::UpdateBrightness { brightness } => {
+					manager.keyboard.set_brightness(brightness);
+				}
+				Message::UpdateSpeed { speed } => {
+					manager.keyboard.set_speed(speed);
+				}
+			}
+			app::awake();
+			thread::sleep(Duration::from_millis(20));
+		}
 	});
 	win
 }
