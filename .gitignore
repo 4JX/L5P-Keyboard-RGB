@@ -7,8 +7,5 @@
 # Rust
 target
 
-# Used with cargo-make
-vcpkg/
-
 # Other
 things.md

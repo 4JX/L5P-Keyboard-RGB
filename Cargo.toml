@@ -32,6 +32,6 @@ rev = "356918c"
 
 [package.metadata.vcpkg.target]
 x86_64-unknown-linux-gnu = { dependencies = ["libvpx", "libyuv"] }
-# x86_64-pc-windows-msvc = { dependencies = ["libvpx:x64-windows-static", "libyuv:x64-windows-static"] }
+x86_64-pc-windows-msvc = { dependencies = ["libvpx:x64-windows-static", "libyuv:x64-windows-static"] }
 
 
