@@ -8,7 +8,7 @@ linux_alias = "build-linux"
 
 [tasks.build-windows]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "{CARGO_MAKE_WORKING_DIRECTORY}/release/vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 command = "cargo"
 args = ["build"]
 
@@ -24,7 +24,7 @@ linux_alias = "build-release-linux"
 
 [tasks.build-release-windows]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/release/vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 command = "cargo"
 args = ["build", "--release"]
 
@@ -44,7 +44,7 @@ windows_alias = "clippy-all_windows"
 linux_alias = "clippy-all-linux"
 
 [tasks.clippy-all-windows]
-env = { VCPKG_INSTALLATION_ROOT = "{CARGO_MAKE_WORKING_DIRECTORY}/release/vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 script = '''
 clear && cargo clippy -- -W clippy::pedantic
 '''
