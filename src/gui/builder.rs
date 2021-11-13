@@ -225,6 +225,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 		color_tile.toggle_button.handle({
 			let mut color_tile = color_tile.clone();
 			let tx = tx.clone();
+			let stop_signal = stop_signal.clone();
 			move |button, event| match event {
 				Event::Released => {
 					if button.is_toggled() {
@@ -235,17 +236,15 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 					} else {
 						tx.send(Message::UpdateZone {
 							zone_index,
-							value: [
-								color_tile.red_input.value().parse::<f32>().unwrap(),
-								color_tile.green_input.value().parse::<f32>().unwrap(),
-								color_tile.blue_input.value().parse::<f32>().unwrap(),
-							],
+							value: color_tile.get_values(),
 						})
 						.unwrap();
 						color_tile.red_input.activate();
 						color_tile.green_input.activate();
 						color_tile.blue_input.activate();
 					}
+					stop_signal.store(true, Ordering::Relaxed);
+					tx.send(Message::Restart).unwrap();
 					true
 				}
 				_ => false,
@@ -301,6 +300,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 			let mut keyboard_color_tiles = keyboard_color_tiles.clone();
 			let mut master_tile = master_tile.clone();
 			let tx = tx.clone();
+			let stop_signal = stop_signal.clone();
 			move |button, event| match event {
 				Event::Released => {
 					if button.is_toggled() {
@@ -310,22 +310,8 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 						master_tile.blue_input.deactivate();
 						keyboard_color_tiles.zones.deactivate();
 					} else {
-						let zones = &keyboard_color_tiles.zones;
 						tx.send(Message::UpdateAllValues {
-							value: [
-								zones.left.red_input.value().parse::<f32>().unwrap(),
-								zones.left.green_input.value().parse::<f32>().unwrap(),
-								zones.left.blue_input.value().parse::<f32>().unwrap(),
-								zones.center_left.red_input.value().parse::<f32>().unwrap(),
-								zones.center_left.green_input.value().parse::<f32>().unwrap(),
-								zones.center_left.blue_input.value().parse::<f32>().unwrap(),
-								zones.center_right.red_input.value().parse::<f32>().unwrap(),
-								zones.center_right.green_input.value().parse::<f32>().unwrap(),
-								zones.center_right.blue_input.value().parse::<f32>().unwrap(),
-								zones.right.red_input.value().parse::<f32>().unwrap(),
-								zones.right.green_input.value().parse::<f32>().unwrap(),
-								zones.right.blue_input.value().parse::<f32>().unwrap(),
-							],
+							value: keyboard_color_tiles.zones.get_values(),
 						})
 						.unwrap();
 						master_tile.red_input.activate();
@@ -333,6 +319,8 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 						master_tile.blue_input.activate();
 						keyboard_color_tiles.zones.activate();
 					}
+					stop_signal.store(true, Ordering::Relaxed);
+					tx.send(Message::Restart).unwrap();
 					true
 				}
 				_ => false,
