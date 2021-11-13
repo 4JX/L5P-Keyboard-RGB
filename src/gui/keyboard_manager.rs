@@ -2,18 +2,15 @@ use super::enums::Effects;
 use super::enums::Message;
 use crate::keyboard_utils::{BaseEffects, Keyboard};
 
-use image::buffer::ConvertBuffer;
-use rand::thread_rng;
-use rand::Rng;
+use image::{buffer::ConvertBuffer, imageops, ImageBuffer};
+use rand::{thread_rng, Rng};
 use scrap::{Capturer, Display};
-use std::sync::atomic::AtomicBool;
+use std::convert::TryInto;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
-use std::{
-	convert::TryInto,
-	sync::{atomic::Ordering, Arc},
-	thread,
-	time::{Duration, Instant},
-};
+use std::sync::Arc;
+use std::thread;
+use std::time::{Duration, Instant};
 
 pub struct KeyboardManager {
 	pub keyboard: Keyboard,
@@ -67,7 +64,7 @@ impl KeyboardManager {
 				for i in 0..displays {
 					let display = Display::all().unwrap().remove(i);
 
-					type BgraImage<V> = image::ImageBuffer<image::Bgra<u8>, V>;
+					type BgraImage<V> = ImageBuffer<image::Bgra<u8>, V>;
 					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
 					let (w, h) = (capturer.width(), capturer.height());
 
@@ -80,7 +77,7 @@ impl KeyboardManager {
 							let now = Instant::now();
 							let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
 							let rgb_img: image::RgbImage = bgra_img.convert();
-							let resized = image::imageops::resize(&rgb_img, 4, 1, image::imageops::FilterType::Lanczos3);
+							let resized = imageops::resize(&rgb_img, 4, 1, imageops::FilterType::Lanczos3);
 							let dst = resized.into_vec();
 
 							let mut result: [f32; 12] = [0.0; 12];

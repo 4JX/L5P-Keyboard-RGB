@@ -1,10 +1,10 @@
 use super::enums::{BaseColor, Colors};
-use fltk::prelude::*;
 use fltk::{
 	button::ToggleButton,
 	enums::{Color, FrameType},
 	group::Tile,
 	input::IntInput,
+	prelude::*,
 };
 
 pub struct ColorInput;

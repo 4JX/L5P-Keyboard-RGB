@@ -1,14 +1,13 @@
 use hidapi::{HidApi, HidDevice};
-
 use std::{
+	error::Error,
 	sync::{
 		atomic::{AtomicBool, Ordering},
 		Arc,
 	},
-	thread, time,
+	thread,
+	time::Duration,
 };
-
-use std::error::Error;
 
 #[cfg(target_os = "linux")]
 const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0, 0);
@@ -185,7 +184,7 @@ impl Keyboard {
 						}
 
 						self.refresh();
-						thread::sleep(time::Duration::from_millis(delay_between_steps));
+						thread::sleep(Duration::from_millis(delay_between_steps));
 					}
 					self.set_colors_to(target_colors);
 				}
