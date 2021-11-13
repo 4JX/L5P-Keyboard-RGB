@@ -1,5 +1,4 @@
-use super::enums::Effects;
-use super::enums::Message;
+use crate::enums::{Effects, Message};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
 
 use image::{buffer::ConvertBuffer, imageops, ImageBuffer};

@@ -1,6 +1,6 @@
-use super::enums::Message;
-use super::keyboard_manager;
-use super::{effect_browser_tile, enums::BaseColor, enums::Effects, keyboard_color_tiles, options_tile};
+use super::{effect_browser_tile, enums::BaseColor, keyboard_color_tiles, options_tile};
+use crate::enums::{Effects, Message};
+use crate::keyboard_manager;
 use fltk::{
 	app,
 	enums::{Event, Font},

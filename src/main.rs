@@ -1,10 +1,12 @@
+mod enums;
 mod gui;
+mod keyboard_manager;
 mod keyboard_utils;
 
 use clap::{crate_authors, crate_version, App, Arg, SubCommand};
+use enums::{Effects, Message};
 use fltk::app;
-use gui::enums::{Effects, Message};
-use gui::keyboard_manager::KeyboardManager;
+use keyboard_manager::KeyboardManager;
 use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
