@@ -14,7 +14,7 @@ args = ["build"]
 
 [tasks.build-linux]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "~/bin/vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 command = "cargo"
 args = ["build"]
 
@@ -30,7 +30,7 @@ args = ["build", "--release"]
 
 [tasks.build-release-linux]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "~/bin/vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 command = "cargo"
 args = ["build", "--release"]
 
@@ -50,7 +50,7 @@ cls && cargo clippy -- -W clippy::pedantic
 '''
 
 [tasks.clippy-all-linux]
-env = { VCPKG_INSTALLATION_ROOT = "~/bin/vcpkg" }
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 script = '''
 clear && cargo clippy -- -W clippy::pedantic
 '''
