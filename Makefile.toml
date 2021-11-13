@@ -38,6 +38,23 @@ args = ["build", "--release"]
 command = "cargo"
 args = ["vcpkg", "build"]
 
+#Running
+[tasks.run]
+windows_alias = "run-windows"
+linux_alias = "run-linux"
+
+[tasks.run-windows]
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
+script = '''
+cls && cargo run --release
+'''
+
+[tasks.run-linux]
+env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
+script = '''
+clear && cargo build --release && sudo ./target/release/legion-kb-rgb
+'''
+
 # Clippy
 [tasks.clippy-all]
 windows_alias = "clippy-all-windows"
