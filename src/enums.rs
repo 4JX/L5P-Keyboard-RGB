@@ -16,6 +16,7 @@ pub enum Effects {
 	Disco,
 }
 
+#[allow(dead_code)]
 pub enum Message {
 	UpdateAllValues { value: [u8; 12] },
 	UpdateRGB { index: u8, value: u8 },
@@ -24,5 +25,5 @@ pub enum Message {
 	UpdateValue { index: u8, value: u8 },
 	UpdateBrightness { brightness: u8 },
 	UpdateSpeed { speed: u8 },
-	Restart,
+	Refresh,
 }
