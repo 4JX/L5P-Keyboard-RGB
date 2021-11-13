@@ -137,7 +137,7 @@ impl Keyboard {
 		}
 		for (i, _) in new_values.iter().enumerate() {
 			let full_index = (zone_index * 3 + i as u8) as usize;
-			self.current_state.rgb_values[full_index] = new_values[i]
+			self.current_state.rgb_values[full_index] = new_values[i];
 		}
 		self.refresh();
 	}
@@ -146,7 +146,7 @@ impl Keyboard {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
 				for (i, _) in new_values.iter().enumerate() {
-					self.current_state.rgb_values[i] = new_values[i]
+					self.current_state.rgb_values[i] = new_values[i];
 				}
 				self.refresh();
 			}
@@ -161,7 +161,7 @@ impl Keyboard {
 				let mut new_values = self.current_state.rgb_values.map(f32::from);
 				let mut color_differences: [f32; 12] = [0.0; 12];
 				for index in 0..12 {
-					color_differences[index] = (target_colors[index].clamp(0.0, 255.0) - f32::from(self.current_state.rgb_values[index])) / steps as f32;
+					color_differences[index] = (target_colors[index].clamp(0.0, 255.0) - f32::from(self.current_state.rgb_values[index])) / f32::from(steps);
 				}
 				if !self.stop_signal.load(Ordering::Relaxed) {
 					for _step_num in 1..=steps {

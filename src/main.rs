@@ -102,6 +102,10 @@ fn main() {
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
+		fn parse_bytes_arg(arg: &str) -> Result<Vec<u8>, <u8 as FromStr>::Err> {
+			arg.split(',').map(str::parse::<u8>).collect()
+		}
+
 		let effect: Effects = Effects::from_str(input).unwrap();
 		let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
 		let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
@@ -121,9 +125,6 @@ fn main() {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
 		start_with_gui(manager, tx, &stop_signal);
-	}
-	fn parse_bytes_arg(arg: &str) -> Result<Vec<u8>, <u8 as FromStr>::Err> {
-		arg.split(',').map(str::parse::<u8>).collect()
 	}
 }
 

@@ -61,9 +61,9 @@ impl KeyboardManager {
 				//Display setup
 				let displays = Display::all().unwrap().len();
 				for i in 0..displays {
+					type BgraImage<V> = ImageBuffer<image::Bgra<u8>, V>;
 					let display = Display::all().unwrap().remove(i);
 
-					type BgraImage<V> = ImageBuffer<image::Bgra<u8>, V>;
 					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
 					let (w, h) = (capturer.width(), capturer.height());
 
@@ -81,7 +81,7 @@ impl KeyboardManager {
 
 							let mut result: [f32; 12] = [0.0; 12];
 							for i in 0..12 {
-								result[i] = dst[i] as f32;
+								result[i] = f32::from(dst[i]);
 							}
 							self.keyboard.transition_colors_to(&result, 4, 1);
 							let elapsed_time = now.elapsed();
@@ -184,7 +184,7 @@ impl KeyboardManager {
 
 					let zone_index = thread_rng.gen_range(0..4);
 					self.keyboard.set_zone_by_index(zone_index, new_values);
-					thread::sleep(Duration::from_millis(2000 / (speed as u64 * 4 as u64)));
+					thread::sleep(Duration::from_millis(2000 / (u64::from(speed) * 4)));
 				}
 			}
 		}
