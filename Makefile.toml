@@ -52,5 +52,5 @@ cls && cargo clippy -- -W clippy::pedantic
 [tasks.clippy-all-linux]
 env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 script = '''
-clear && cargo clippy -- -W clippy::pedantic
+clear && cargo clippy -- -W clippy::pedantic -A clippy::unreadable_literal -A clippy::too_many_lines
 '''
