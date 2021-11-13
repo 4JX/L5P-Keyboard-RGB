@@ -3,6 +3,7 @@ use super::enums::Message;
 use crate::keyboard_utils::{BaseEffects, Keyboard};
 
 use image::buffer::ConvertBuffer;
+use rand::thread_rng;
 use rand::Rng;
 use scrap::{Capturer, Display};
 use std::sync::atomic::AtomicBool;
@@ -25,6 +26,7 @@ impl KeyboardManager {
 	pub fn set_effect(&mut self, effect: Effects, color_array: &[f32; 12], speed: u8) {
 		self.stop_signal.store(false, Ordering::Relaxed);
 		self.last_effect = effect;
+		let mut thread_rng = thread_rng();
 
 		self.keyboard.set_effect(BaseEffects::Static);
 
@@ -51,11 +53,11 @@ impl KeyboardManager {
 					if self.stop_signal.load(Ordering::Relaxed) {
 						break;
 					}
-					let zone = rand::thread_rng().gen_range(0..4);
-					let steps = rand::thread_rng().gen_range(50..=200);
+					let zone = thread_rng.gen_range(0..4);
+					let steps = thread_rng.gen_range(50..=200);
 					self.keyboard.set_zone_by_index(zone, [255.0; 3]);
 					self.keyboard.transition_colors_to(&[0.0; 12], steps / speed, 5);
-					let sleep_time = rand::thread_rng().gen_range(100..=2000);
+					let sleep_time = thread_rng.gen_range(100..=2000);
 					thread::sleep(Duration::from_millis(sleep_time));
 				}
 			}
@@ -176,6 +178,17 @@ impl KeyboardManager {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
+				}
+			}
+			Effects::Disco => {
+				while !self.stop_signal.load(Ordering::Relaxed) {
+					let colors = [[255.0, 0.0, 0.0], [255.0, 255.0, 0.0], [0.0, 255.0, 0.0], [0.0, 255.0, 255.0], [0.0, 0.0, 255.0], [255.0, 0.0, 255.0]];
+					let colors_index = thread_rng.gen_range(0..6);
+					let new_values = colors[colors_index];
+
+					let zone_index = thread_rng.gen_range(0..4);
+					self.keyboard.set_zone_by_index(zone_index, new_values);
+					thread::sleep(Duration::from_millis(2000 / (speed as u64 * 4 as u64)));
 				}
 			}
 		}

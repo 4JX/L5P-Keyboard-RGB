@@ -43,6 +43,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		"SmoothRightWave",
 		"LeftSwipe",
 		"RightSwipe",
+		"Disco",
 	];
 	let effect_browser_tile = effect_browser_tile::EffectBrowserTile::create(&effects_list);
 	let mut effect_browser = effect_browser_tile.effect_browser;
@@ -133,6 +134,9 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 				}
 				11 => {
 					tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
+				}
+				12 => {
+					tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
 				}
 				_ => {}
 			}

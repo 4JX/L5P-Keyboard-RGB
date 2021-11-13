@@ -20,6 +20,7 @@ pub enum Effects {
 	SmoothRightWave,
 	LeftSwipe,
 	RightSwipe,
+	Disco,
 }
 
 pub enum Colors {
