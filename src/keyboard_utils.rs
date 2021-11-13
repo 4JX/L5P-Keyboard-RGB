@@ -18,7 +18,6 @@ const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0xff89, 0x00cc);
 #[cfg(not(target_os = "linux"))]
 const DEVICE_INFO_2020: (u16, u16, u16, u16) = (0x048d, 0xc955, 0xff89, 0x00cc);
 
-const RGB_RANGE: std::ops::RangeInclusive<f32> = 0.0..=255.0;
 const SPEED_RANGE: std::ops::RangeInclusive<u8> = 1..=4;
 const BRIGHTNESS_RANGE: std::ops::RangeInclusive<u8> = 1..=2;
 
@@ -34,7 +33,7 @@ pub struct LightingState {
 	effect_type: BaseEffects,
 	speed: u8,
 	brightness: u8,
-	rgb_values: [f32; 12],
+	rgb_values: [u8; 12],
 }
 
 pub struct Keyboard {
@@ -53,11 +52,6 @@ impl Keyboard {
 		}
 		if !BRIGHTNESS_RANGE.contains(&keyboard_state.brightness) {
 			return Err("Brightness is outside valid range (1-2)");
-		}
-		for i in &keyboard_state.rgb_values {
-			if !RGB_RANGE.contains(i) {
-				return Err("Keyboard colors has value outside accepted range (0-255)");
-			}
 		}
 		let mut payload: [u8; 33] = [0; 33];
 		payload[0] = 0xcc;
@@ -118,20 +112,18 @@ impl Keyboard {
 		self.refresh();
 	}
 
-	pub fn set_value_by_index(&mut self, color_index: u8, new_value: f32) {
+	pub fn set_value_by_index(&mut self, color_index: u8, new_value: u8) {
 		if !(0..12).contains(&color_index) {
 			panic!("Color index is outside valid range (0-11)");
 		}
-		let new_value = new_value.clamp(0.0, 255.0);
 		let full_index: usize = color_index as usize;
 		self.current_state.rgb_values[full_index] = new_value;
 		self.refresh();
 	}
-	pub fn solid_set_value_by_index(&mut self, color_index: u8, new_value: f32) {
+	pub fn solid_set_value_by_index(&mut self, color_index: u8, new_value: u8) {
 		if !(0..3).contains(&color_index) {
 			panic!("Color index is outside valid range (0-2)");
 		}
-		let new_value = new_value.clamp(0.0, 255.0);
 		for i in 0..4 {
 			let full_index: usize = ((i * 3) + color_index) as usize;
 			self.current_state.rgb_values[full_index] = new_value;
@@ -139,22 +131,22 @@ impl Keyboard {
 		self.refresh();
 	}
 
-	pub fn set_zone_by_index(&mut self, zone_index: u8, new_values: [f32; 3]) {
+	pub fn set_zone_by_index(&mut self, zone_index: u8, new_values: [u8; 3]) {
 		if !(0..4).contains(&zone_index) {
 			panic!("Zone index is outside valid range (0-3)");
 		}
 		for (i, _) in new_values.iter().enumerate() {
 			let full_index = (zone_index * 3 + i as u8) as usize;
-			self.current_state.rgb_values[full_index] = new_values[i].clamp(0.0, 255.0);
+			self.current_state.rgb_values[full_index] = new_values[i]
 		}
 		self.refresh();
 	}
 
-	pub fn set_colors_to(&mut self, new_values: &[f32; 12]) {
+	pub fn set_colors_to(&mut self, new_values: &[u8; 12]) {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
 				for (i, _) in new_values.iter().enumerate() {
-					self.current_state.rgb_values[i] = new_values[i].clamp(0.0, 255.0);
+					self.current_state.rgb_values[i] = new_values[i]
 				}
 				self.refresh();
 			}
@@ -165,9 +157,11 @@ impl Keyboard {
 	pub fn transition_colors_to(&mut self, target_colors: &[f32; 12], steps: u8, delay_between_steps: u64) {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
+				target_colors.map(|val| val.clamp(0.0, 255.0));
+				let mut new_values = self.current_state.rgb_values.map(f32::from);
 				let mut color_differences: [f32; 12] = [0.0; 12];
 				for index in 0..12 {
-					color_differences[index] = (target_colors[index].clamp(0.0, 255.0) - self.current_state.rgb_values[index]) / steps as f32;
+					color_differences[index] = (target_colors[index].clamp(0.0, 255.0) - f32::from(self.current_state.rgb_values[index])) / steps as f32;
 				}
 				if !self.stop_signal.load(Ordering::Relaxed) {
 					for _step_num in 1..=steps {
@@ -175,18 +169,14 @@ impl Keyboard {
 							break;
 						}
 						for (index, _) in color_differences.iter().enumerate() {
-							self.current_state.rgb_values[index] += color_differences[index];
-							if self.current_state.rgb_values[index] > 255.0 {
-								self.current_state.rgb_values[index] = 255.0;
-							} else if self.current_state.rgb_values[index] < 0.0 {
-								self.current_state.rgb_values[index] = 0.0;
-							}
+							new_values[index] += color_differences[index];
 						}
+						self.current_state.rgb_values = new_values.map(|val| val as u8);
 
 						self.refresh();
 						thread::sleep(Duration::from_millis(delay_between_steps));
 					}
-					self.set_colors_to(target_colors);
+					self.set_colors_to(&target_colors.map(|val| val as u8));
 				}
 			}
 			_ => {}
@@ -210,7 +200,7 @@ pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard, Box<dyn Er
 		effect_type: BaseEffects::Static,
 		speed: 1,
 		brightness: 1,
-		rgb_values: [0.0; 12],
+		rgb_values: [0; 12],
 	};
 
 	let mut keyboard = Keyboard {

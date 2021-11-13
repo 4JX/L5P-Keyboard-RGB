@@ -109,7 +109,7 @@ fn main() {
 		manager.keyboard.set_brightness(brightness);
 
 		let matches = matches.subcommand_matches(input).unwrap();
-		let color_array: [f32; 12] = if let Ok(color_array) = parse_bytes_arg(matches.value_of("colors").unwrap_or_default()).unwrap_or_else(|_| vec![0.0; 12]).try_into() {
+		let color_array: [u8; 12] = if let Ok(color_array) = parse_bytes_arg(matches.value_of("colors").unwrap_or_default()).unwrap_or_default().try_into() {
 			color_array
 		} else {
 			println!("Invalid input, please check you used the correct format for the colors");
@@ -122,8 +122,8 @@ fn main() {
 		println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
 		start_with_gui(manager, tx, &stop_signal);
 	}
-	fn parse_bytes_arg(arg: &str) -> Result<Vec<f32>, <f32 as FromStr>::Err> {
-		arg.split(',').map(str::parse::<f32>).collect()
+	fn parse_bytes_arg(arg: &str) -> Result<Vec<u8>, <u8 as FromStr>::Err> {
+		arg.split(',').map(str::parse::<u8>).collect()
 	}
 }
 

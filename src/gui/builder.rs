@@ -229,7 +229,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 			move |button, event| match event {
 				Event::Released => {
 					if button.is_toggled() {
-						tx.send(Message::UpdateZone { zone_index, value: [0.0; 3] }).unwrap();
+						tx.send(Message::UpdateZone { zone_index, value: [0; 3] }).unwrap();
 						color_tile.red_input.deactivate();
 						color_tile.green_input.deactivate();
 						color_tile.blue_input.deactivate();
@@ -304,7 +304,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 			move |button, event| match event {
 				Event::Released => {
 					if button.is_toggled() {
-						tx.send(Message::UpdateAllValues { value: [255.0; 12] }).unwrap();
+						tx.send(Message::UpdateAllValues { value: [255; 12] }).unwrap();
 						master_tile.red_input.deactivate();
 						master_tile.green_input.deactivate();
 						master_tile.blue_input.deactivate();

@@ -17,11 +17,11 @@ pub enum Effects {
 }
 
 pub enum Message {
-	UpdateAllValues { value: [f32; 12] },
-	UpdateRGB { index: u8, value: f32 },
-	UpdateZone { zone_index: u8, value: [f32; 3] },
+	UpdateAllValues { value: [u8; 12] },
+	UpdateRGB { index: u8, value: u8 },
+	UpdateZone { zone_index: u8, value: [u8; 3] },
 	UpdateEffect { effect: Effects },
-	UpdateValue { index: u8, value: f32 },
+	UpdateValue { index: u8, value: u8 },
 	UpdateBrightness { brightness: u8 },
 	UpdateSpeed { speed: u8 },
 	Restart,

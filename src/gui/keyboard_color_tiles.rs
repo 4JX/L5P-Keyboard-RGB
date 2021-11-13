@@ -96,12 +96,12 @@ impl ColorTile {
 		color_tile.toggle_button.set_color(Color::from_u32(Colors::White as u32));
 		color_tile
 	}
-	pub fn get_values(&mut self) -> [f32; 3] {
-		let mut values = [0.0; 3];
+	pub fn get_values(&mut self) -> [u8; 3] {
+		let mut values = [0; 3];
 		if !self.toggle_button.is_toggled() {
-			values[0] = self.red_input.value().parse::<f32>().unwrap_or(0.0);
-			values[1] = self.green_input.value().parse::<f32>().unwrap_or(0.0);
-			values[2] = self.blue_input.value().parse::<f32>().unwrap_or(0.0);
+			values[0] = self.red_input.value().parse::<u8>().unwrap_or(0);
+			values[1] = self.green_input.value().parse::<u8>().unwrap_or(0);
+			values[2] = self.blue_input.value().parse::<u8>().unwrap_or(0);
 		};
 		values
 	}
@@ -161,27 +161,27 @@ impl ZoneColorTiles {
 			}
 		}
 	}
-	pub fn get_values(&mut self) -> [f32; 12] {
-		let mut values = [0.0; 12];
+	pub fn get_values(&mut self) -> [u8; 12] {
+		let mut values = [0; 12];
 		if !self.left.toggle_button.is_toggled() {
-			values[0] = self.left.red_input.value().parse::<f32>().unwrap_or(0.0);
-			values[1] = self.left.green_input.value().parse::<f32>().unwrap_or(0.0);
-			values[2] = self.left.blue_input.value().parse::<f32>().unwrap_or(0.0);
+			values[0] = self.left.red_input.value().parse::<u8>().unwrap_or(0);
+			values[1] = self.left.green_input.value().parse::<u8>().unwrap_or(0);
+			values[2] = self.left.blue_input.value().parse::<u8>().unwrap_or(0);
 		};
 		if !self.center_left.toggle_button.is_toggled() {
-			values[3] = self.center_left.red_input.value().parse::<f32>().unwrap_or(0.0);
-			values[4] = self.center_left.green_input.value().parse::<f32>().unwrap_or(0.0);
-			values[5] = self.center_left.blue_input.value().parse::<f32>().unwrap_or(0.0);
+			values[3] = self.center_left.red_input.value().parse::<u8>().unwrap_or(0);
+			values[4] = self.center_left.green_input.value().parse::<u8>().unwrap_or(0);
+			values[5] = self.center_left.blue_input.value().parse::<u8>().unwrap_or(0);
 		};
 		if !self.center_right.toggle_button.is_toggled() {
-			values[6] = self.center_right.red_input.value().parse::<f32>().unwrap_or(0.0);
-			values[7] = self.center_right.green_input.value().parse::<f32>().unwrap_or(0.0);
-			values[8] = self.center_right.blue_input.value().parse::<f32>().unwrap_or(0.0);
+			values[6] = self.center_right.red_input.value().parse::<u8>().unwrap_or(0);
+			values[7] = self.center_right.green_input.value().parse::<u8>().unwrap_or(0);
+			values[8] = self.center_right.blue_input.value().parse::<u8>().unwrap_or(0);
 		};
 		if !self.right.toggle_button.is_toggled() {
-			values[9] = self.right.red_input.value().parse::<f32>().unwrap_or(0.0);
-			values[10] = self.right.green_input.value().parse::<f32>().unwrap_or(0.0);
-			values[11] = self.right.blue_input.value().parse::<f32>().unwrap_or(0.0);
+			values[9] = self.right.red_input.value().parse::<u8>().unwrap_or(0);
+			values[10] = self.right.green_input.value().parse::<u8>().unwrap_or(0);
+			values[11] = self.right.blue_input.value().parse::<u8>().unwrap_or(0);
 		};
 		values
 	}
