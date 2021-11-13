@@ -29,6 +29,7 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 - **AmbientLight:** Reacts to content on your screen.
 - **Smooth(Left/Right)Wave:** An implementation of the classic wave effect.
 - **(Left/Right)Swipe:** Transitions the selected colors from side to side, useful for custom waves.
+- **Disco:** A portable dance floor!
 
 # Compatibility
 
