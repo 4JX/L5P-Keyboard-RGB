@@ -153,19 +153,15 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 				}
 				Message::UpdateAllValues { value } => {
 					manager.keyboard.set_colors_to(&value);
-					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateRGB { index, value } => {
 					manager.keyboard.solid_set_value_by_index(index, value);
-					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateZone { zone_index, value } => {
 					manager.keyboard.set_zone_by_index(zone_index, value);
-					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateValue { index, value } => {
 					manager.keyboard.set_value_by_index(index, value);
-					tx.send(Message::Restart).unwrap();
 				}
 				Message::UpdateBrightness { brightness } => {
 					manager.keyboard.set_brightness(brightness);
@@ -187,7 +183,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 }
 
 fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> keyboard_color_tiles::KeyboardColorTiles {
-	fn add_zone_tile_handle(control_tile: &mut keyboard_color_tiles::ColorTile, tx: &mpsc::Sender<Message>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
+	fn add_zone_tile_handle(color_tile: &mut keyboard_color_tiles::ColorTile, tx: &mpsc::Sender<Message>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
 		fn add_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
 			let triplet_index = zone_index * 3;
 			let color_index = match color {
@@ -212,6 +208,8 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 									})
 									.unwrap();
 								}
+								stop_signal.store(true, Ordering::Relaxed);
+								tx.send(Message::Restart).unwrap();
 							}
 							Err(_) => {
 								input.set_value("0");
@@ -224,29 +222,29 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 			});
 		}
 		//Button
-		control_tile.toggle_button.handle({
-			let mut control_tile = control_tile.clone();
+		color_tile.toggle_button.handle({
+			let mut color_tile = color_tile.clone();
 			let tx = tx.clone();
 			move |button, event| match event {
 				Event::Released => {
 					if button.is_toggled() {
 						tx.send(Message::UpdateZone { zone_index, value: [0.0; 3] }).unwrap();
-						control_tile.red_input.deactivate();
-						control_tile.green_input.deactivate();
-						control_tile.blue_input.deactivate();
+						color_tile.red_input.deactivate();
+						color_tile.green_input.deactivate();
+						color_tile.blue_input.deactivate();
 					} else {
 						tx.send(Message::UpdateZone {
 							zone_index,
 							value: [
-								control_tile.red_input.value().parse::<f32>().unwrap(),
-								control_tile.green_input.value().parse::<f32>().unwrap(),
-								control_tile.blue_input.value().parse::<f32>().unwrap(),
+								color_tile.red_input.value().parse::<f32>().unwrap(),
+								color_tile.green_input.value().parse::<f32>().unwrap(),
+								color_tile.blue_input.value().parse::<f32>().unwrap(),
 							],
 						})
 						.unwrap();
-						control_tile.red_input.activate();
-						control_tile.green_input.activate();
-						control_tile.blue_input.activate();
+						color_tile.red_input.activate();
+						color_tile.green_input.activate();
+						color_tile.blue_input.activate();
 					}
 					true
 				}
@@ -254,11 +252,11 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 			}
 		});
 		//Red
-		add_input_handle(&mut control_tile.red_input, BaseColor::Red, tx.clone(), zone_index, stop_signal.clone());
+		add_input_handle(&mut color_tile.red_input, BaseColor::Red, tx.clone(), zone_index, stop_signal.clone());
 		//Green
-		add_input_handle(&mut control_tile.green_input, BaseColor::Green, tx.clone(), zone_index, stop_signal.clone());
+		add_input_handle(&mut color_tile.green_input, BaseColor::Green, tx.clone(), zone_index, stop_signal.clone());
 		//Blue
-		add_input_handle(&mut control_tile.blue_input, BaseColor::Blue, tx.clone(), zone_index, stop_signal);
+		add_input_handle(&mut color_tile.blue_input, BaseColor::Blue, tx.clone(), zone_index, stop_signal);
 	}
 
 	fn add_master_tile_handle(keyboard_color_tiles: &mut keyboard_color_tiles::KeyboardColorTiles, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
@@ -285,6 +283,8 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 								.unwrap();
 								keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
 							}
+							stop_signal.store(true, Ordering::Relaxed);
+							tx.send(Message::Restart).unwrap();
 						} else {
 							input.set_value("0");
 							keyboard_color_tiles.zones.change_color_value(color, 0.0);
