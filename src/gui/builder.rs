@@ -157,39 +157,43 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	});
 
 	thread::spawn(move || loop {
-		if let Ok(message) = manager.rx.recv() {
-			match message {
-				Message::UpdateEffect { effect } => {
-					let color_array = keyboard_color_tiles.zones.get_values();
-					let speed = speed_choice.choice().unwrap().parse::<u8>().unwrap();
-					manager.set_effect(effect, &color_array, speed);
+		match manager.rx.try_iter().last() {
+			Some(message) => {
+				match message {
+					Message::UpdateEffect { effect } => {
+						let color_array = keyboard_color_tiles.zones.get_values();
+						let speed = speed_choice.choice().unwrap().parse::<u8>().unwrap();
+						manager.set_effect(effect, &color_array, speed);
+					}
+					Message::UpdateAllValues { value } => {
+						manager.keyboard.set_colors_to(&value);
+					}
+					Message::UpdateRGB { index, value } => {
+						manager.keyboard.solid_set_value_by_index(index, value);
+					}
+					Message::UpdateZone { zone_index, value } => {
+						manager.keyboard.set_zone_by_index(zone_index, value);
+					}
+					Message::UpdateValue { index, value } => {
+						manager.keyboard.set_value_by_index(index, value);
+					}
+					Message::UpdateBrightness { brightness } => {
+						manager.keyboard.set_brightness(brightness);
+						tx.send(Message::Refresh).unwrap();
+					}
+					Message::UpdateSpeed { speed } => {
+						manager.keyboard.set_speed(speed);
+						tx.send(Message::Refresh).unwrap();
+					}
+					Message::Refresh => {
+						tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
+					}
 				}
-				Message::UpdateAllValues { value } => {
-					manager.keyboard.set_colors_to(&value);
-				}
-				Message::UpdateRGB { index, value } => {
-					manager.keyboard.solid_set_value_by_index(index, value);
-				}
-				Message::UpdateZone { zone_index, value } => {
-					manager.keyboard.set_zone_by_index(zone_index, value);
-				}
-				Message::UpdateValue { index, value } => {
-					manager.keyboard.set_value_by_index(index, value);
-				}
-				Message::UpdateBrightness { brightness } => {
-					manager.keyboard.set_brightness(brightness);
-					tx.send(Message::Refresh).unwrap();
-				}
-				Message::UpdateSpeed { speed } => {
-					manager.keyboard.set_speed(speed);
-					tx.send(Message::Refresh).unwrap();
-				}
-				Message::Refresh => {
-					tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
-				}
+				app::awake();
 			}
-			app::awake();
-			thread::sleep(Duration::from_millis(20));
+			None => {
+				thread::sleep(Duration::from_millis(20));
+			}
 		}
 	});
 	win
