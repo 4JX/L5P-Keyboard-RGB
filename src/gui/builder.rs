@@ -67,7 +67,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		let tx = tx.clone();
 		let stop_signal = stop_signal.clone();
 		move |choice| {
-			stop_signal.store(true, Ordering::Relaxed);
+			stop_signal.store(true, Ordering::SeqCst);
 			if let Some(value) = choice.choice() {
 				let speed = value.parse::<u8>().unwrap();
 				if (1..=4).contains(&speed) {
@@ -82,7 +82,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		let tx = tx.clone();
 		let stop_signal = stop_signal.clone();
 		move |choice| {
-			stop_signal.store(true, Ordering::Relaxed);
+			stop_signal.store(true, Ordering::SeqCst);
 			if let Some(value) = choice.choice() {
 				let brightness = value.parse::<u8>().unwrap();
 				if (1..=2).contains(&brightness) {
@@ -98,7 +98,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		let stop_signal = stop_signal.clone();
 		let mut keyboard_color_tiles = keyboard_color_tiles.clone();
 		move |browser| {
-			stop_signal.store(true, Ordering::Relaxed);
+			stop_signal.store(true, Ordering::SeqCst);
 			match browser.value() {
 				0 => {
 					browser.select(0);
@@ -211,7 +211,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 								if value > 255.0 {
 									input.set_value("255");
 								}
-								stop_signal.store(true, Ordering::Relaxed);
+								stop_signal.store(true, Ordering::SeqCst);
 								tx.send(Message::Refresh).unwrap();
 							}
 							Err(_) => {
@@ -246,7 +246,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 						color_tile.green_input.activate();
 						color_tile.blue_input.activate();
 					}
-					stop_signal.store(true, Ordering::Relaxed);
+					stop_signal.store(true, Ordering::SeqCst);
 					tx.send(Message::Refresh).unwrap();
 					true
 				}
@@ -272,7 +272,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 							if value > 255.0 {
 								input.set_value("255");
 							}
-							stop_signal.store(true, Ordering::Relaxed);
+							stop_signal.store(true, Ordering::SeqCst);
 							tx.send(Message::Refresh).unwrap();
 						} else {
 							input.set_value("0");
@@ -309,7 +309,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 						master_tile.blue_input.activate();
 						keyboard_color_tiles.zones.activate();
 					}
-					stop_signal.store(true, Ordering::Relaxed);
+					stop_signal.store(true, Ordering::SeqCst);
 					tx.send(Message::Refresh).unwrap();
 					true
 				}
