@@ -272,6 +272,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 							if value > 255.0 {
 								input.set_value("255");
 							}
+							keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
 							stop_signal.store(true, Ordering::SeqCst);
 							tx.send(Message::Refresh).unwrap();
 						} else {
