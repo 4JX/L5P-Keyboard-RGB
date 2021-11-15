@@ -20,7 +20,7 @@ pub struct KeyboardManager {
 
 impl KeyboardManager {
 	pub fn set_effect(&mut self, effect: Effects, color_array: &[u8; 12], speed: u8) {
-		self.stop_signal.store(false, Ordering::Relaxed);
+		self.stop_signal.store(false, Ordering::SeqCst);
 		self.last_effect = effect;
 		let mut thread_rng = thread_rng();
 
@@ -45,8 +45,8 @@ impl KeyboardManager {
 				self.keyboard.set_effect(BaseEffects::RightWave);
 			}
 			Effects::Lightning => {
-				while !self.stop_signal.load(Ordering::Relaxed) {
-					if self.stop_signal.load(Ordering::Relaxed) {
+				while !self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					let zone = thread_rng.gen_range(0..4);
@@ -68,8 +68,8 @@ impl KeyboardManager {
 					let (w, h) = (capturer.width(), capturer.height());
 
 					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
-					while !self.stop_signal.load(Ordering::Relaxed) {
-						if self.stop_signal.load(Ordering::Relaxed) {
+					while !self.stop_signal.load(Ordering::SeqCst) {
+						if self.stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
 						if let Ok(frame) = capturer.frame(0) {
@@ -105,14 +105,14 @@ impl KeyboardManager {
 			Effects::SmoothLeftWave => {
 				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 
-				while !self.stop_signal.load(Ordering::Relaxed) {
-					if self.stop_signal.load(Ordering::Relaxed) {
+				while !self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					shift_vec(&mut gradient, 3);
 					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 					self.keyboard.transition_colors_to(&colors, 70 / speed, 10);
-					if self.stop_signal.load(Ordering::Relaxed) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
@@ -121,22 +121,22 @@ impl KeyboardManager {
 			Effects::SmoothRightWave => {
 				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 
-				while !self.stop_signal.load(Ordering::Relaxed) {
-					if self.stop_signal.load(Ordering::Relaxed) {
+				while !self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					shift_vec(&mut gradient, 9);
 					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 					self.keyboard.transition_colors_to(&colors, 70 / speed, 10);
-					if self.stop_signal.load(Ordering::Relaxed) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
 				}
 			}
 			Effects::LeftSwipe => {
-				while !self.stop_signal.load(Ordering::Relaxed) {
-					if self.stop_signal.load(Ordering::Relaxed) {
+				while !self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 
@@ -145,19 +145,19 @@ impl KeyboardManager {
 						shift_vec(&mut gradient, 3);
 						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / speed, 10);
-						if self.stop_signal.load(Ordering::Relaxed) {
+						if self.stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
 					}
-					if self.stop_signal.load(Ordering::Relaxed) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
 				}
 			}
 			Effects::RightSwipe => {
-				while !self.stop_signal.load(Ordering::Relaxed) {
-					if self.stop_signal.load(Ordering::Relaxed) {
+				while !self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 
@@ -166,18 +166,18 @@ impl KeyboardManager {
 						shift_vec(&mut gradient, 9);
 						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / speed, 10);
-						if self.stop_signal.load(Ordering::Relaxed) {
+						if self.stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
 					}
-					if self.stop_signal.load(Ordering::Relaxed) {
+					if self.stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
 				}
 			}
 			Effects::Disco => {
-				while !self.stop_signal.load(Ordering::Relaxed) {
+				while !self.stop_signal.load(Ordering::SeqCst) {
 					let colors = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255]];
 					let colors_index = thread_rng.gen_range(0..6);
 					let new_values = colors[colors_index];
@@ -188,7 +188,7 @@ impl KeyboardManager {
 				}
 			}
 		}
-		self.stop_signal.store(false, Ordering::Relaxed);
+		self.stop_signal.store(false, Ordering::SeqCst);
 	}
 }
 

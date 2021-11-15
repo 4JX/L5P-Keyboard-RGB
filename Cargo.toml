@@ -1,6 +1,6 @@
 [package]
 name = "legion-kb-rgb"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["4JX"]
 edition = "2018"
 homepage = "https://github.com/4JX/L5P-Keyboard-RGB"

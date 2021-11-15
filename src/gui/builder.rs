@@ -67,7 +67,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		let tx = tx.clone();
 		let stop_signal = stop_signal.clone();
 		move |choice| {
-			stop_signal.store(true, Ordering::Relaxed);
+			stop_signal.store(true, Ordering::SeqCst);
 			if let Some(value) = choice.choice() {
 				let speed = value.parse::<u8>().unwrap();
 				if (1..=4).contains(&speed) {
@@ -82,7 +82,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		let tx = tx.clone();
 		let stop_signal = stop_signal.clone();
 		move |choice| {
-			stop_signal.store(true, Ordering::Relaxed);
+			stop_signal.store(true, Ordering::SeqCst);
 			if let Some(value) = choice.choice() {
 				let brightness = value.parse::<u8>().unwrap();
 				if (1..=2).contains(&brightness) {
@@ -96,46 +96,59 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	effect_browser.set_callback({
 		let tx = tx.clone();
 		let stop_signal = stop_signal.clone();
+		let mut keyboard_color_tiles = keyboard_color_tiles.clone();
 		move |browser| {
-			stop_signal.store(true, Ordering::Relaxed);
+			stop_signal.store(true, Ordering::SeqCst);
 			match browser.value() {
 				0 => {
 					browser.select(0);
 				}
 				1 => {
+					keyboard_color_tiles.activate();
 					tx.send(Message::UpdateEffect { effect: Effects::Static }).unwrap();
 				}
 				2 => {
+					keyboard_color_tiles.activate();
 					tx.send(Message::UpdateEffect { effect: Effects::Breath }).unwrap();
 				}
 				3 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
 				}
 				4 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::LeftWave }).unwrap();
 				}
 				5 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::RightWave }).unwrap();
 				}
 				6 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
 				}
 				7 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
 				}
 				8 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::SmoothLeftWave }).unwrap();
 				}
 				9 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::SmoothRightWave }).unwrap();
 				}
 				10 => {
+					keyboard_color_tiles.activate();
 					tx.send(Message::UpdateEffect { effect: Effects::LeftSwipe }).unwrap();
 				}
 				11 => {
+					keyboard_color_tiles.activate();
 					tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
 				}
 				12 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
 				}
 				_ => {}
@@ -144,39 +157,43 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	});
 
 	thread::spawn(move || loop {
-		if let Ok(message) = manager.rx.recv() {
-			match message {
-				Message::UpdateEffect { effect } => {
-					let color_array = keyboard_color_tiles.zones.get_values();
-					let speed = speed_choice.choice().unwrap().parse::<u8>().unwrap();
-					manager.set_effect(effect, &color_array, speed);
+		match manager.rx.try_iter().last() {
+			Some(message) => {
+				match message {
+					Message::UpdateEffect { effect } => {
+						let color_array = keyboard_color_tiles.zones.get_values();
+						let speed = speed_choice.choice().unwrap().parse::<u8>().unwrap();
+						manager.set_effect(effect, &color_array, speed);
+					}
+					Message::UpdateAllValues { value } => {
+						manager.keyboard.set_colors_to(&value);
+					}
+					Message::UpdateRGB { index, value } => {
+						manager.keyboard.solid_set_value_by_index(index, value);
+					}
+					Message::UpdateZone { zone_index, value } => {
+						manager.keyboard.set_zone_by_index(zone_index, value);
+					}
+					Message::UpdateValue { index, value } => {
+						manager.keyboard.set_value_by_index(index, value);
+					}
+					Message::UpdateBrightness { brightness } => {
+						manager.keyboard.set_brightness(brightness);
+						tx.send(Message::Refresh).unwrap();
+					}
+					Message::UpdateSpeed { speed } => {
+						manager.keyboard.set_speed(speed);
+						tx.send(Message::Refresh).unwrap();
+					}
+					Message::Refresh => {
+						tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
+					}
 				}
-				Message::UpdateAllValues { value } => {
-					manager.keyboard.set_colors_to(&value);
-				}
-				Message::UpdateRGB { index, value } => {
-					manager.keyboard.solid_set_value_by_index(index, value);
-				}
-				Message::UpdateZone { zone_index, value } => {
-					manager.keyboard.set_zone_by_index(zone_index, value);
-				}
-				Message::UpdateValue { index, value } => {
-					manager.keyboard.set_value_by_index(index, value);
-				}
-				Message::UpdateBrightness { brightness } => {
-					manager.keyboard.set_brightness(brightness);
-					tx.send(Message::Refresh).unwrap();
-				}
-				Message::UpdateSpeed { speed } => {
-					manager.keyboard.set_speed(speed);
-					tx.send(Message::Refresh).unwrap();
-				}
-				Message::Refresh => {
-					tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
-				}
+				app::awake();
 			}
-			app::awake();
-			thread::sleep(Duration::from_millis(20));
+			None => {
+				thread::sleep(Duration::from_millis(20));
+			}
 		}
 	});
 	win
@@ -194,7 +211,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 								if value > 255.0 {
 									input.set_value("255");
 								}
-								stop_signal.store(true, Ordering::Relaxed);
+								stop_signal.store(true, Ordering::SeqCst);
 								tx.send(Message::Refresh).unwrap();
 							}
 							Err(_) => {
@@ -229,7 +246,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 						color_tile.green_input.activate();
 						color_tile.blue_input.activate();
 					}
-					stop_signal.store(true, Ordering::Relaxed);
+					stop_signal.store(true, Ordering::SeqCst);
 					tx.send(Message::Refresh).unwrap();
 					true
 				}
@@ -255,7 +272,8 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 							if value > 255.0 {
 								input.set_value("255");
 							}
-							stop_signal.store(true, Ordering::Relaxed);
+							keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
+							stop_signal.store(true, Ordering::SeqCst);
 							tx.send(Message::Refresh).unwrap();
 						} else {
 							input.set_value("0");
@@ -292,7 +310,7 @@ fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<Atom
 						master_tile.blue_input.activate();
 						keyboard_color_tiles.zones.activate();
 					}
-					stop_signal.store(true, Ordering::Relaxed);
+					stop_signal.store(true, Ordering::SeqCst);
 					tx.send(Message::Refresh).unwrap();
 					true
 				}

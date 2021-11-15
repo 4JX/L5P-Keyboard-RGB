@@ -163,9 +163,9 @@ impl Keyboard {
 				for index in 0..12 {
 					color_differences[index] = (target_colors[index].clamp(0.0, 255.0) - f32::from(self.current_state.rgb_values[index])) / f32::from(steps);
 				}
-				if !self.stop_signal.load(Ordering::Relaxed) {
+				if !self.stop_signal.load(Ordering::SeqCst) {
 					for _step_num in 1..=steps {
-						if self.stop_signal.load(Ordering::Relaxed) {
+						if self.stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
 						for (index, _) in color_differences.iter().enumerate() {
