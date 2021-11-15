@@ -96,6 +96,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	effect_browser.set_callback({
 		let tx = tx.clone();
 		let stop_signal = stop_signal.clone();
+		let mut keyboard_color_tiles = keyboard_color_tiles.clone();
 		move |browser| {
 			stop_signal.store(true, Ordering::Relaxed);
 			match browser.value() {
@@ -103,39 +104,51 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 					browser.select(0);
 				}
 				1 => {
+					keyboard_color_tiles.activate();
 					tx.send(Message::UpdateEffect { effect: Effects::Static }).unwrap();
 				}
 				2 => {
+					keyboard_color_tiles.activate();
 					tx.send(Message::UpdateEffect { effect: Effects::Breath }).unwrap();
 				}
 				3 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
 				}
 				4 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::LeftWave }).unwrap();
 				}
 				5 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::RightWave }).unwrap();
 				}
 				6 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
 				}
 				7 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
 				}
 				8 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::SmoothLeftWave }).unwrap();
 				}
 				9 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::SmoothRightWave }).unwrap();
 				}
 				10 => {
+					keyboard_color_tiles.activate();
 					tx.send(Message::UpdateEffect { effect: Effects::LeftSwipe }).unwrap();
 				}
 				11 => {
+					keyboard_color_tiles.activate();
 					tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
 				}
 				12 => {
+					keyboard_color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
 				}
 				_ => {}
