@@ -1,6 +1,6 @@
 # Preview
 
-![Preview](https://github.com/4JX/L5P-Keyboard-RGB/blob/dev/Preview.png)
+![Preview](https://github.com/4JX/L5P-Keyboard-RGB/blob/main/Preview.png)
 
 # Index
 
