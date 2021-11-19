@@ -44,9 +44,8 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	let effect_browser_tile = effect_browser_tile::EffectBrowserTile::create(540, 30, &effects_list);
 	let mut effect_browser = effect_browser_tile.effect_browser;
 
-	let options_tile = options_tile::OptionsTile::create(540, 390);
-	let mut speed_choice = options_tile.speed_choice;
-	let mut brightness_choice = options_tile.brightness_choice;
+	let options_tile = options_tile::OptionsTile::create(540, 390, &tx, &stop_signal.clone());
+	let speed_choice = options_tile.speed_choice;
 
 	win.end();
 	win.make_resizable(false);
@@ -57,37 +56,6 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	app::set_visible_focus(false);
 	app::set_font(Font::HelveticaBold);
 	app::set_frame_type(FrameType::FlatBox);
-
-	//Begin app logic
-	//Speed
-	speed_choice.set_callback({
-		let tx = tx.clone();
-		let stop_signal = stop_signal.clone();
-		move |choice| {
-			stop_signal.store(true, Ordering::SeqCst);
-			if let Some(value) = choice.choice() {
-				let speed = value.parse::<u8>().unwrap();
-				if (1..=4).contains(&speed) {
-					tx.send(Message::UpdateSpeed { speed }).unwrap();
-				}
-			}
-		}
-	});
-
-	//Brightness
-	brightness_choice.set_callback({
-		let tx = tx.clone();
-		let stop_signal = stop_signal.clone();
-		move |choice| {
-			stop_signal.store(true, Ordering::SeqCst);
-			if let Some(value) = choice.choice() {
-				let brightness = value.parse::<u8>().unwrap();
-				if (1..=2).contains(&brightness) {
-					tx.send(Message::UpdateBrightness { brightness }).unwrap();
-				}
-			}
-		}
-	});
 
 	// Effect choice
 	effect_browser.set_callback({
