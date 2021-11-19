@@ -79,10 +79,10 @@ fn main() {
 		.subcommand(SubCommand::with_name("Smooth").about("Smooth effect"))
 		.subcommand(SubCommand::with_name("LeftWave").about("Left Wave effect"))
 		.subcommand(SubCommand::with_name("RightWave").about("Right Wave effect"))
-		.subcommand(SubCommand::with_name("Lightning").about("Right Wave effect"))
-		.subcommand(SubCommand::with_name("AmbientLight").about("Right Wave effect"))
-		.subcommand(SubCommand::with_name("SmoothLeftWave").about("Right Wave effect"))
-		.subcommand(SubCommand::with_name("SmoothRightWave").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("Lightning").about("Lightning effect"))
+		.subcommand(SubCommand::with_name("AmbientLight").about("AmbientLight effect"))
+		.subcommand(SubCommand::with_name("SmoothLeftWave").about("SmoothLeftWave effect"))
+		.subcommand(SubCommand::with_name("SmoothRightWave").about("SmoothRightWave effect"))
 		.subcommand(
 			SubCommand::with_name("LeftSwipe").about("Swipe effect").arg(
 				Arg::with_name("colors")
@@ -99,6 +99,7 @@ fn main() {
 					.required(true),
 			),
 		)
+		.subcommand(SubCommand::with_name("Disco").about("Disco effect"))
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
