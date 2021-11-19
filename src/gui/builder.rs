@@ -1,5 +1,6 @@
 use super::{color_tiles, effect_browser_tile, options_tile};
 use crate::enums::{Effects, Message};
+use crate::gui::app::App;
 use crate::gui::menu_bar;
 use crate::keyboard_manager;
 use fltk::enums::FrameType;
@@ -18,13 +19,13 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
 	menu_bar::AppMenuBar::new(&tx);
 	let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
-	let mut keyboard_color_tiles = color_tiles::ColorTiles::new(&tx, stop_signal.clone());
+	let mut tiles = color_tiles::ColorTiles::new(&tx, stop_signal.clone());
 
-	color_picker_pack.add(&keyboard_color_tiles.zones.left.exterior_tile);
-	color_picker_pack.add(&keyboard_color_tiles.zones.center_left.exterior_tile);
-	color_picker_pack.add(&keyboard_color_tiles.zones.center_right.exterior_tile);
-	color_picker_pack.add(&keyboard_color_tiles.zones.right.exterior_tile);
-	color_picker_pack.add(&keyboard_color_tiles.master.exterior_tile);
+	color_picker_pack.add(&tiles.zones.left.exterior_tile);
+	color_picker_pack.add(&tiles.zones.center_left.exterior_tile);
+	color_picker_pack.add(&tiles.zones.center_right.exterior_tile);
+	color_picker_pack.add(&tiles.zones.right.exterior_tile);
+	color_picker_pack.add(&tiles.master.exterior_tile);
 	color_picker_pack.end();
 
 	let effects_list: Vec<&str> = vec![
@@ -46,6 +47,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 
 	let options_tile = options_tile::OptionsTile::create(540, 390, &tx, &stop_signal.clone());
 	let speed_choice = options_tile.speed_choice;
+	let brightness_choice = options_tile.brightness_choice;
 
 	win.end();
 	win.make_resizable(false);
@@ -57,11 +59,19 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	app::set_font(Font::HelveticaBold);
 	app::set_frame_type(FrameType::FlatBox);
 
+	let mut app = App {
+		color_tiles: tiles.clone(),
+		effect_browser: effect_browser.clone(),
+		speed_choice: speed_choice.clone(),
+		brightness_choice,
+		tx: tx.clone(),
+		stop_signal: stop_signal.clone(),
+	};
+
 	// Effect choice
 	effect_browser.set_callback({
-		let tx = tx.clone();
 		let stop_signal = stop_signal.clone();
-		let mut keyboard_color_tiles = keyboard_color_tiles.clone();
+
 		move |browser| {
 			stop_signal.store(true, Ordering::SeqCst);
 			match browser.value() {
@@ -69,52 +79,40 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 					browser.select(0);
 				}
 				1 => {
-					keyboard_color_tiles.activate();
-					tx.send(Message::UpdateEffect { effect: Effects::Static }).unwrap();
+					app.set_effect(Effects::Static);
 				}
 				2 => {
-					keyboard_color_tiles.activate();
-					tx.send(Message::UpdateEffect { effect: Effects::Breath }).unwrap();
+					app.set_effect(Effects::Breath);
 				}
 				3 => {
-					keyboard_color_tiles.deactivate();
-					tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
+					app.set_effect(Effects::Smooth);
 				}
 				4 => {
-					keyboard_color_tiles.deactivate();
-					tx.send(Message::UpdateEffect { effect: Effects::LeftWave }).unwrap();
+					app.set_effect(Effects::LeftWave);
 				}
 				5 => {
-					keyboard_color_tiles.deactivate();
-					tx.send(Message::UpdateEffect { effect: Effects::RightWave }).unwrap();
+					app.set_effect(Effects::RightWave);
 				}
 				6 => {
-					keyboard_color_tiles.deactivate();
-					tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
+					app.set_effect(Effects::Lightning);
 				}
 				7 => {
-					keyboard_color_tiles.deactivate();
-					tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
+					app.set_effect(Effects::AmbientLight);
 				}
 				8 => {
-					keyboard_color_tiles.deactivate();
-					tx.send(Message::UpdateEffect { effect: Effects::SmoothLeftWave }).unwrap();
+					app.set_effect(Effects::SmoothLeftWave);
 				}
 				9 => {
-					keyboard_color_tiles.deactivate();
-					tx.send(Message::UpdateEffect { effect: Effects::SmoothRightWave }).unwrap();
+					app.set_effect(Effects::SmoothRightWave);
 				}
 				10 => {
-					keyboard_color_tiles.activate();
-					tx.send(Message::UpdateEffect { effect: Effects::LeftSwipe }).unwrap();
+					app.set_effect(Effects::LeftSwipe);
 				}
 				11 => {
-					keyboard_color_tiles.activate();
-					tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
+					app.set_effect(Effects::RightSwipe);
 				}
 				12 => {
-					keyboard_color_tiles.deactivate();
-					tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
+					app.set_effect(Effects::Disco);
 				}
 				_ => {}
 			}
@@ -126,7 +124,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 			Some(message) => {
 				match message {
 					Message::UpdateEffect { effect } => {
-						let color_array = keyboard_color_tiles.get_zone_values();
+						let color_array = tiles.get_zone_values();
 						let speed = speed_choice.choice().unwrap().parse::<u8>().unwrap();
 						manager.set_effect(effect, &color_array, speed);
 					}
