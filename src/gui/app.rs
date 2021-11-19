@@ -1,22 +1,31 @@
-use std::sync::{
-	atomic::{AtomicBool, Ordering},
-	mpsc::Sender,
-	Arc,
-};
-
+use super::color_tiles::{ColorTiles, ColorTilesState};
+use crate::enums::{Effects, Message};
 use fltk::{
 	browser::HoldBrowser,
+	dialog,
 	menu::Choice,
 	prelude::{BrowserExt, MenuExt},
+	text,
+};
+use serde::{Deserialize, Serialize};
+use serde_json::Result;
+
+use std::{
+	path,
+	sync::{
+		atomic::{AtomicBool, Ordering},
+		mpsc::Sender,
+		Arc,
+	},
 };
 
-use crate::enums::{Effects, Message};
-
-use super::{
-	color_tiles::{ColorTiles, ColorTilesState},
-	profile_manager::Profile,
-};
-
+#[derive(Serialize, Deserialize)]
+struct Profile {
+	pub color_tiles_state: ColorTilesState,
+	pub effect: Effects,
+	pub speed: i32,
+	pub brightness: i32,
+}
 pub struct App {
 	pub color_tiles: ColorTiles,
 	pub effect_browser: HoldBrowser,
@@ -24,59 +33,68 @@ pub struct App {
 	pub brightness_choice: Choice,
 	pub tx: Sender<Message>,
 	pub stop_signal: Arc<AtomicBool>,
+	pub buf: text::TextBuffer,
+	pub center: (i32, i32),
 }
 
 impl App {
-	pub fn set_effect(&mut self, effect: Effects) {
-		match effect {
-			Effects::Static => {
-				self.color_tiles.activate();
+	pub fn load_profile(&mut self) {
+		let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseFile);
+		dlg.set_option(dialog::FileDialogOptions::NoOptions);
+		dlg.set_filter("*.json");
+		dlg.show();
+		let filename = dlg.filename().to_string_lossy().to_string();
+		if !filename.is_empty() {
+			if path::Path::new(&filename).exists() {
+				self.buf.load_file(&filename).unwrap();
+			} else {
+				dialog::alert(self.center.0 - 200, self.center.1 - 100, "File does not exist!")
 			}
-			Effects::Breath => {
-				self.color_tiles.activate();
+
+			fn parse_profile(profile_text: String) -> Result<Profile> {
+				serde_json::from_str(&profile_text)
 			}
-			Effects::Smooth => {
-				self.color_tiles.deactivate();
+
+			match parse_profile(self.buf.text()) {
+				Ok(profile) => {
+					self.color_tiles.set_state(profile.color_tiles_state);
+					self.effect_browser.select(0);
+					self.speed_choice.set_value(i32::from(profile.speed));
+					self.brightness_choice.set_value(i32::from(profile.brightness));
+					self.stop_signal.store(true, Ordering::SeqCst);
+					self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
+				}
+				Err(_) => dialog::alert(
+					self.center.0 - 300,
+					self.center.1 - 100,
+					"There was an error loading the profile. Please make sure its a valid profile file.",
+				),
 			}
-			Effects::LeftWave => {
-				self.color_tiles.deactivate();
-			}
-			Effects::RightWave => {
-				self.color_tiles.deactivate();
-			}
-			Effects::Lightning => {
-				self.color_tiles.deactivate();
-			}
-			Effects::AmbientLight => {
-				self.color_tiles.deactivate();
-			}
-			Effects::SmoothLeftWave => {
-				self.color_tiles.deactivate();
-			}
-			Effects::SmoothRightWave => {
-				self.color_tiles.deactivate();
-			}
-			Effects::LeftSwipe => {
-				self.color_tiles.activate();
-			}
-			Effects::RightSwipe => {
-				self.color_tiles.activate();
-			}
-			Effects::Disco => {
-				self.color_tiles.deactivate();
-			}
+		} else {
+			//Do nothing
 		}
-
-		self.stop_signal.store(true, Ordering::SeqCst);
-		self.tx.send(Message::UpdateEffect { effect }).unwrap();
 	}
-	pub fn load_profile(&mut self, profile: Profile) {
-		self.color_tiles.set_state(profile.color_tiles_state);
-		self.effect_browser.select(0);
-		self.speed_choice.set_value(i32::from(profile.speed - 1));
-		self.brightness_choice.set_value(i32::from(profile.brightness - 1));
+	pub fn save_profile(&mut self) {
+		let profile = Profile {
+			color_tiles_state: ColorTilesState {
+				rgb_values: self.color_tiles.get_zone_values(),
+				buttons_toggle_state: self.color_tiles.get_button_state(),
+			},
+			effect: Effects::Static,
+			speed: self.speed_choice.value(),
+			brightness: self.brightness_choice.value(),
+		};
 
-		self.stop_signal.store(true, Ordering::SeqCst);
-		self.set_effect(profile.effect);
+		self.buf.set_text(&serde_json::to_string(&profile).unwrap().as_str());
+
+		let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseSaveFile);
+		dlg.set_option(dialog::FileDialogOptions::SaveAsConfirm);
+		dlg.show();
+		let filename = dlg.filename().to_string_lossy().to_string();
+		if !filename.is_empty() {
+			self.buf
+				.save_file(format!("{}{}", &filename, ".json"))
+				.unwrap_or_else(|_| dialog::alert(self.center.0 - 200, self.center.1 - 100, "Please specify a file name to use."));
+		}
 	}
 }

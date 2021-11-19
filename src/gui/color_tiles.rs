@@ -13,6 +13,7 @@ use fltk::{
 	input::IntInput,
 	prelude::*,
 };
+use serde::{Deserialize, Serialize};
 
 pub struct ColorInput;
 
@@ -219,6 +220,7 @@ pub struct ColorTiles {
 	pub zones: Zones,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct ColorTilesState {
 	pub rgb_values: [u8; 12],
 	pub buttons_toggle_state: [bool; 5],
@@ -408,5 +410,14 @@ impl ColorTiles {
 			};
 		}
 		values
+	}
+	pub fn get_button_state(&self) -> [bool; 5] {
+		[
+			self.master.toggle_button.is_toggled(),
+			self.zones.left.toggle_button.is_toggled(),
+			self.zones.center_left.toggle_button.is_toggled(),
+			self.zones.center_right.toggle_button.is_toggled(),
+			self.zones.right.toggle_button.is_toggled(),
+		]
 	}
 }

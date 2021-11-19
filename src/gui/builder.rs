@@ -5,19 +5,32 @@ use crate::gui::menu_bar;
 use crate::keyboard_manager;
 use fltk::enums::FrameType;
 use fltk::{app, enums::Font, group::Pack, prelude::*, window::Window};
+use fltk::{dialog, text};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
+use std::{panic, thread};
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 480;
 
+pub fn center() -> (i32, i32) {
+	((app::screen_size().0 / 2.0) as i32, (app::screen_size().1 / 2.0) as i32)
+}
+
 pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: &Arc<AtomicBool>) -> fltk::window::Window {
+	panic::set_hook(Box::new(|info| {
+		if let Some(s) = info.payload().downcast_ref::<&str>() {
+			dialog::message(center().0 - 200, center().1 - 100, s);
+		} else {
+			dialog::message(center().0 - 200, center().1 - 100, &info.to_string());
+		}
+	}));
+
 	//UI
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
-	menu_bar::AppMenuBar::new(&tx);
+	menu_bar::AppMenuBar::new(&tx, stop_signal.clone());
 	let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
 	let mut tiles = color_tiles::ColorTiles::new(&tx, stop_signal.clone());
 
@@ -54,7 +67,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	win.show();
 
 	// Theming
-	app::background(51, 51, 51);
+	app::background(200, 200, 200);
 	app::set_visible_focus(false);
 	app::set_font(Font::HelveticaBold);
 	app::set_frame_type(FrameType::FlatBox);
@@ -66,12 +79,15 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		brightness_choice: brightness_choice.clone(),
 		tx: tx.clone(),
 		stop_signal: stop_signal.clone(),
+		buf: text::TextBuffer::default(),
+		center: center(),
 	};
 
 	// Effect choice
 	effect_browser.set_callback({
 		let stop_signal = stop_signal.clone();
-
+		let tx = tx.clone();
+		let mut color_tiles = tiles.clone();
 		move |browser| {
 			stop_signal.store(true, Ordering::SeqCst);
 			match browser.value() {
@@ -79,40 +95,52 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 					browser.select(0);
 				}
 				1 => {
-					app.set_effect(Effects::Static);
+					color_tiles.activate();
+					tx.send(Message::UpdateEffect { effect: Effects::Static }).unwrap();
 				}
 				2 => {
-					app.set_effect(Effects::Breath);
+					color_tiles.activate();
+					tx.send(Message::UpdateEffect { effect: Effects::Breath }).unwrap();
 				}
 				3 => {
-					app.set_effect(Effects::Smooth);
+					color_tiles.deactivate();
+					tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
 				}
 				4 => {
-					app.set_effect(Effects::LeftWave);
+					color_tiles.deactivate();
+					tx.send(Message::UpdateEffect { effect: Effects::LeftWave }).unwrap();
 				}
 				5 => {
-					app.set_effect(Effects::RightWave);
+					color_tiles.deactivate();
+					tx.send(Message::UpdateEffect { effect: Effects::RightWave }).unwrap();
 				}
 				6 => {
-					app.set_effect(Effects::Lightning);
+					color_tiles.deactivate();
+					tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
 				}
 				7 => {
-					app.set_effect(Effects::AmbientLight);
+					color_tiles.deactivate();
+					tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
 				}
 				8 => {
-					app.set_effect(Effects::SmoothLeftWave);
+					color_tiles.deactivate();
+					tx.send(Message::UpdateEffect { effect: Effects::SmoothLeftWave }).unwrap();
 				}
 				9 => {
-					app.set_effect(Effects::SmoothRightWave);
+					color_tiles.deactivate();
+					tx.send(Message::UpdateEffect { effect: Effects::SmoothRightWave }).unwrap();
 				}
 				10 => {
-					app.set_effect(Effects::LeftSwipe);
+					color_tiles.activate();
+					tx.send(Message::UpdateEffect { effect: Effects::LeftSwipe }).unwrap();
 				}
 				11 => {
-					app.set_effect(Effects::RightSwipe);
+					color_tiles.activate();
+					tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
 				}
 				12 => {
-					app.set_effect(Effects::Disco);
+					color_tiles.deactivate();
+					tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
 				}
 				_ => {}
 			}
@@ -151,6 +179,12 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 					}
 					Message::Refresh => {
 						tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
+					}
+					Message::SaveProfile => {
+						app.save_profile();
+					}
+					Message::LoadProfile => {
+						app.load_profile();
 					}
 				}
 				app::awake();

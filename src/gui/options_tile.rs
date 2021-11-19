@@ -48,6 +48,7 @@ impl OptionsTile {
 
 		// Options tile
 		options_tile.set_frame(FrameType::FlatBox);
+		options_tile.set_color(Color::from_u32(Colors::DarkGray as u32));
 
 		speed_choice.set_callback({
 			let tx = tx.clone();
