@@ -113,11 +113,25 @@ fn main() {
 		manager.keyboard.set_brightness(brightness);
 
 		let matches = matches.subcommand_matches(input).unwrap();
-		let color_array: [u8; 12] = if let Ok(color_array) = parse_bytes_arg(matches.value_of("colors").unwrap_or_default()).unwrap_or_default().try_into() {
-			color_array
-		} else {
-			println!("Invalid input, please check you used the correct format for the colors");
-			process::exit(0);
+
+		let color_array: [u8; 12] = match effect {
+			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe => {
+				let color_array = match matches.value_of("colors") {
+					Some(value) => {
+						let color_array = parse_bytes_arg(value)
+							.expect("Invalid input, please check you used the correct format for the colors")
+							.try_into()
+							.expect("Invalid input, please check you used the correct format for the colors");
+						color_array
+					}
+					None => {
+						println!("This effect requires specifying the colors to use.");
+						process::exit(0);
+					}
+				};
+				color_array
+			}
+			_ => [0; 12],
 		};
 
 		manager.set_effect(effect, &color_array, speed);
