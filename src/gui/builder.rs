@@ -18,7 +18,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
 	menu_bar::AppMenuBar::new(&tx);
 	let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
-	let mut keyboard_color_tiles = color_tiles::KeyboardColorTiles::new(&tx, stop_signal.clone());
+	let mut keyboard_color_tiles = color_tiles::ColorTiles::new(&tx, stop_signal.clone());
 
 	color_picker_pack.add(&keyboard_color_tiles.zones.left.exterior_tile);
 	color_picker_pack.add(&keyboard_color_tiles.zones.center_left.exterior_tile);

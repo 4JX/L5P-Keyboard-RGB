@@ -116,7 +116,7 @@ impl ColorTile {
 }
 
 #[derive(Clone)]
-pub struct ZoneColorTiles {
+pub struct Zones {
 	pub left: ColorTile,
 	pub center_left: ColorTile,
 	pub center_right: ColorTile,
@@ -124,9 +124,9 @@ pub struct ZoneColorTiles {
 }
 
 #[allow(dead_code)]
-impl ZoneColorTiles {
+impl Zones {
 	pub fn create() -> Self {
-		ZoneColorTiles {
+		Zones {
 			left: ColorTile::create(false),
 			center_left: ColorTile::create(false),
 			center_right: ColorTile::create(false),
@@ -197,13 +197,13 @@ impl ZoneColorTiles {
 }
 
 #[derive(Clone)]
-pub struct KeyboardColorTiles {
+pub struct ColorTiles {
 	pub master: ColorTile,
-	pub zones: ZoneColorTiles,
+	pub zones: Zones,
 }
 
 #[allow(dead_code)]
-impl KeyboardColorTiles {
+impl ColorTiles {
 	pub fn new(tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> Self {
 		fn add_zone_tile_handle(color_tile: &mut color_tiles::ColorTile, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
 			fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
@@ -260,7 +260,7 @@ impl KeyboardColorTiles {
 
 		let mut color_tiles = Self {
 			master: (color_tiles::ColorTile::create(true)),
-			zones: color_tiles::ZoneColorTiles::create(),
+			zones: color_tiles::Zones::create(),
 		};
 
 		add_zone_tile_handle(&mut color_tiles.zones.left, tx, stop_signal.clone());
@@ -268,7 +268,7 @@ impl KeyboardColorTiles {
 		add_zone_tile_handle(&mut color_tiles.zones.center_right, tx, stop_signal.clone());
 		add_zone_tile_handle(&mut color_tiles.zones.right, tx, stop_signal.clone());
 
-		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, color_tiles: color_tiles::KeyboardColorTiles, stop_signal: Arc<AtomicBool>) {
+		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, color_tiles: color_tiles::ColorTiles, stop_signal: Arc<AtomicBool>) {
 			input.handle({
 				let mut keyboard_color_tiles = color_tiles;
 				move |input, event| match event {
