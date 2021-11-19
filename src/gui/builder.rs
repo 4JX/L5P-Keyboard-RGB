@@ -1,6 +1,8 @@
 use super::{effect_browser_tile, enums::BaseColor, keyboard_color_tiles, options_tile};
 use crate::enums::{Effects, Message};
+use crate::gui::menu_bar;
 use crate::keyboard_manager;
+use fltk::enums::FrameType;
 use fltk::{
 	app,
 	enums::{Event, Font},
@@ -16,12 +18,13 @@ use std::thread;
 use std::time::Duration;
 
 const WIDTH: i32 = 900;
-const HEIGHT: i32 = 450;
+const HEIGHT: i32 = 480;
 
 pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: &Arc<AtomicBool>) -> fltk::window::Window {
 	//UI
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
-	let mut color_picker_pack = Pack::new(0, 0, 540, 360, "");
+	menu_bar::AppMenuBar::new(&tx);
+	let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
 	let mut keyboard_color_tiles = create_keyboard_color_tiles(&tx, stop_signal.clone());
 
 	color_picker_pack.add(&keyboard_color_tiles.zones.left.exterior_tile);
@@ -45,10 +48,10 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		"RightSwipe",
 		"Disco",
 	];
-	let effect_browser_tile = effect_browser_tile::EffectBrowserTile::create(&effects_list);
+	let effect_browser_tile = effect_browser_tile::EffectBrowserTile::create(540, 30, &effects_list);
 	let mut effect_browser = effect_browser_tile.effect_browser;
 
-	let options_tile = options_tile::OptionsTile::create();
+	let options_tile = options_tile::OptionsTile::create(540, 390);
 	let mut speed_choice = options_tile.speed_choice;
 	let mut brightness_choice = options_tile.brightness_choice;
 
@@ -60,6 +63,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	app::background(51, 51, 51);
 	app::set_visible_focus(false);
 	app::set_font(Font::HelveticaBold);
+	app::set_frame_type(FrameType::FlatBox);
 
 	//Begin app logic
 	//Speed

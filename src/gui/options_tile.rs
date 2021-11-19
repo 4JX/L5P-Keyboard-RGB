@@ -14,13 +14,13 @@ impl OptionsChoice {
 		choice.add_choice(choices);
 
 		//Themeing
-		choice.set_frame(FrameType::FlatBox);
+		choice.set_frame(FrameType::BorderBox);
 		choice.set_color(Color::from_u32(Colors::DarkGray as u32));
 		choice.set_label_color(Color::from_u32(Colors::White as u32));
 		choice.set_selection_color(Color::White);
 		choice.set_text_color(Color::from_u32(Colors::White as u32));
 		choice.set_text_size(20);
-		choice.set_label_size(20);
+		choice.set_label_size(18);
 		choice.set_value(0);
 		choice
 	}
@@ -31,11 +31,11 @@ pub struct OptionsTile {
 }
 
 impl OptionsTile {
-	pub fn create() -> Self {
-		let mut options_tile = Tile::new(540, 360, 360, 90, "");
-		let speed_choice = OptionsChoice::create(540 + 100, 385, 40, 40, "Speed:", "1|2|3|4");
+	pub fn create(x: i32, y: i32) -> Self {
+		let mut options_tile = Tile::new(x, y, 360, 90, "");
+		let speed_choice = OptionsChoice::create(x + 100, y + 25, 45, 40, "Speed: ", "1|2|3|4");
 
-		let brightness_choice = OptionsChoice::create(540 + 100 + 190, 385, 40, 40, "Brightness:", "1|2");
+		let brightness_choice = OptionsChoice::create(x + 100 + 190, y + 25, 45, 40, "Brightness: ", "1|2");
 		options_tile.end();
 
 		// Options tile
