@@ -55,18 +55,35 @@ pub struct ColorTile {
 	pub blue_input: IntInput,
 }
 
+pub struct ColorTileState {
+	rgb_values: [u8; 3],
+	button_toggle_state: bool,
+}
+
 impl ColorTile {
 	pub fn activate(&mut self) {
 		self.toggle_button.activate();
-		self.red_input.activate();
-		self.green_input.activate();
-		self.blue_input.activate();
+		if !self.toggle_button.is_toggled() {
+			self.red_input.activate();
+			self.green_input.activate();
+			self.blue_input.activate();
+		}
 	}
 	pub fn deactivate(&mut self) {
 		self.toggle_button.deactivate();
 		self.red_input.deactivate();
 		self.green_input.deactivate();
 		self.blue_input.deactivate();
+	}
+	pub fn set_state(&mut self, state: ColorTileState) {
+		self.red_input.set_value(state.rgb_values[0].to_string().as_str());
+		self.green_input.set_value(state.rgb_values[1].to_string().as_str());
+		self.blue_input.set_value(state.rgb_values[2].to_string().as_str());
+
+		self.toggle_button.toggle(state.button_toggle_state);
+		if state.button_toggle_state {
+			self.deactivate();
+		}
 	}
 }
 
@@ -200,6 +217,11 @@ impl Zones {
 pub struct ColorTiles {
 	pub master: ColorTile,
 	pub zones: Zones,
+}
+
+pub struct ColorTilesState {
+	pub rgb_values: [u8; 12],
+	pub buttons_toggle_state: [bool; 5],
 }
 
 #[allow(dead_code)]
@@ -338,6 +360,29 @@ impl ColorTiles {
 		self.master.activate();
 		self.master.toggle_button.deactivate();
 	}
+	pub fn set_state(&mut self, state: ColorTilesState) {
+		self.master.set_state(ColorTileState {
+			rgb_values: [0; 3],
+			button_toggle_state: state.buttons_toggle_state[0],
+		});
+		self.zones.left.set_state(ColorTileState {
+			rgb_values: [state.rgb_values[0], state.rgb_values[1], state.rgb_values[2]],
+			button_toggle_state: state.buttons_toggle_state[1],
+		});
+		self.zones.center_left.set_state(ColorTileState {
+			rgb_values: [state.rgb_values[3], state.rgb_values[4], state.rgb_values[5]],
+			button_toggle_state: state.buttons_toggle_state[2],
+		});
+		self.zones.center_right.set_state(ColorTileState {
+			rgb_values: [state.rgb_values[6], state.rgb_values[7], state.rgb_values[8]],
+			button_toggle_state: state.buttons_toggle_state[3],
+		});
+		self.zones.right.set_state(ColorTileState {
+			rgb_values: [state.rgb_values[9], state.rgb_values[10], state.rgb_values[11]],
+			button_toggle_state: state.buttons_toggle_state[4],
+		});
+	}
+
 	pub fn get_zone_values(&mut self) -> [u8; 12] {
 		let mut values = [0; 12];
 		if !self.master.toggle_button.is_toggled() {

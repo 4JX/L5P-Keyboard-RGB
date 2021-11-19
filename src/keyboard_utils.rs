@@ -31,14 +31,14 @@ pub enum BaseEffects {
 
 pub struct LightingState {
 	effect_type: BaseEffects,
-	speed: u8,
-	brightness: u8,
+	pub speed: u8,
+	pub brightness: u8,
 	rgb_values: [u8; 12],
 }
 
 pub struct Keyboard {
 	keyboard_hid: HidDevice,
-	current_state: LightingState,
+	pub current_state: LightingState,
 	pub stop_signal: Arc<AtomicBool>,
 }
 

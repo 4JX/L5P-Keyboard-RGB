@@ -4,11 +4,18 @@ use std::sync::{
 	Arc,
 };
 
-use fltk::{browser::HoldBrowser, menu::Choice};
+use fltk::{
+	browser::HoldBrowser,
+	menu::Choice,
+	prelude::{BrowserExt, MenuExt},
+};
 
 use crate::enums::{Effects, Message};
 
-use super::color_tiles::ColorTiles;
+use super::{
+	color_tiles::{ColorTiles, ColorTilesState},
+	profile_manager::Profile,
+};
 
 pub struct App {
 	pub color_tiles: ColorTiles,
@@ -62,5 +69,14 @@ impl App {
 
 		self.stop_signal.store(true, Ordering::SeqCst);
 		self.tx.send(Message::UpdateEffect { effect }).unwrap();
+	}
+	pub fn load_profile(&mut self, profile: Profile) {
+		self.color_tiles.set_state(profile.color_tiles_state);
+		self.effect_browser.select(0);
+		self.speed_choice.set_value(i32::from(profile.speed - 1));
+		self.brightness_choice.set_value(i32::from(profile.brightness - 1));
+
+		self.stop_signal.store(true, Ordering::SeqCst);
+		self.set_effect(profile.effect);
 	}
 }

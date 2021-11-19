@@ -63,7 +63,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		color_tiles: tiles.clone(),
 		effect_browser: effect_browser.clone(),
 		speed_choice: speed_choice.clone(),
-		brightness_choice,
+		brightness_choice: brightness_choice.clone(),
 		tx: tx.clone(),
 		stop_signal: stop_signal.clone(),
 	};
@@ -126,7 +126,8 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 					Message::UpdateEffect { effect } => {
 						let color_array = tiles.get_zone_values();
 						let speed = speed_choice.choice().unwrap().parse::<u8>().unwrap();
-						manager.set_effect(effect, &color_array, speed);
+						let brightness = brightness_choice.choice().unwrap().parse::<u8>().unwrap();
+						manager.set_effect(effect, &color_array, speed, brightness);
 					}
 					Message::UpdateAllValues { value } => {
 						manager.keyboard.set_colors_to(&value);

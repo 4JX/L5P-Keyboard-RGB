@@ -111,8 +111,6 @@ fn main() {
 		let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
 		let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
 
-		manager.keyboard.set_brightness(brightness);
-
 		let matches = matches.subcommand_matches(input).unwrap();
 
 		let color_array: [u8; 12] = match effect {
@@ -135,7 +133,7 @@ fn main() {
 			_ => [0; 12],
 		};
 
-		manager.set_effect(effect, &color_array, speed);
+		manager.set_effect(effect, &color_array, speed, brightness);
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
