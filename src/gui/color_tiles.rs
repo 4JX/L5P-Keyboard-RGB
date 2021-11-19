@@ -56,6 +56,7 @@ pub struct ColorTile {
 	pub blue_input: IntInput,
 }
 
+#[derive(Copy, Clone)]
 pub struct ColorTileState {
 	rgb_values: [u8; 3],
 	button_toggle_state: bool,
@@ -362,7 +363,7 @@ impl ColorTiles {
 		self.master.activate();
 		self.master.toggle_button.deactivate();
 	}
-	pub fn set_state(&mut self, state: ColorTilesState) {
+	pub fn set_state(&mut self, state: &ColorTilesState) {
 		self.master.set_state(ColorTileState {
 			rgb_values: [0; 3],
 			button_toggle_state: state.buttons_toggle_state[0],

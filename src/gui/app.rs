@@ -45,22 +45,22 @@ impl App {
 		dlg.show();
 		let filename = dlg.filename().to_string_lossy().to_string();
 		if !filename.is_empty() {
+			fn parse_profile(profile_text: &str) -> Result<Profile> {
+				serde_json::from_str(profile_text)
+			}
+
 			if path::Path::new(&filename).exists() {
 				self.buf.load_file(&filename).unwrap();
 			} else {
-				dialog::alert(self.center.0 - 200, self.center.1 - 100, "File does not exist!")
+				dialog::alert(self.center.0 - 200, self.center.1 - 100, "File does not exist!");
 			}
 
-			fn parse_profile(profile_text: String) -> Result<Profile> {
-				serde_json::from_str(&profile_text)
-			}
-
-			match parse_profile(self.buf.text()) {
+			match parse_profile(&self.buf.text()) {
 				Ok(profile) => {
-					self.color_tiles.set_state(profile.color_tiles_state);
+					self.color_tiles.set_state(&profile.color_tiles_state);
 					self.effect_browser.select(0);
-					self.speed_choice.set_value(i32::from(profile.speed));
-					self.brightness_choice.set_value(i32::from(profile.brightness));
+					self.speed_choice.set_value(profile.speed);
+					self.brightness_choice.set_value(profile.brightness);
 					self.stop_signal.store(true, Ordering::SeqCst);
 					self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
 				}
@@ -70,8 +70,6 @@ impl App {
 					"There was an error loading the profile. Please make sure its a valid profile file.",
 				),
 			}
-		} else {
-			//Do nothing
 		}
 	}
 	pub fn save_profile(&mut self) {
@@ -85,7 +83,7 @@ impl App {
 			brightness: self.brightness_choice.value(),
 		};
 
-		self.buf.set_text(&serde_json::to_string(&profile).unwrap().as_str());
+		self.buf.set_text(serde_json::to_string(&profile).unwrap().as_str());
 
 		let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseSaveFile);
 		dlg.set_option(dialog::FileDialogOptions::SaveAsConfirm);

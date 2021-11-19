@@ -115,18 +115,15 @@ fn main() {
 
 		let color_array: [u8; 12] = match effect {
 			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe => {
-				let color_array = match matches.value_of("colors") {
-					Some(value) => {
-						let color_array = parse_bytes_arg(value)
-							.expect("Invalid input, please check you used the correct format for the colors")
-							.try_into()
-							.expect("Invalid input, please check you used the correct format for the colors");
-						color_array
-					}
-					None => {
-						println!("This effect requires specifying the colors to use.");
-						process::exit(0);
-					}
+				let color_array = if let Some(value) = matches.value_of("colors") {
+					let color_array = parse_bytes_arg(value)
+						.expect("Invalid input, please check you used the correct format for the colors")
+						.try_into()
+						.expect("Invalid input, please check you used the correct format for the colors");
+					color_array
+				} else {
+					println!("This effect requires specifying the colors to use.");
+					process::exit(0);
 				};
 				color_array
 			}
