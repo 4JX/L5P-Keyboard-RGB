@@ -1,7 +1,14 @@
+use std::sync::{
+	atomic::{AtomicBool, Ordering},
+	mpsc, Arc,
+};
+
+use crate::{enums::Message, gui::color_tiles};
+
 use super::enums::{BaseColor, Colors};
 use fltk::{
 	button::ToggleButton,
-	enums::{Color, FrameType},
+	enums::{Color, Event, FrameType},
 	group::Tile,
 	input::IntInput,
 	prelude::*,
@@ -63,6 +70,7 @@ impl ColorTile {
 	}
 }
 
+#[allow(dead_code)]
 impl ColorTile {
 	pub fn create(master_tile: bool) -> Self {
 		let center_x = 540 / 2;
@@ -115,6 +123,7 @@ pub struct ZoneColorTiles {
 	pub right: ColorTile,
 }
 
+#[allow(dead_code)]
 impl ZoneColorTiles {
 	pub fn create() -> Self {
 		ZoneColorTiles {
@@ -195,6 +204,127 @@ pub struct KeyboardColorTiles {
 
 #[allow(dead_code)]
 impl KeyboardColorTiles {
+	pub fn new(tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> Self {
+		fn add_zone_tile_handle(color_tile: &mut color_tiles::ColorTile, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
+			fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
+				input.handle({
+					move |input, event| match event {
+						Event::KeyUp => {
+							match input.value().parse::<f32>() {
+								Ok(value) => {
+									input.set_value(&value.to_string());
+									if value > 255.0 {
+										input.set_value("255");
+									}
+									stop_signal.store(true, Ordering::SeqCst);
+									tx.send(Message::Refresh).unwrap();
+								}
+								Err(_) => {
+									input.set_value("0");
+								}
+							}
+							true
+						}
+						_ => false,
+					}
+				});
+			}
+
+			color_tile.toggle_button.handle({
+				let mut color_tile = color_tile.clone();
+				let tx = tx.clone();
+				let stop_signal = stop_signal.clone();
+				move |button, event| match event {
+					Event::Released => {
+						if button.is_toggled() {
+							color_tile.red_input.deactivate();
+							color_tile.green_input.deactivate();
+							color_tile.blue_input.deactivate();
+						} else {
+							color_tile.red_input.activate();
+							color_tile.green_input.activate();
+							color_tile.blue_input.activate();
+						}
+						stop_signal.store(true, Ordering::SeqCst);
+						tx.send(Message::Refresh).unwrap();
+						true
+					}
+					_ => false,
+				}
+			});
+
+			add_input_handle(&mut color_tile.red_input, tx.clone(), stop_signal.clone());
+			add_input_handle(&mut color_tile.green_input, tx.clone(), stop_signal.clone());
+			add_input_handle(&mut color_tile.blue_input, tx.clone(), stop_signal);
+		}
+
+		let mut color_tiles = Self {
+			master: (color_tiles::ColorTile::create(true)),
+			zones: color_tiles::ZoneColorTiles::create(),
+		};
+
+		add_zone_tile_handle(&mut color_tiles.zones.left, tx, stop_signal.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.center_left, tx, stop_signal.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.center_right, tx, stop_signal.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.right, tx, stop_signal.clone());
+
+		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, color_tiles: color_tiles::KeyboardColorTiles, stop_signal: Arc<AtomicBool>) {
+			input.handle({
+				let mut keyboard_color_tiles = color_tiles;
+				move |input, event| match event {
+					Event::KeyUp => {
+						if let Ok(value) = input.value().parse::<f32>() {
+							input.set_value(&value.to_string());
+							if value > 255.0 {
+								input.set_value("255");
+							}
+							keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
+							stop_signal.store(true, Ordering::SeqCst);
+							tx.send(Message::Refresh).unwrap();
+						} else {
+							input.set_value("0");
+							keyboard_color_tiles.zones.change_color_value(color, 0.0);
+						}
+						true
+					}
+					_ => false,
+				}
+			});
+		}
+		let mut master_tile = color_tiles.master.clone();
+
+		master_tile.toggle_button.handle({
+			let mut keyboard_color_tiles = color_tiles.clone();
+			let mut master_tile = master_tile.clone();
+			let tx = tx.clone();
+			let stop_signal = stop_signal.clone();
+			move |button, event| match event {
+				Event::Released => {
+					if button.is_toggled() {
+						master_tile.red_input.deactivate();
+						master_tile.green_input.deactivate();
+						master_tile.blue_input.deactivate();
+						keyboard_color_tiles.zones.deactivate();
+					} else {
+						master_tile.red_input.activate();
+						master_tile.green_input.activate();
+						master_tile.blue_input.activate();
+						keyboard_color_tiles.zones.activate();
+					}
+					stop_signal.store(true, Ordering::SeqCst);
+					tx.send(Message::Refresh).unwrap();
+					true
+				}
+				_ => false,
+			}
+		});
+
+		add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, tx.clone(), color_tiles.clone(), stop_signal.clone());
+		add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, tx.clone(), color_tiles.clone(), stop_signal.clone());
+		add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, tx.clone(), color_tiles.clone(), stop_signal);
+
+		color_tiles
+	}
 	pub fn activate(&mut self) {
 		self.master.activate();
 		self.zones.activate();
@@ -207,5 +337,31 @@ impl KeyboardColorTiles {
 		self.deactivate();
 		self.master.activate();
 		self.master.toggle_button.deactivate();
+	}
+	pub fn get_zone_values(&mut self) -> [u8; 12] {
+		let mut values = [0; 12];
+		if !self.master.toggle_button.is_toggled() {
+			if !self.zones.left.toggle_button.is_toggled() {
+				values[0] = self.zones.left.red_input.value().parse::<u8>().unwrap_or(255);
+				values[1] = self.zones.left.green_input.value().parse::<u8>().unwrap_or(255);
+				values[2] = self.zones.left.blue_input.value().parse::<u8>().unwrap_or(255);
+			};
+			if !self.zones.center_left.toggle_button.is_toggled() {
+				values[3] = self.zones.center_left.red_input.value().parse::<u8>().unwrap_or(255);
+				values[4] = self.zones.center_left.green_input.value().parse::<u8>().unwrap_or(255);
+				values[5] = self.zones.center_left.blue_input.value().parse::<u8>().unwrap_or(255);
+			};
+			if !self.zones.center_right.toggle_button.is_toggled() {
+				values[6] = self.zones.center_right.red_input.value().parse::<u8>().unwrap_or(255);
+				values[7] = self.zones.center_right.green_input.value().parse::<u8>().unwrap_or(255);
+				values[8] = self.zones.center_right.blue_input.value().parse::<u8>().unwrap_or(255);
+			};
+			if !self.zones.right.toggle_button.is_toggled() {
+				values[9] = self.zones.right.red_input.value().parse::<u8>().unwrap_or(255);
+				values[10] = self.zones.right.green_input.value().parse::<u8>().unwrap_or(255);
+				values[11] = self.zones.right.blue_input.value().parse::<u8>().unwrap_or(255);
+			};
+		}
+		values
 	}
 }

@@ -1,16 +1,9 @@
-use super::{effect_browser_tile, enums::BaseColor, keyboard_color_tiles, options_tile};
+use super::{color_tiles, effect_browser_tile, options_tile};
 use crate::enums::{Effects, Message};
 use crate::gui::menu_bar;
 use crate::keyboard_manager;
 use fltk::enums::FrameType;
-use fltk::{
-	app,
-	enums::{Event, Font},
-	group::Pack,
-	input::IntInput,
-	prelude::*,
-	window::Window,
-};
+use fltk::{app, enums::Font, group::Pack, prelude::*, window::Window};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -25,7 +18,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
 	menu_bar::AppMenuBar::new(&tx);
 	let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
-	let mut keyboard_color_tiles = create_keyboard_color_tiles(&tx, stop_signal.clone());
+	let mut keyboard_color_tiles = color_tiles::KeyboardColorTiles::new(&tx, stop_signal.clone());
 
 	color_picker_pack.add(&keyboard_color_tiles.zones.left.exterior_tile);
 	color_picker_pack.add(&keyboard_color_tiles.zones.center_left.exterior_tile);
@@ -165,7 +158,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 			Some(message) => {
 				match message {
 					Message::UpdateEffect { effect } => {
-						let color_array = keyboard_color_tiles.zones.get_values();
+						let color_array = keyboard_color_tiles.get_zone_values();
 						let speed = speed_choice.choice().unwrap().parse::<u8>().unwrap();
 						manager.set_effect(effect, &color_array, speed);
 					}
@@ -201,144 +194,4 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		}
 	});
 	win
-}
-
-fn create_keyboard_color_tiles(tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> keyboard_color_tiles::KeyboardColorTiles {
-	fn add_zone_tile_handle(color_tile: &mut keyboard_color_tiles::ColorTile, tx: &mpsc::Sender<Message>, zone_index: u8, stop_signal: Arc<AtomicBool>) {
-		fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
-			input.handle({
-				move |input, event| match event {
-					Event::KeyUp => {
-						match input.value().parse::<f32>() {
-							Ok(value) => {
-								input.set_value(&value.to_string());
-								if value > 255.0 {
-									input.set_value("255");
-								}
-								stop_signal.store(true, Ordering::SeqCst);
-								tx.send(Message::Refresh).unwrap();
-							}
-							Err(_) => {
-								input.set_value("0");
-							}
-						}
-						true
-					}
-					_ => false,
-				}
-			});
-		}
-		//Button
-		color_tile.toggle_button.handle({
-			let mut color_tile = color_tile.clone();
-			let tx = tx.clone();
-			let stop_signal = stop_signal.clone();
-			move |button, event| match event {
-				Event::Released => {
-					if button.is_toggled() {
-						tx.send(Message::UpdateZone { zone_index, value: [0; 3] }).unwrap();
-						color_tile.red_input.deactivate();
-						color_tile.green_input.deactivate();
-						color_tile.blue_input.deactivate();
-					} else {
-						tx.send(Message::UpdateZone {
-							zone_index,
-							value: color_tile.get_values(),
-						})
-						.unwrap();
-						color_tile.red_input.activate();
-						color_tile.green_input.activate();
-						color_tile.blue_input.activate();
-					}
-					stop_signal.store(true, Ordering::SeqCst);
-					tx.send(Message::Refresh).unwrap();
-					true
-				}
-				_ => false,
-			}
-		});
-		//Red
-		add_input_handle(&mut color_tile.red_input, tx.clone(), stop_signal.clone());
-		//Green
-		add_input_handle(&mut color_tile.green_input, tx.clone(), stop_signal.clone());
-		//Blue
-		add_input_handle(&mut color_tile.blue_input, tx.clone(), stop_signal);
-	}
-
-	fn add_master_tile_handle(keyboard_color_tiles: &mut keyboard_color_tiles::KeyboardColorTiles, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
-		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, keyboard_color_tiles: keyboard_color_tiles::KeyboardColorTiles, stop_signal: Arc<AtomicBool>) {
-			input.handle({
-				let mut keyboard_color_tiles = keyboard_color_tiles;
-				move |input, event| match event {
-					Event::KeyUp => {
-						if let Ok(value) = input.value().parse::<f32>() {
-							input.set_value(&value.to_string());
-							if value > 255.0 {
-								input.set_value("255");
-							}
-							keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
-							stop_signal.store(true, Ordering::SeqCst);
-							tx.send(Message::Refresh).unwrap();
-						} else {
-							input.set_value("0");
-							keyboard_color_tiles.zones.change_color_value(color, 0.0);
-						}
-						true
-					}
-					_ => false,
-				}
-			});
-		}
-		let mut master_tile = keyboard_color_tiles.master.clone();
-		//Button
-		master_tile.toggle_button.handle({
-			let mut keyboard_color_tiles = keyboard_color_tiles.clone();
-			let mut master_tile = master_tile.clone();
-			let tx = tx.clone();
-			let stop_signal = stop_signal.clone();
-			move |button, event| match event {
-				Event::Released => {
-					if button.is_toggled() {
-						tx.send(Message::UpdateAllValues { value: [255; 12] }).unwrap();
-						master_tile.red_input.deactivate();
-						master_tile.green_input.deactivate();
-						master_tile.blue_input.deactivate();
-						keyboard_color_tiles.zones.deactivate();
-					} else {
-						tx.send(Message::UpdateAllValues {
-							value: keyboard_color_tiles.zones.get_values(),
-						})
-						.unwrap();
-						master_tile.red_input.activate();
-						master_tile.green_input.activate();
-						master_tile.blue_input.activate();
-						keyboard_color_tiles.zones.activate();
-					}
-					stop_signal.store(true, Ordering::SeqCst);
-					tx.send(Message::Refresh).unwrap();
-					true
-				}
-				_ => false,
-			}
-		});
-		//Red
-		add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, tx.clone(), keyboard_color_tiles.clone(), stop_signal.clone());
-		//Green
-		add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, tx.clone(), keyboard_color_tiles.clone(), stop_signal.clone());
-		//Blue
-		add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, tx.clone(), keyboard_color_tiles.clone(), stop_signal);
-	}
-
-	let mut keyboard_color_tiles = keyboard_color_tiles::KeyboardColorTiles {
-		master: (keyboard_color_tiles::ColorTile::create(true)),
-		zones: keyboard_color_tiles::ZoneColorTiles::create(),
-	};
-
-	add_zone_tile_handle(&mut keyboard_color_tiles.zones.left, tx, 0, stop_signal.clone());
-	add_zone_tile_handle(&mut keyboard_color_tiles.zones.center_left, tx, 1, stop_signal.clone());
-	add_zone_tile_handle(&mut keyboard_color_tiles.zones.center_right, tx, 2, stop_signal.clone());
-	add_zone_tile_handle(&mut keyboard_color_tiles.zones.right, tx, 3, stop_signal.clone());
-	add_master_tile_handle(&mut keyboard_color_tiles.clone(), tx, stop_signal);
-
-	keyboard_color_tiles
 }
