@@ -1,11 +1,11 @@
 use super::{color_tiles, effect_browser_tile, options_tile};
 use crate::enums::{Effects, Message};
 use crate::gui::app::App;
-use crate::gui::menu_bar;
+use crate::gui::{dialog, menu_bar};
 use crate::keyboard_manager;
 use fltk::enums::FrameType;
+use fltk::text;
 use fltk::{app, enums::Font, group::Pack, prelude::*, window::Window};
-use fltk::{dialog, text};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -22,14 +22,14 @@ pub fn center() -> (i32, i32) {
 pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: &Arc<AtomicBool>) -> fltk::window::Window {
 	panic::set_hook(Box::new(|info| {
 		if let Some(s) = info.payload().downcast_ref::<&str>() {
-			dialog::message(center().0 - 200, center().1 - 100, s);
+			dialog::message(800, 400, s);
 		} else {
-			dialog::message(center().0 - 200, center().1 - 100, &info.to_string());
+			dialog::message(800, 400, &info.to_string());
 		}
 	}));
 
 	//UI
-	let mut win = Window::default().with_size(WIDTH, HEIGHT).with_label("Legion Keyboard RGB Control");
+	let mut win = Window::new(center().0 - WIDTH / 2, center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
 	menu_bar::AppMenuBar::new(&tx, stop_signal.clone());
 	let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
 	let mut tiles = color_tiles::ColorTiles::new(&tx, stop_signal.clone());
@@ -67,7 +67,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	win.show();
 
 	// Theming
-	app::background(200, 200, 200);
+	app::background(51, 51, 51);
 	app::set_visible_focus(false);
 	app::set_font(Font::HelveticaBold);
 	app::set_frame_type(FrameType::FlatBox);

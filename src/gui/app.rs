@@ -1,5 +1,8 @@
 use super::color_tiles::{ColorTiles, ColorTilesState};
-use crate::enums::{Effects, Message};
+use crate::{
+	enums::{Effects, Message},
+	gui::dialog::alert,
+};
 use fltk::{
 	browser::HoldBrowser,
 	dialog,
@@ -52,7 +55,7 @@ impl App {
 			if path::Path::new(&filename).exists() {
 				self.buf.load_file(&filename).unwrap();
 			} else {
-				dialog::alert(self.center.0 - 200, self.center.1 - 100, "File does not exist!");
+				alert(800, 200, "File does not exist!");
 			}
 
 			match parse_profile(&self.buf.text()) {
@@ -64,11 +67,7 @@ impl App {
 					self.stop_signal.store(true, Ordering::SeqCst);
 					self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
 				}
-				Err(_) => dialog::alert(
-					self.center.0 - 300,
-					self.center.1 - 100,
-					"There was an error loading the profile. Please make sure its a valid profile file.",
-				),
+				Err(_) => alert(800, 200, "There was an error loading the profile. Please make sure its a valid profile file."),
 			}
 		}
 	}
@@ -92,7 +91,7 @@ impl App {
 		if !filename.is_empty() {
 			self.buf
 				.save_file(format!("{}{}", &filename, ".json"))
-				.unwrap_or_else(|_| dialog::alert(self.center.0 - 200, self.center.1 - 100, "Please specify a file name to use."));
+				.unwrap_or_else(|_| alert(800, 200, "Please specify a file name to use."));
 		}
 	}
 }

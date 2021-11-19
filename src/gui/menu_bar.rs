@@ -4,7 +4,6 @@ use std::sync::{
 };
 
 use fltk::{
-	dialog,
 	enums::{Color, Font, FrameType, Shortcut},
 	menu,
 	prelude::*,
@@ -12,7 +11,7 @@ use fltk::{
 
 use crate::enums::Message;
 
-use super::{builder::center, enums::Colors};
+use super::{dialog, enums::Colors};
 
 pub struct AppMenuBar {
 	_menu: menu::SysMenuBar,
@@ -43,11 +42,11 @@ impl AppMenuBar {
 			}
 		});
 
-		menu.add("&About\t", Shortcut::None, menu::MenuFlag::Normal, {
+		menu.add("&About", Shortcut::None, menu::MenuFlag::Normal, {
 			move |_some| {
 				dialog::message(
-					center().0 - 100,
-					center().1 - 100,
+					800,
+					200,
 					"A program made by 4JX.\n\nFor updates, issues and feature requests, head over to:\nhttps://github.com/4JX/L5P-Keyboard-RGB/",
 				);
 			}

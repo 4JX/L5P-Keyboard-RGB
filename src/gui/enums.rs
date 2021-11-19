@@ -14,5 +14,5 @@ pub enum Colors {
 	Gray = 0x444444,
 	LightGray = 0x777777,
 	LighterGray = 0xcccccc,
-	White = 0xffffff,
+	White = 0xeeeeee,
 }
