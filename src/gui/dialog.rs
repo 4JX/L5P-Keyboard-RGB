@@ -14,7 +14,7 @@ pub fn message(width: i32, height: i32, message: &str) {
 	let mut window = Window::new(x, y, width, height, "Message");
 	window.set_color(Color::from_u32(Colors::DarkGray as u32));
 
-	let _frame = frame::Frame::new(0, 0, width, height - 30 - 45, "")
+	frame::Frame::new(0, 0, width, height - 30 - 45, "")
 		.with_label(message)
 		.set_label_color(Color::from_u32(Colors::White as u32));
 
@@ -29,7 +29,7 @@ pub fn message(width: i32, height: i32, message: &str) {
 		move |_but| {
 			window.hide();
 		}
-	})
+	});
 }
 
 pub fn alert(width: i32, height: i32, message: &str) {
@@ -38,7 +38,7 @@ pub fn alert(width: i32, height: i32, message: &str) {
 	let mut window = Window::new(x, y, width, height, "Message");
 	window.set_color(Color::from_u32(Colors::DarkGray as u32));
 
-	let _frame = frame::Frame::new(0, 0, width, height - 30 - 45, "")
+	frame::Frame::new(0, 0, width, height - 30 - 45, "")
 		.with_label(message)
 		.set_label_color(Color::from_u32(Colors::White as u32));
 
@@ -53,5 +53,5 @@ pub fn alert(width: i32, height: i32, message: &str) {
 		move |_but| {
 			window.hide();
 		}
-	})
+	});
 }
