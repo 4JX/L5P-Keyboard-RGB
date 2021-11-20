@@ -152,7 +152,14 @@ pub fn about(width: i32, height: i32) {
 	let mut buffer = fltk::text::TextBuffer::default();
 	buffer.set_text(message);
 
-	let mut display = fltk::text::TextDisplay::new(margin + display_height, margin, display_width - display_height, display_height, "");
+	let display_shrink = 12;
+	let mut display = fltk::text::TextDisplay::new(
+		margin + display_height + display_shrink,
+		margin + display_shrink,
+		display_width - display_height - display_shrink * 2,
+		display_height - display_shrink * 2,
+		"",
+	);
 	display.set_buffer(buffer);
 	display.set_color(Color::from_u32(Colors::DarkGray as u32));
 	display.set_frame(FrameType::FlatBox);
@@ -168,11 +175,12 @@ pub fn about(width: i32, height: i32) {
 	icon_svg.scale(100, 100, true, false);
 
 	let image_shrink = 10;
+	let image_offset_correction = 8;
 	let mut image_frame = fltk::frame::Frame::new(
 		margin + image_shrink,
-		margin + image_shrink,
-		display_height - margin + image_shrink,
-		display_height - margin + image_shrink,
+		margin + image_shrink + image_offset_correction,
+		display_height - image_shrink * 2,
+		display_height - image_shrink * 2,
 		"",
 	);
 	image_frame.set_image_scaled(Some(icon_svg));
