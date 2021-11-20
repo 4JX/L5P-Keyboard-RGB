@@ -145,7 +145,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 					tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
 				}
 				13 => {
-					color_tiles.activate();
+					color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::Christmas }).unwrap();
 				}
 				_ => {}
