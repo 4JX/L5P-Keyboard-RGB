@@ -189,6 +189,97 @@ impl KeyboardManager {
 					thread::sleep(Duration::from_millis(2000 / (u64::from(self.keyboard.current_state.speed) * 4)));
 				}
 			}
+			Effects::Christmas => {
+				let color_array = [255, 10, 10, 255, 255, 20, 30, 255, 30, 70, 70, 255];
+				let subeffect_count = 4;
+				let mut last_subeffect = -1;
+				while !self.stop_signal.load(Ordering::SeqCst) {
+					let mut subeffect = thread_rng.gen_range(0..subeffect_count);
+					while last_subeffect == subeffect {
+						subeffect = thread_rng.gen_range(0..subeffect_count);
+					}
+					last_subeffect = subeffect;
+
+					match subeffect {
+						0 => {
+							for _i in 0..3 {
+								for j in 0..4 {
+									let array_index = j * 3;
+									let used_colors: [u8; 3] = color_array[array_index..array_index + 3].try_into().unwrap();
+									self.keyboard.solid_set_colors_to(&used_colors);
+									thread::sleep(Duration::from_millis(500));
+								}
+							}
+						}
+						1 => {
+							let cut_start_1 = (thread_rng.gen_range(0..4)) * 3;
+							let used_colors_1: [u8; 3] = color_array[cut_start_1..cut_start_1 + 3].try_into().unwrap();
+
+							let mut cut_start_2 = (thread_rng.gen_range(0..4)) * 3;
+							while cut_start_1 == cut_start_2 {
+								cut_start_2 = (thread_rng.gen_range(0..4)) * 3;
+							}
+							let used_colors_2: [u8; 3] = color_array[cut_start_2..cut_start_2 + 3].try_into().unwrap();
+
+							for _i in 0..4 {
+								self.keyboard.solid_set_colors_to(&used_colors_1);
+								thread::sleep(Duration::from_millis(400));
+								self.keyboard.solid_set_colors_to(&used_colors_2);
+								thread::sleep(Duration::from_millis(400));
+							}
+						}
+						2 => {
+							let steps = 100;
+							self.keyboard.transition_colors_to(&[0.0; 12], steps, 1);
+							let mut used_colors_array: [f32; 12] = [0.0; 12];
+							let left_or_right = thread_rng.gen_range(0..2);
+							if left_or_right == 0 {
+								for i in (0..12).step_by(3) {
+									for j in (0..12).step_by(3) {
+										used_colors_array[j] = f32::from(color_array[i]);
+										used_colors_array[j + 1] = f32::from(color_array[i + 1]);
+										used_colors_array[j + 2] = f32::from(color_array[i + 2]);
+										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
+									}
+									for j in (0..12).step_by(3) {
+										used_colors_array[j] = 0.0;
+										used_colors_array[j + 1] = 0.0;
+										used_colors_array[j + 2] = 0.0;
+										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
+									}
+								}
+							} else {
+								for i in (0..12).step_by(3) {
+									for j in (0..12).step_by(3) {
+										used_colors_array[11 - j] = f32::from(color_array[11 - i]);
+										used_colors_array[11 - (j + 1)] = f32::from(color_array[11 - (i + 1)]);
+										used_colors_array[11 - (j + 2)] = f32::from(color_array[11 - (i + 2)]);
+										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
+									}
+									for j in (0..12).step_by(3) {
+										used_colors_array[11 - j] = 0.0;
+										used_colors_array[11 - (j + 1)] = 0.0;
+										used_colors_array[11 - (j + 2)] = 0.0;
+										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
+									}
+								}
+							}
+						}
+						3 => {
+							let state1 = [255.0, 255.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 255.0, 0.0, 0.0, 0.0];
+							let state2 = [0.0, 0.0, 0.0, 255.0, 255.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 255.0];
+							let steps = 30;
+							for _i in 0..4 {
+								self.keyboard.transition_colors_to(&state1, steps, 1);
+								thread::sleep(Duration::from_millis(400));
+								self.keyboard.transition_colors_to(&state2, steps, 1);
+								thread::sleep(Duration::from_millis(400));
+							}
+						}
+						_ => unreachable!("Subeffect index for Christmas effect is out of range."),
+					}
+				}
+			}
 		}
 		self.stop_signal.store(false, Ordering::SeqCst);
 	}

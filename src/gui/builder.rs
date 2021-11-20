@@ -14,7 +14,7 @@ use std::{panic, thread};
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 480;
-pub const EFFECTS_LIST: [&str; 12] = [
+pub const EFFECTS_LIST: [&str; 13] = [
 	"Static",
 	"Breath",
 	"Smooth",
@@ -27,6 +27,7 @@ pub const EFFECTS_LIST: [&str; 12] = [
 	"LeftSwipe",
 	"RightSwipe",
 	"Disco",
+	"Christmas",
 ];
 
 pub fn screen_center() -> (i32, i32) {
@@ -142,6 +143,10 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 				12 => {
 					color_tiles.deactivate();
 					tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
+				}
+				13 => {
+					color_tiles.activate();
+					tx.send(Message::UpdateEffect { effect: Effects::Christmas }).unwrap();
 				}
 				_ => {}
 			}

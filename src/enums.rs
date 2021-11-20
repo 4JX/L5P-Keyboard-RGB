@@ -15,6 +15,7 @@ pub enum Effects {
 	LeftSwipe,
 	RightSwipe,
 	Disco,
+	Christmas,
 }
 
 #[allow(dead_code)]

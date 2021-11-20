@@ -154,6 +154,20 @@ impl Keyboard {
 		}
 	}
 
+	pub fn solid_set_colors_to(&mut self, new_values: &[u8; 3]) {
+		match self.current_state.effect_type {
+			BaseEffects::Static | BaseEffects::Breath => {
+				for i in (0..12).step_by(3) {
+					self.current_state.rgb_values[i] = new_values[0];
+					self.current_state.rgb_values[i + 1] = new_values[1];
+					self.current_state.rgb_values[i + 2] = new_values[2];
+				}
+				self.refresh();
+			}
+			_ => {}
+		}
+	}
+
 	pub fn transition_colors_to(&mut self, target_colors: &[f32; 12], steps: u8, delay_between_steps: u64) {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
