@@ -56,10 +56,10 @@ pub struct ColorTile {
 	pub blue_input: IntInput,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct ColorTileState {
-	rgb_values: [u8; 3],
-	button_toggle_state: bool,
+	pub rgb_values: [u8; 3],
+	pub button_toggle_state: bool,
 }
 
 impl ColorTile {
@@ -77,6 +77,7 @@ impl ColorTile {
 		self.green_input.deactivate();
 		self.blue_input.deactivate();
 	}
+
 	pub fn set_state(&mut self, state: ColorTileState) {
 		self.red_input.set_value(state.rgb_values[0].to_string().as_str());
 		self.green_input.set_value(state.rgb_values[1].to_string().as_str());
@@ -85,6 +86,12 @@ impl ColorTile {
 		self.toggle_button.toggle(state.button_toggle_state);
 		if state.button_toggle_state {
 			self.deactivate();
+		}
+	}
+	pub fn get_state(&mut self) -> ColorTileState {
+		ColorTileState {
+			rgb_values: self.get_values(),
+			button_toggle_state: self.toggle_button.is_toggled(),
 		}
 	}
 }
@@ -223,8 +230,11 @@ pub struct ColorTiles {
 
 #[derive(Serialize, Deserialize)]
 pub struct ColorTilesState {
-	pub rgb_values: [u8; 12],
-	pub buttons_toggle_state: [bool; 5],
+	pub master: ColorTileState,
+	pub left: ColorTileState,
+	pub center_left: ColorTileState,
+	pub center_right: ColorTileState,
+	pub right: ColorTileState,
 }
 
 #[allow(dead_code)]
@@ -364,61 +374,28 @@ impl ColorTiles {
 		self.master.toggle_button.deactivate();
 	}
 	pub fn set_state(&mut self, state: &ColorTilesState) {
-		self.master.set_state(ColorTileState {
-			rgb_values: [0; 3],
-			button_toggle_state: state.buttons_toggle_state[0],
-		});
-		self.zones.left.set_state(ColorTileState {
-			rgb_values: [state.rgb_values[0], state.rgb_values[1], state.rgb_values[2]],
-			button_toggle_state: state.buttons_toggle_state[1],
-		});
-		self.zones.center_left.set_state(ColorTileState {
-			rgb_values: [state.rgb_values[3], state.rgb_values[4], state.rgb_values[5]],
-			button_toggle_state: state.buttons_toggle_state[2],
-		});
-		self.zones.center_right.set_state(ColorTileState {
-			rgb_values: [state.rgb_values[6], state.rgb_values[7], state.rgb_values[8]],
-			button_toggle_state: state.buttons_toggle_state[3],
-		});
-		self.zones.right.set_state(ColorTileState {
-			rgb_values: [state.rgb_values[9], state.rgb_values[10], state.rgb_values[11]],
-			button_toggle_state: state.buttons_toggle_state[4],
-		});
+		self.master.set_state(state.master);
+		self.zones.left.set_state(state.left);
+		self.zones.center_left.set_state(state.center_left);
+		self.zones.center_right.set_state(state.center_right);
+		self.zones.right.set_state(state.right);
+	}
+
+	pub fn get_state(&mut self) -> ColorTilesState {
+		ColorTilesState {
+			master: self.master.get_state(),
+			left: self.zones.left.get_state(),
+			center_left: self.zones.center_left.get_state(),
+			center_right: self.zones.center_right.get_state(),
+			right: self.zones.right.get_state(),
+		}
 	}
 
 	pub fn get_zone_values(&mut self) -> [u8; 12] {
 		let mut values = [0; 12];
 		if !self.master.toggle_button.is_toggled() {
-			if !self.zones.left.toggle_button.is_toggled() {
-				values[0] = self.zones.left.red_input.value().parse::<u8>().unwrap_or(255);
-				values[1] = self.zones.left.green_input.value().parse::<u8>().unwrap_or(255);
-				values[2] = self.zones.left.blue_input.value().parse::<u8>().unwrap_or(255);
-			};
-			if !self.zones.center_left.toggle_button.is_toggled() {
-				values[3] = self.zones.center_left.red_input.value().parse::<u8>().unwrap_or(255);
-				values[4] = self.zones.center_left.green_input.value().parse::<u8>().unwrap_or(255);
-				values[5] = self.zones.center_left.blue_input.value().parse::<u8>().unwrap_or(255);
-			};
-			if !self.zones.center_right.toggle_button.is_toggled() {
-				values[6] = self.zones.center_right.red_input.value().parse::<u8>().unwrap_or(255);
-				values[7] = self.zones.center_right.green_input.value().parse::<u8>().unwrap_or(255);
-				values[8] = self.zones.center_right.blue_input.value().parse::<u8>().unwrap_or(255);
-			};
-			if !self.zones.right.toggle_button.is_toggled() {
-				values[9] = self.zones.right.red_input.value().parse::<u8>().unwrap_or(255);
-				values[10] = self.zones.right.green_input.value().parse::<u8>().unwrap_or(255);
-				values[11] = self.zones.right.blue_input.value().parse::<u8>().unwrap_or(255);
-			};
+			values = self.zones.get_values();
 		}
 		values
-	}
-	pub fn get_button_state(&self) -> [bool; 5] {
-		[
-			self.master.toggle_button.is_toggled(),
-			self.zones.left.toggle_button.is_toggled(),
-			self.zones.center_left.toggle_button.is_toggled(),
-			self.zones.center_right.toggle_button.is_toggled(),
-			self.zones.right.toggle_button.is_toggled(),
-		]
 	}
 }

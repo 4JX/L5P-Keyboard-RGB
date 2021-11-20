@@ -14,6 +14,20 @@ use std::{panic, thread};
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 480;
+pub const EFFECTS_LIST: [&str; 12] = [
+	"Static",
+	"Breath",
+	"Smooth",
+	"LeftWave",
+	"RightWave",
+	"Lightning",
+	"AmbientLight",
+	"SmoothLeftWave",
+	"SmoothRightWave",
+	"LeftSwipe",
+	"RightSwipe",
+	"Disco",
+];
 
 pub fn center() -> (i32, i32) {
 	((app::screen_size().0 / 2.0) as i32, (app::screen_size().1 / 2.0) as i32)
@@ -30,7 +44,6 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 
 	//UI
 	let mut win = Window::new(center().0 - WIDTH / 2, center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
-	menu_bar::AppMenuBar::new(&tx, stop_signal.clone());
 	let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
 	let mut tiles = color_tiles::ColorTiles::new(&tx, stop_signal.clone());
 
@@ -41,36 +54,12 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	color_picker_pack.add(&tiles.master.exterior_tile);
 	color_picker_pack.end();
 
-	let effects_list: Vec<&str> = vec![
-		"Static",
-		"Breath",
-		"Smooth",
-		"LeftWave",
-		"RightWave",
-		"Lightning",
-		"AmbientLight",
-		"SmoothLeftWave",
-		"SmoothRightWave",
-		"LeftSwipe",
-		"RightSwipe",
-		"Disco",
-	];
-	let effect_browser_tile = effect_browser_tile::EffectBrowserTile::create(540, 30, &effects_list);
+	let effect_browser_tile = effect_browser_tile::EffectBrowserTile::create(540, 30, &EFFECTS_LIST);
 	let mut effect_browser = effect_browser_tile.effect_browser;
 
 	let options_tile = options_tile::OptionsTile::create(540, 390, &tx, &stop_signal.clone());
 	let speed_choice = options_tile.speed_choice;
 	let brightness_choice = options_tile.brightness_choice;
-
-	win.end();
-	win.make_resizable(false);
-	win.show();
-
-	// Theming
-	app::background(51, 51, 51);
-	app::set_visible_focus(false);
-	app::set_font(Font::HelveticaBold);
-	app::set_frame_type(FrameType::FlatBox);
 
 	let mut app = App {
 		color_tiles: tiles.clone(),
@@ -82,6 +71,18 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		buf: text::TextBuffer::default(),
 		center: center(),
 	};
+
+	menu_bar::AppMenuBar::new(&tx, stop_signal.clone(), &app);
+
+	win.end();
+	win.make_resizable(false);
+	win.show();
+
+	// Theming
+	app::background(51, 51, 51);
+	app::set_visible_focus(false);
+	app::set_font(Font::HelveticaBold);
+	app::set_frame_type(FrameType::FlatBox);
 
 	// Effect choice
 	effect_browser.set_callback({

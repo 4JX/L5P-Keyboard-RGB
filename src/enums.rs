@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::EnumString;
+use strum_macros::{Display, EnumString};
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display)]
 pub enum Effects {
 	Static,
 	Breath,

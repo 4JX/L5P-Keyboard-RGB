@@ -35,7 +35,7 @@ pub fn message(width: i32, height: i32, message: &str) {
 pub fn alert(width: i32, height: i32, message: &str) {
 	let x = center().0 - width / 2;
 	let y = center().1 - height / 2;
-	let mut window = Window::new(x, y, width, height, "Message");
+	let mut window = Window::new(x, y, width, height, "Warning");
 	window.set_color(Color::from_u32(Colors::DarkGray as u32));
 
 	frame::Frame::new(0, 0, width, height - 30 - 45, "")

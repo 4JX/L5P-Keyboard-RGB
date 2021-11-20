@@ -30,7 +30,7 @@ fn main() {
 
 		fn is_console() -> bool {
 			unsafe {
-				let mut buffer = [0u32; 1];
+				let mut buffer = [0_u32; 1];
 				let count = GetConsoleProcessList(buffer.as_mut_ptr(), 1);
 				count != 1
 			}
