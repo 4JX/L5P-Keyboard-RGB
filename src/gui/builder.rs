@@ -36,9 +36,9 @@ pub fn center() -> (i32, i32) {
 pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: &Arc<AtomicBool>) -> fltk::window::Window {
 	panic::set_hook(Box::new(|info| {
 		if let Some(s) = info.payload().downcast_ref::<&str>() {
-			dialog::message(800, 400, s);
+			dialog::panic(800, 400, s);
 		} else {
-			dialog::message(800, 400, &info.to_string());
+			dialog::panic(800, 400, &info.to_string());
 		}
 	}));
 

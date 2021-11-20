@@ -7,6 +7,7 @@ pub enum BaseColor {
 
 pub enum Colors {
 	Red = 0xff0000,
+	DarkRed = 0x893838,
 	Green = 0x00ff00,
 	Blue = 0x0000ff,
 	DarkerGray = 0x222222,
