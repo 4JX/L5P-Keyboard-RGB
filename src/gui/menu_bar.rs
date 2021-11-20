@@ -44,11 +44,7 @@ impl AppMenuBar {
 
 		menu.add("&About", Shortcut::None, menu::MenuFlag::Normal, {
 			move |_some| {
-				dialog::message(
-					800,
-					200,
-					"A program made by 4JX.\n\nFor updates, issues and feature requests, head over to:\nhttps://github.com/4JX/L5P-Keyboard-RGB/",
-				);
+				dialog::about(800, 200);
 			}
 		});
 		menu.add("Exit", Shortcut::None, menu::MenuFlag::Normal, {

@@ -29,7 +29,7 @@ pub const EFFECTS_LIST: [&str; 12] = [
 	"Disco",
 ];
 
-pub fn center() -> (i32, i32) {
+pub fn screen_center() -> (i32, i32) {
 	((app::screen_size().0 / 2.0) as i32, (app::screen_size().1 / 2.0) as i32)
 }
 
@@ -43,7 +43,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 	}));
 
 	//UI
-	let mut win = Window::new(center().0 - WIDTH / 2, center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
+	let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
 	let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
 	let mut tiles = color_tiles::ColorTiles::new(&tx, stop_signal.clone());
 
@@ -69,7 +69,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		tx: tx.clone(),
 		stop_signal: stop_signal.clone(),
 		buf: text::TextBuffer::default(),
-		center: center(),
+		center: screen_center(),
 	};
 
 	menu_bar::AppMenuBar::new(&tx, stop_signal.clone(), &app);
