@@ -38,7 +38,7 @@ impl AppMenuBar {
 			let mut app = app.clone();
 			move |_some| {
 				stop_signal.store(true, Ordering::SeqCst);
-				app.load_profile();
+				app.load_profile(false);
 			}
 		});
 

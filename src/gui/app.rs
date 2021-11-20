@@ -46,12 +46,18 @@ pub struct App {
 }
 
 impl App {
-	pub fn load_profile(&mut self) {
-		let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseFile);
-		dlg.set_option(dialog::FileDialogOptions::NoOptions);
-		dlg.set_filter("*.json");
-		dlg.show();
-		let filename = dlg.filename().to_string_lossy().to_string();
+	pub fn load_profile(&mut self, is_default: bool) {
+		let filename: String;
+		if is_default {
+			filename = String::from_str("default.json").unwrap();
+		} else {
+			let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseFile);
+			dlg.set_option(dialog::FileDialogOptions::NoOptions);
+			dlg.set_filter("*.json");
+			dlg.show();
+			filename = dlg.filename().to_string_lossy().to_string();
+		}
+
 		if !filename.is_empty() {
 			fn parse_profile(profile_text: &str) -> Result<Profile> {
 				serde_json::from_str(profile_text)

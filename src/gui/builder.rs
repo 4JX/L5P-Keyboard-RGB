@@ -148,6 +148,8 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 		}
 	});
 
+	app.load_profile(true);
+
 	thread::spawn(move || loop {
 		match manager.rx.try_iter().last() {
 			Some(message) => {
@@ -185,7 +187,7 @@ pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender
 						app.save_profile();
 					}
 					Message::LoadProfile => {
-						app.load_profile();
+						app.load_profile(false);
 					}
 				}
 				app::awake();
