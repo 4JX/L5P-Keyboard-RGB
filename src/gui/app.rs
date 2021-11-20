@@ -85,7 +85,9 @@ impl App {
 					}
 				}
 			} else {
-				alert(800, 200, "File does not exist!");
+				if !is_default {
+					alert(800, 200, "File does not exist!");
+				}
 			}
 		} else {
 			self.stop_signal.store(true, Ordering::SeqCst);
