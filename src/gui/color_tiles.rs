@@ -117,7 +117,7 @@ impl ColorTile {
 		color_tile.exterior_tile.add(&color_tile.blue_input);
 		color_tile.exterior_tile.end();
 
-		//Themeing
+		//Theming
 		color_tile.exterior_tile.set_frame(FrameType::FlatBox);
 		if master_tile {
 			color_tile.exterior_tile.set_color(Color::from_u32(Colors::LightGray as u32));

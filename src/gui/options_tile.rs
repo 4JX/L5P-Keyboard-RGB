@@ -21,7 +21,7 @@ impl OptionsChoice {
 		let mut choice = Choice::new(x, y, width, height, "").with_label(title);
 		choice.add_choice(choices);
 
-		//Themeing
+		//Theming
 		choice.set_frame(FrameType::BorderBox);
 		choice.set_color(Color::from_u32(Colors::DarkGray as u32));
 		choice.set_label_color(Color::from_u32(Colors::White as u32));
