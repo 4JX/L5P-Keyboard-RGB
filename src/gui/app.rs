@@ -82,11 +82,9 @@ impl App {
 					self.stop_signal.store(true, Ordering::SeqCst);
 					self.tx.send(Message::Refresh).unwrap();
 				}
-			} else {
-				if !is_default {
-					alert(800, 200, "File does not exist!");
-				}
-			}
+			} else if !is_default {
+   					alert(800, 200, "File does not exist!");
+   				}
 		} else {
 			self.stop_signal.store(true, Ordering::SeqCst);
 			self.tx.send(Message::Refresh).unwrap();

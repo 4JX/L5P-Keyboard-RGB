@@ -206,7 +206,7 @@ impl KeyboardManager {
 								for j in 0..4 {
 									let array_index = j * 3;
 									let used_colors: [u8; 3] = color_array[array_index..array_index + 3].try_into().unwrap();
-									self.keyboard.solid_set_colors_to(&used_colors);
+									self.keyboard.solid_set_colors_to(used_colors);
 									thread::sleep(Duration::from_millis(500));
 								}
 							}
@@ -222,9 +222,9 @@ impl KeyboardManager {
 							let used_colors_2: [u8; 3] = color_array[cut_start_2..cut_start_2 + 3].try_into().unwrap();
 
 							for _i in 0..4 {
-								self.keyboard.solid_set_colors_to(&used_colors_1);
+								self.keyboard.solid_set_colors_to(used_colors_1);
 								thread::sleep(Duration::from_millis(400));
-								self.keyboard.solid_set_colors_to(&used_colors_2);
+								self.keyboard.solid_set_colors_to(used_colors_2);
 								thread::sleep(Duration::from_millis(400));
 							}
 						}

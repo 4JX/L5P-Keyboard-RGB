@@ -154,7 +154,7 @@ impl Keyboard {
 		}
 	}
 
-	pub fn solid_set_colors_to(&mut self, new_values: &[u8; 3]) {
+	pub fn solid_set_colors_to(&mut self, new_values: [u8; 3]) {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
 				for i in (0..12).step_by(3) {
