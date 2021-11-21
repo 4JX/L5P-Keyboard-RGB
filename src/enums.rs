@@ -1,6 +1,7 @@
-use strum_macros::EnumString;
+use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 
-#[derive(Clone, Copy, EnumString)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display)]
 pub enum Effects {
 	Static,
 	Breath,
@@ -14,6 +15,7 @@ pub enum Effects {
 	LeftSwipe,
 	RightSwipe,
 	Disco,
+	Christmas,
 }
 
 #[allow(dead_code)]
@@ -26,4 +28,6 @@ pub enum Message {
 	UpdateBrightness { brightness: u8 },
 	UpdateSpeed { speed: u8 },
 	Refresh,
+	SaveProfile,
+	LoadProfile,
 }

@@ -6,6 +6,7 @@
 
 - [Download](#download)
 - [Available effects](#available-effects)
+- [Usage](#usage)
 - [Compatibility](#compatibility)
 - [Building from source](#building-from-source)
   - [Using `cargo-make`](#using-cargo-make)
@@ -30,6 +31,44 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 - **Smooth(Left/Right)Wave:** An implementation of the classic wave effect.
 - **(Left/Right)Swipe:** Transitions the selected colors from side to side, useful for custom waves.
 - **Disco:** A portable dance floor!
+
+# Usage
+
+## ℹ️ Note
+
+If you are using the program on Linux, you'll need to run the program as root.
+
+## With GUI
+
+Execute the file by double-clicking on it or running it from a console _without_ arguments.
+
+## Via the command line
+
+Usage:
+
+```sh
+$ legion-kb-rgb [OPTIONS] [SUBCOMMAND]
+```
+
+Examples:
+
+- Getting the help prompt
+
+```sh
+$ legion-kb-rgb --help
+```
+
+- Setting the keyboard to red
+
+```sh
+$ legion-kb-rgb Static 255,0,0,255,0,0,255,0,0,255,0,0
+```
+
+- Using the SmoothLeftWave with speed `4` and brightness at high
+
+```sh
+$ legion-kb-rgb -s 4 -b 2 SmoothLeftWave
+```
 
 # Compatibility
 

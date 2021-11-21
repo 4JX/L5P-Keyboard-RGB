@@ -30,7 +30,7 @@ fn main() {
 
 		fn is_console() -> bool {
 			unsafe {
-				let mut buffer = [0u32; 1];
+				let mut buffer = [0_u32; 1];
 				let count = GetConsoleProcessList(buffer.as_mut_ptr(), 1);
 				count != 1
 			}
@@ -79,10 +79,10 @@ fn main() {
 		.subcommand(SubCommand::with_name("Smooth").about("Smooth effect"))
 		.subcommand(SubCommand::with_name("LeftWave").about("Left Wave effect"))
 		.subcommand(SubCommand::with_name("RightWave").about("Right Wave effect"))
-		.subcommand(SubCommand::with_name("Lightning").about("Right Wave effect"))
-		.subcommand(SubCommand::with_name("AmbientLight").about("Right Wave effect"))
-		.subcommand(SubCommand::with_name("SmoothLeftWave").about("Right Wave effect"))
-		.subcommand(SubCommand::with_name("SmoothRightWave").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("Lightning").about("Lightning effect"))
+		.subcommand(SubCommand::with_name("AmbientLight").about("AmbientLight effect"))
+		.subcommand(SubCommand::with_name("SmoothLeftWave").about("SmoothLeftWave effect"))
+		.subcommand(SubCommand::with_name("SmoothRightWave").about("SmoothRightWave effect"))
 		.subcommand(
 			SubCommand::with_name("LeftSwipe").about("Swipe effect").arg(
 				Arg::with_name("colors")
@@ -99,6 +99,7 @@ fn main() {
 					.required(true),
 			),
 		)
+		.subcommand(SubCommand::with_name("Disco").about("Disco effect"))
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
@@ -110,31 +111,26 @@ fn main() {
 		let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
 		let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
 
-		manager.keyboard.set_brightness(brightness);
-
 		let matches = matches.subcommand_matches(input).unwrap();
 
 		let color_array: [u8; 12] = match effect {
 			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe => {
-				let color_array = match matches.value_of("colors") {
-					Some(value) => {
-						let color_array = parse_bytes_arg(value)
-							.expect("Invalid input, please check you used the correct format for the colors")
-							.try_into()
-							.expect("Invalid input, please check you used the correct format for the colors");
-						color_array
-					}
-					None => {
-						println!("This effect requires specifying the colors to use.");
-						process::exit(0);
-					}
+				let color_array = if let Some(value) = matches.value_of("colors") {
+					let color_array = parse_bytes_arg(value)
+						.expect("Invalid input, please check you used the correct format for the colors")
+						.try_into()
+						.expect("Invalid input, please check you used the correct format for the colors");
+					color_array
+				} else {
+					println!("This effect requires specifying the colors to use.");
+					process::exit(0);
 				};
 				color_array
 			}
 			_ => [0; 12],
 		};
 
-		manager.set_effect(effect, &color_array, speed);
+		manager.set_effect(effect, &color_array, speed, brightness);
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
