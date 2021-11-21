@@ -1,12 +1,9 @@
 # Legion RGB Control
 
-## Preview
-
 ![Preview](https://github.com/4JX/L5P-Keyboard-RGB/blob/main/Preview.png)
 
 ## Index
 
-- [Preview](#preview)
 - [Index](#index)
 - [Download](#download)
 - [Available effects](#available-effects)
@@ -14,9 +11,11 @@
   - [With GUI](#with-gui)
   - [Via the command line](#via-the-command-line)
 - [Compatibility](#compatibility)
-    - ["How about X model"](#how-about-x-model)
+  - ["How about X model"](#how-about-x-model)
 - [Building from source](#building-from-source)
   - [Prerequisites](#prerequisites)
+    - [Ubuntu](#ubuntu)
+    - [Arch Linux](#arch-linux)
   - [Using `cargo-make`](#using-cargo-make)
   - [Building manually](#building-manually)
     - [Windows](#windows)
@@ -45,9 +44,7 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 
 ## Usage
 
-**ℹ️ Note**
-
-If you are using the program on Linux, you'll need to run the program as root.
+- **Note**: If you are using the program on Linux, you'll need to run the program as root.
 
 ### With GUI
 
@@ -85,7 +82,7 @@ legion-kb-rgb -s 4 -b 2 SmoothLeftWave
 
 This program has been tested to work on the 4 zone keyboard of the Legion 5 2020, Legion 5 2021 and Legion 5 Pro models on both Windows and Linux.
 
-#### "How about X model"
+### "How about X model"
 
 - **Legion 7(i):** Won't work, the backlight on these is per-key and uses a different way of communicating.
 - **Any variant with a white backlight:** Haven't figured out how to talk to this one yet, but given the limited number of states (off, low, high) there's not many effects I'd be able to add anyways.
@@ -98,13 +95,13 @@ This program has been tested to work on the 4 zone keyboard of the Legion 5 2020
 - [Git](https://git-scm.com/downloads)
 - On Linux, you'll need additional dependencies:
 
-**Ubuntu**
+#### Ubuntu
 
 ```sh
 sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
 ```
 
-**EndeavourOS (Arch Linux)**
+#### Arch Linux
 
 ```sh
 sudo pacman -S nasm cmake
@@ -116,7 +113,7 @@ Works on both Windows and Linux.
 
 - Install `cargo-make`
 
-```
+```sh
 cargo install cargo-make
 ```
 
