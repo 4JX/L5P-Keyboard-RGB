@@ -4,13 +4,14 @@
 
 # Index
 
-- [Download](#download)
-- [Available effects](#available-effects)
-- [Usage](#usage)
-- [Compatibility](#compatibility)
-- [Building from source](#building-from-source)
-  - [Using `cargo-make`](#using-cargo-make)
-  - [Building manually](#building-manually)
+- [With GUI](#with-gui)
+- [Via the command line](#via-the-command-line)
+  - ["How about X model"](#how-about-x-model)
+- [Prerequisites](#prerequisites)
+- [Using `cargo-make`](#using-cargo-make)
+- [Building manually](#building-manually)
+  - [Windows](#windows)
+  - [Linux](#linux)
 
 # Download
 
@@ -24,7 +25,7 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 
 **All stock effects:** Static, Breath, Smooth, LeftWave, RightWave.
 
-**Custon effects:**
+**Custom effects:**
 
 - **Lightning:** Adds a little _spark_.
 - **AmbientLight:** Reacts to content on your screen.
@@ -34,7 +35,7 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 
 # Usage
 
-## ℹ️ Note
+**ℹ️ Note**
 
 If you are using the program on Linux, you'll need to run the program as root.
 
@@ -77,11 +78,11 @@ This program has been tested to work on the 4 zone keyboard of the Legion 5 2020
 ### "How about X model"
 
 - **Legion 7(i):** Won't work, the backlight on these is per-key and uses a different way of communicating.
-- **Any variant with a white backlight:** Havent figured out how to talk to this one yet, but given the limited number of states (off, low, high) there's not many effects I'd be able to add anyways.
+- **Any variant with a white backlight:** Haven't figured out how to talk to this one yet, but given the limited number of states (off, low, high) there's not many effects I'd be able to add anyways.
 
 # Building from source
 
-## Prequisites
+## Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Git](https://git-scm.com/downloads)
@@ -127,7 +128,7 @@ $ cargo make build-release
 ## Building manually
 
 - Download and bootstrap [VCPKG](https://github.com/Microsoft/vcpkg#getting-started)
-  - You'll need to set an enviorement variable called `VCPKG_INSTALLATION_ROOT` pointing to the directory where you downloaded and bootstrapped VCPKG.
+  - You'll need to set an environment variable called `VCPKG_INSTALLATION_ROOT` pointing to the directory where you downloaded and bootstrapped VCPKG.
 
 ### Windows
 
