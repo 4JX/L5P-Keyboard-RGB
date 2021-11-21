@@ -58,7 +58,7 @@ Execute the file by double-clicking on it or running it from a console _without_
 Usage:
 
 ```sh
-$ legion-kb-rgb [OPTIONS] [SUBCOMMAND]
+legion-kb-rgb [OPTIONS] [SUBCOMMAND]
 ```
 
 Examples:
@@ -66,19 +66,19 @@ Examples:
 - Getting the help prompt
 
 ```sh
-$ legion-kb-rgb --help
+legion-kb-rgb --help
 ```
 
 - Setting the keyboard to red
 
 ```sh
-$ legion-kb-rgb Static 255,0,0,255,0,0,255,0,0,255,0,0
+legion-kb-rgb Static 255,0,0,255,0,0,255,0,0,255,0,0
 ```
 
 - Using the SmoothLeftWave with speed `4` and brightness at high
 
 ```sh
-$ legion-kb-rgb -s 4 -b 2 SmoothLeftWave
+legion-kb-rgb -s 4 -b 2 SmoothLeftWave
 ```
 
 ## Compatibility
@@ -101,13 +101,13 @@ This program has been tested to work on the 4 zone keyboard of the Legion 5 2020
 **Ubuntu**
 
 ```sh
-$ sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
+sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
 ```
 
 **EndeavourOS (Arch Linux)**
 
 ```sh
-$ sudo pacman -S nasm cmake
+sudo pacman -S nasm cmake
 ```
 
 ### Using `cargo-make`
@@ -117,13 +117,13 @@ Works on both Windows and Linux.
 - Install `cargo-make`
 
 ```
-$ cargo install cargo-make
+cargo install cargo-make
 ```
 
 - Clone the repository
 
 ```sh
-$ git clone https://github.com/4JX/L5P-Keyboard-RGB.git
+git clone https://github.com/4JX/L5P-Keyboard-RGB.git
 ```
 
 - Build the project
@@ -145,20 +145,20 @@ $ cargo make build-release
 - Download the necessary dependencies
 
 ```cmd
-> vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
+vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
 ```
 
 - Clone the repository
 
 ```cmd
-> git clone https://github.com/4JX/L5P-Keyboard-RGB.git
+git clone https://github.com/4JX/L5P-Keyboard-RGB.git
 ```
 
 - Build the project
 
 ```cmd
-> cd L5P-Keyboard-RGB/
-> cargo build --release
+cd L5P-Keyboard-RGB/
+cargo build --release
 ```
 
 #### Linux
@@ -166,20 +166,20 @@ $ cargo make build-release
 - Download the necessary dependencies
 
 ```sh
-$ vcpkg update && vcpkg install libvpx libyuv
+vcpkg update && vcpkg install libvpx libyuv
 ```
 
 - Clone the repository
 
 ```sh
-$ git clone https://github.com/4JX/L5P-Keyboard-RGB.git
+git clone https://github.com/4JX/L5P-Keyboard-RGB.git
 ```
 
 - Build the project
 
 ```sh
-$ cd L5P-Keyboard-RGB/
-$ cargo build --release
+cd L5P-Keyboard-RGB/
+cargo build --release
 ```
 
 ## Crashes, freezes, etc
