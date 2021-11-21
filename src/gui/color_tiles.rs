@@ -3,7 +3,10 @@ use std::sync::{
 	mpsc, Arc,
 };
 
-use crate::{enums::Message, gui::color_tiles};
+use crate::{
+	enums::{Effects, Message},
+	gui::color_tiles,
+};
 
 use super::enums::{BaseColor, Colors};
 use fltk::{
@@ -373,12 +376,13 @@ impl ColorTiles {
 		self.master.activate();
 		self.master.toggle_button.deactivate();
 	}
-	pub fn set_state(&mut self, state: &ColorTilesState) {
+	pub fn set_state(&mut self, state: &ColorTilesState, effect: Effects) {
 		self.master.set_state(state.master);
 		self.zones.left.set_state(state.left);
 		self.zones.center_left.set_state(state.center_left);
 		self.zones.center_right.set_state(state.center_right);
 		self.zones.right.set_state(state.right);
+		self.update(effect);
 	}
 
 	pub fn get_state(&mut self) -> ColorTilesState {
@@ -397,5 +401,49 @@ impl ColorTiles {
 			values = self.zones.get_values();
 		}
 		values
+	}
+
+	pub fn update(&mut self, effect: Effects) {
+		match effect {
+			Effects::Static => {
+				self.activate();
+			}
+			Effects::Breath => {
+				self.activate();
+			}
+			Effects::Smooth => {
+				self.deactivate();
+			}
+			Effects::LeftWave => {
+				self.deactivate();
+			}
+			Effects::RightWave => {
+				self.deactivate();
+			}
+			Effects::Lightning => {
+				self.deactivate();
+			}
+			Effects::AmbientLight => {
+				self.deactivate();
+			}
+			Effects::SmoothLeftWave => {
+				self.deactivate();
+			}
+			Effects::SmoothRightWave => {
+				self.deactivate();
+			}
+			Effects::LeftSwipe => {
+				self.activate();
+			}
+			Effects::RightSwipe => {
+				self.activate();
+			}
+			Effects::Disco => {
+				self.deactivate();
+			}
+			Effects::Christmas => {
+				self.deactivate();
+			}
+		}
 	}
 }

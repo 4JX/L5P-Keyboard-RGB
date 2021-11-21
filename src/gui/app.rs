@@ -67,7 +67,7 @@ impl App {
 				self.buf.load_file(&filename).unwrap();
 
 				if let Ok(profile) = parse_profile(&self.buf.text()) {
-					self.color_tiles.set_state(&profile.color_tiles_state);
+					self.color_tiles.set_state(&profile.color_tiles_state, profile.effect);
 					self.effect_browser.select(EFFECTS_LIST.iter().position(|&val| val == profile.effect.to_string()).unwrap() as i32 + 1);
 					self.speed_choice.set_value(profile.speed);
 					self.brightness_choice.set_value(profile.brightness);
