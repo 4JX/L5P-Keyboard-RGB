@@ -38,7 +38,7 @@ args = ["build", "--release"]
 command = "cargo"
 args = ["vcpkg", "build"]
 
-#Running
+# Running
 [tasks.run]
 windows_alias = "run-windows"
 linux_alias = "run-linux"
