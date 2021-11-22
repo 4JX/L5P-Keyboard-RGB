@@ -364,8 +364,13 @@ impl ColorTiles {
 		color_tiles
 	}
 	pub fn activate(&mut self) {
-		self.master.activate();
-		self.zones.activate();
+		if self.master.toggle_button.is_toggled() {
+			self.master.toggle_button.activate();
+			self.zones.deactivate();
+		} else {
+			self.master.activate();
+			self.zones.activate();
+		}
 	}
 	pub fn deactivate(&mut self) {
 		self.master.deactivate();
