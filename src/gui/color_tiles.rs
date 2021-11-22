@@ -18,6 +18,9 @@ use fltk::{
 };
 use serde::{Deserialize, Serialize};
 
+const TILE_WIDTH: i32 = 540;
+const TILE_HEIGHT: i32 = 90;
+
 pub struct ColorInput;
 
 impl ColorInput {
@@ -101,23 +104,27 @@ impl ColorTile {
 
 #[allow(dead_code)]
 impl ColorTile {
-	pub fn create(master_tile: bool) -> Self {
-		let center_x = 540 / 2;
-		let center_y = 90 / 2 - 20;
-		let offset = 120;
+	pub fn create(x: i32, y: i32, master_tile: bool) -> Self {
+		let button_size = 40;
+		let inputs_offset = 70;
+
 		//Begin tile
+		let exterior_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
+		let toggle_button = ToggleButton::new(x + 25, y + TILE_HEIGHT / 2 - button_size / 2, button_size, button_size, "");
+		let inputs_tile = Tile::new(x + TILE_HEIGHT, y, TILE_WIDTH - TILE_HEIGHT, TILE_HEIGHT, "");
+		let green_input = ColorInput::create(0, 0, 60, 40, BaseColor::Green).center_of_parent();
+		let red_input = ColorInput::create(0, 0, 60, 40, BaseColor::Red).left_of(&green_input, inputs_offset);
+		let blue_input = ColorInput::create(0, 0, 60, 40, BaseColor::Blue).right_of(&green_input, inputs_offset);
+		inputs_tile.end();
+
 		let mut color_tile = Self {
-			exterior_tile: Tile::new(0, 0, 540, 90, ""),
-			toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
-			red_input: ColorInput::create(center_x - offset, center_y, 60, 40, BaseColor::Red),
-			green_input: ColorInput::create(center_x, center_y, 60, 40, BaseColor::Green),
-			blue_input: ColorInput::create(center_x + offset, center_y, 60, 40, BaseColor::Blue),
+			exterior_tile,
+			toggle_button,
+			red_input,
+			green_input,
+			blue_input,
 		};
 
-		color_tile.exterior_tile.add(&color_tile.toggle_button);
-		color_tile.exterior_tile.add(&color_tile.red_input);
-		color_tile.exterior_tile.add(&color_tile.green_input);
-		color_tile.exterior_tile.add(&color_tile.blue_input);
 		color_tile.exterior_tile.end();
 
 		//Theming
@@ -154,12 +161,12 @@ pub struct Zones {
 
 #[allow(dead_code)]
 impl Zones {
-	pub fn create() -> Self {
+	pub fn create(x: i32, y: i32) -> Self {
 		Zones {
-			left: ColorTile::create(false),
-			center_left: ColorTile::create(false),
-			center_right: ColorTile::create(false),
-			right: ColorTile::create(false),
+			left: ColorTile::create(x, y, false),
+			center_left: ColorTile::create(x, y + TILE_HEIGHT, false),
+			center_right: ColorTile::create(x, y + TILE_HEIGHT * 2, false),
+			right: ColorTile::create(x, y + TILE_HEIGHT * 3, false),
 		}
 	}
 	pub fn activate(&mut self) {
@@ -242,7 +249,7 @@ pub struct ColorTilesState {
 
 #[allow(dead_code)]
 impl ColorTiles {
-	pub fn new(tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> Self {
+	pub fn new(x: i32, y: i32, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> Self {
 		fn add_zone_tile_handle(color_tile: &mut color_tiles::ColorTile, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
 			fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
 				input.handle({
@@ -297,8 +304,8 @@ impl ColorTiles {
 		}
 
 		let mut color_tiles = Self {
-			master: (color_tiles::ColorTile::create(true)),
-			zones: color_tiles::Zones::create(),
+			master: (color_tiles::ColorTile::create(x, y + TILE_HEIGHT * 4, true)),
+			zones: color_tiles::Zones::create(x, y),
 		};
 
 		add_zone_tile_handle(&mut color_tiles.zones.left, tx, stop_signal.clone());

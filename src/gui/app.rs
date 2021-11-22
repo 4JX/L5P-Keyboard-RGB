@@ -8,7 +8,7 @@ use crate::{
 	gui::dialog::{alert, panic},
 };
 use fltk::enums::FrameType;
-use fltk::{app, enums::Font, group::Pack, prelude::*, window::Window};
+use fltk::{app, enums::Font, prelude::*, window::Window};
 use fltk::{
 	browser::HoldBrowser,
 	dialog,
@@ -145,25 +145,12 @@ impl App {
 
 		//UI
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
-		let mut color_picker_pack = Pack::new(0, 30, 540, 360, "");
-		let tiles = color_tiles::ColorTiles::new(&tx, stop_signal.clone());
-
-		color_picker_pack.add(&tiles.zones.left.exterior_tile);
-		color_picker_pack.add(&tiles.zones.center_left.exterior_tile);
-		color_picker_pack.add(&tiles.zones.center_right.exterior_tile);
-		color_picker_pack.add(&tiles.zones.right.exterior_tile);
-		color_picker_pack.add(&tiles.master.exterior_tile);
-		color_picker_pack.end();
-
-		let effect_browser_tile = effect_browser_tile::EffectBrowserTile::create(540, 30, &EFFECTS_LIST);
-		let effect_browser = effect_browser_tile.effect_browser;
-
-		let options_tile = options_tile::OptionsTile::create(540, 390, &tx, &stop_signal.clone());
+		let tiles = color_tiles::ColorTiles::new(0, 30, &tx, stop_signal.clone());
 
 		let mut app = Self {
 			color_tiles: tiles,
-			effect_browser,
-			options_tile,
+			effect_browser: effect_browser_tile::EffectBrowserTile::create(540, 30, &EFFECTS_LIST).effect_browser,
+			options_tile: options_tile::OptionsTile::create(540, 390, &tx, &stop_signal.clone()),
 			tx,
 			stop_signal,
 			buf: text::TextBuffer::default(),
@@ -181,6 +168,8 @@ impl App {
 		app::set_visible_focus(false);
 		app::set_font(Font::HelveticaBold);
 		app::set_frame_type(FrameType::FlatBox);
+
+		app.load_profile(true);
 
 		// Effect choice
 		app.effect_browser.set_callback({
@@ -245,12 +234,10 @@ impl App {
 						color_tiles.update(Effects::Christmas);
 						tx.send(Message::UpdateEffect { effect: Effects::Christmas }).unwrap();
 					}
-					_ => {}
+					_ => unreachable!("Effect index is out of range"),
 				}
 			}
 		});
-
-		app.load_profile(true);
 
 		thread::spawn(move || loop {
 			match manager.rx.try_iter().last() {
