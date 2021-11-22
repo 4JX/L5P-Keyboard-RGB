@@ -4,7 +4,6 @@
 
 ## Index
 
-- [Index](#index)
 - [Download](#download)
 - [Available effects](#available-effects)
 - [Usage](#usage)
