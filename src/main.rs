@@ -133,11 +133,11 @@ fn main() {
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
-		start_with_gui(manager, tx, &stop_signal);
+		start_with_gui(manager, tx, stop_signal);
 	}
 }
 
-fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: &Arc<AtomicBool>) {
+fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
 	let app = app::App::default();
 
 	//Windows logic
@@ -194,7 +194,7 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_sign
 
 	#[cfg(not(target_os = "windows"))]
 	{
-		gui::builder::start_ui(manager, tx, stop_signal);
+		gui::app::App::start_ui(manager, tx, stop_signal);
 		app.run().unwrap();
 	}
 }

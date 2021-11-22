@@ -33,6 +33,8 @@ impl OptionsChoice {
 		choice
 	}
 }
+
+#[derive(Clone)]
 pub struct OptionsTile {
 	pub speed_choice: Choice,
 	pub brightness_choice: Choice,

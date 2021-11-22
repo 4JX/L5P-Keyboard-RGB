@@ -1,5 +1,4 @@
-mod app;
-pub mod builder;
+pub mod app;
 mod color_tiles;
 mod dialog;
 mod effect_browser_tile;
