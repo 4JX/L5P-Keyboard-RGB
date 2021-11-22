@@ -285,7 +285,7 @@ impl KeyboardManager {
 	}
 }
 
-fn shift_vec(vec: &mut Vec<f32>, steps: u8) {
+fn shift_vec<T>(vec: &mut Vec<T>, steps: u8) {
 	for _i in 0..steps {
 		let temp = vec.pop().unwrap();
 		vec.insert(0, temp);
