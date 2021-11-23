@@ -181,10 +181,7 @@ impl Zones {
 		self.center_right.deactivate();
 		self.right.deactivate();
 	}
-	pub fn change_color_value(&mut self, color: BaseColor, value: f32) {
-		if !(0.0..=255.0).contains(&value) {
-			panic!("Keyboard colors has value outside accepted range (0-255)");
-		}
+	pub fn change_color_value(&mut self, color: BaseColor, value: u8) {
 		match color {
 			BaseColor::Red => {
 				self.left.red_input.set_value(value.to_string().as_str());
@@ -328,7 +325,7 @@ impl ColorTiles {
 							tx.send(Message::Refresh).unwrap();
 						} else {
 							input.set_value("0");
-							keyboard_color_tiles.zones.change_color_value(color, 0.0);
+							keyboard_color_tiles.zones.change_color_value(color, 0);
 						}
 						true
 					}
