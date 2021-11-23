@@ -16,7 +16,7 @@ impl EffectBrowser {
 		}
 
 		// Effect choice
-		effect_browser.set_frame(FrameType::FlatBox);
+		effect_browser.set_frame(FrameType::RFlatBox);
 		effect_browser.set_color(Color::from_u32(Colors::LighterGray as u32));
 		effect_browser.set_selection_color(Color::from_u32(Colors::White as u32));
 		effect_browser.set_text_size(20);

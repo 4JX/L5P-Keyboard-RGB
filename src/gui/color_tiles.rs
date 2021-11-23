@@ -42,7 +42,7 @@ impl ColorInput {
 				color_input
 			}
 		};
-		color_input.set_frame(FrameType::FlatBox);
+		color_input.set_frame(FrameType::RFlatBox);
 		color_input.set_color(Color::from_u32(Colors::DarkGray as u32));
 		color_input.set_selection_color(Color::White);
 		color_input.set_text_color(Color::from_u32(Colors::White as u32));

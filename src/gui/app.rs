@@ -167,6 +167,7 @@ impl App {
 		app::background(51, 51, 51);
 		app::set_visible_focus(false);
 		app::set_font(Font::HelveticaBold);
+		app::set_frame_border_radius_max(5);
 		app::set_frame_type(FrameType::FlatBox);
 
 		app.load_profile(true);

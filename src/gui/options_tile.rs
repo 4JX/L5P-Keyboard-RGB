@@ -22,7 +22,7 @@ impl OptionsChoice {
 		choice.add_choice(choices);
 
 		//Theming
-		choice.set_frame(FrameType::BorderBox);
+		choice.set_frame(FrameType::RoundedBox);
 		choice.set_color(Color::from_u32(Colors::DarkGray as u32));
 		choice.set_label_color(Color::from_u32(Colors::White as u32));
 		choice.set_selection_color(Color::White);
