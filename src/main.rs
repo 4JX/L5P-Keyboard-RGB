@@ -4,6 +4,7 @@ mod keyboard_manager;
 mod keyboard_utils;
 
 use clap::{crate_authors, crate_version, App, Arg, SubCommand};
+use color_eyre::Result;
 use enums::{Effects, Message};
 use fltk::app;
 use keyboard_manager::KeyboardManager;
@@ -14,7 +15,8 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::{env, process};
 
-fn main() {
+fn main() -> Result<()> {
+	color_eyre::install()?;
 	// Clear/Hide console if not running via one (Windows specific)
 	#[cfg(target_os = "windows")]
 	{
@@ -132,9 +134,10 @@ fn main() {
 		manager.set_effect(effect, &color_array, speed, brightness);
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
-		println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
+		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
 		start_with_gui(manager, tx, stop_signal);
 	}
+	Ok(())
 }
 
 fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
