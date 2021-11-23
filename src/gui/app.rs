@@ -272,12 +272,6 @@ impl App {
 						Message::Refresh => {
 							app.tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
 						}
-						Message::SaveProfile => {
-							app.save_profile();
-						}
-						Message::LoadProfile => {
-							app.load_profile(false);
-						}
 					}
 					app::awake();
 				}

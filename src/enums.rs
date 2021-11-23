@@ -28,6 +28,4 @@ pub enum Message {
 	UpdateBrightness { brightness: u8 },
 	UpdateSpeed { speed: u8 },
 	Refresh,
-	SaveProfile,
-	LoadProfile,
 }
