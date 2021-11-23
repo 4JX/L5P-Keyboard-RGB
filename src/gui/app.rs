@@ -165,10 +165,13 @@ impl App {
 
 		// Theming
 		app::background(51, 51, 51);
+		app::background2(119, 119, 119);
+		app::foreground(0, 0, 0);
 		app::set_visible_focus(false);
 		app::set_font(Font::HelveticaBold);
 		app::set_frame_border_radius_max(5);
 		app::set_frame_type(FrameType::FlatBox);
+		app::set_frame_type2(FrameType::DownBox, FrameType::RoundedBox);
 
 		app.load_profile(true);
 
