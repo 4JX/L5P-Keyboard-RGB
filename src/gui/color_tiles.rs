@@ -1,14 +1,9 @@
-use std::sync::{
-	atomic::{AtomicBool, Ordering},
-	mpsc, Arc,
-};
-
+use super::enums::{BaseColor, Colors};
 use crate::{
 	enums::{Effects, Message},
 	gui::color_tiles,
+	keyboard_manager::StopSignals,
 };
-
-use super::enums::{BaseColor, Colors};
 use fltk::{
 	button::ToggleButton,
 	enums::{Color, Event, FrameType},
@@ -17,6 +12,7 @@ use fltk::{
 	prelude::*,
 };
 use serde::{Deserialize, Serialize};
+use std::sync::mpsc;
 
 const TILE_WIDTH: i32 = 540;
 const TILE_HEIGHT: i32 = 90;
@@ -247,9 +243,9 @@ pub struct ColorTilesState {
 
 #[allow(dead_code)]
 impl ColorTiles {
-	pub fn new(x: i32, y: i32, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> Self {
-		fn add_zone_tile_handle(color_tile: &mut color_tiles::ColorTile, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
-			fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
+	pub fn new(x: i32, y: i32, tx: &mpsc::Sender<Message>, stop_signals: StopSignals) -> Self {
+		fn add_zone_tile_handle(color_tile: &mut color_tiles::ColorTile, tx: &mpsc::Sender<Message>, stop_signals: StopSignals) {
+			fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signals: StopSignals) {
 				input.handle({
 					move |input, event| match event {
 						Event::KeyUp => {
@@ -259,7 +255,7 @@ impl ColorTiles {
 									if value > 255.0 {
 										input.set_value("255");
 									}
-									stop_signal.store(true, Ordering::SeqCst);
+									stop_signals.set_true();
 									tx.send(Message::Refresh).unwrap();
 								}
 								Err(_) => {
@@ -276,7 +272,7 @@ impl ColorTiles {
 			color_tile.toggle_button.handle({
 				let mut color_tile = color_tile.clone();
 				let tx = tx.clone();
-				let stop_signal = stop_signal.clone();
+				let stop_signal = stop_signals.clone();
 				move |button, event| match event {
 					Event::Released => {
 						if button.is_toggled() {
@@ -288,7 +284,7 @@ impl ColorTiles {
 							color_tile.green_input.activate();
 							color_tile.blue_input.activate();
 						}
-						stop_signal.store(true, Ordering::SeqCst);
+						stop_signal.set_true();
 						tx.send(Message::Refresh).unwrap();
 						true
 					}
@@ -296,9 +292,9 @@ impl ColorTiles {
 				}
 			});
 
-			add_input_handle(&mut color_tile.red_input, tx.clone(), stop_signal.clone());
-			add_input_handle(&mut color_tile.green_input, tx.clone(), stop_signal.clone());
-			add_input_handle(&mut color_tile.blue_input, tx.clone(), stop_signal);
+			add_input_handle(&mut color_tile.red_input, tx.clone(), stop_signals.clone());
+			add_input_handle(&mut color_tile.green_input, tx.clone(), stop_signals.clone());
+			add_input_handle(&mut color_tile.blue_input, tx.clone(), stop_signals);
 		}
 
 		let mut color_tiles = Self {
@@ -306,12 +302,12 @@ impl ColorTiles {
 			zones: color_tiles::Zones::create(x, y),
 		};
 
-		add_zone_tile_handle(&mut color_tiles.zones.left, tx, stop_signal.clone());
-		add_zone_tile_handle(&mut color_tiles.zones.center_left, tx, stop_signal.clone());
-		add_zone_tile_handle(&mut color_tiles.zones.center_right, tx, stop_signal.clone());
-		add_zone_tile_handle(&mut color_tiles.zones.right, tx, stop_signal.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.left, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.center_left, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.center_right, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.right, tx, stop_signals.clone());
 
-		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, color_tiles: color_tiles::ColorTiles, stop_signal: Arc<AtomicBool>) {
+		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, color_tiles: color_tiles::ColorTiles, stop_signals: StopSignals) {
 			input.handle({
 				let mut keyboard_color_tiles = color_tiles;
 				move |input, event| match event {
@@ -322,7 +318,7 @@ impl ColorTiles {
 								input.set_value("255");
 							}
 							keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
-							stop_signal.store(true, Ordering::SeqCst);
+							stop_signals.set_true();
 							tx.send(Message::Refresh).unwrap();
 						} else {
 							input.set_value("0");
@@ -340,7 +336,7 @@ impl ColorTiles {
 			let mut keyboard_color_tiles = color_tiles.clone();
 			let mut master_tile = master_tile.clone();
 			let tx = tx.clone();
-			let stop_signal = stop_signal.clone();
+			let stop_signals = stop_signals.clone();
 			move |button, event| match event {
 				Event::Released => {
 					if button.is_toggled() {
@@ -354,7 +350,7 @@ impl ColorTiles {
 						master_tile.blue_input.activate();
 						keyboard_color_tiles.zones.activate();
 					}
-					stop_signal.store(true, Ordering::SeqCst);
+					stop_signals.set_true();
 					tx.send(Message::Refresh).unwrap();
 					true
 				}
@@ -362,9 +358,9 @@ impl ColorTiles {
 			}
 		});
 
-		add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, tx.clone(), color_tiles.clone(), stop_signal.clone());
-		add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, tx.clone(), color_tiles.clone(), stop_signal.clone());
-		add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, tx.clone(), color_tiles.clone(), stop_signal);
+		add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, tx.clone(), color_tiles.clone(), stop_signals.clone());
+		add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, tx.clone(), color_tiles.clone(), stop_signals.clone());
+		add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, tx.clone(), color_tiles.clone(), stop_signals);
 
 		color_tiles
 	}

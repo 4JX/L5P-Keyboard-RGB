@@ -14,13 +14,13 @@ use std::time::{Duration, Instant};
 pub struct KeyboardManager {
 	pub keyboard: Keyboard,
 	pub rx: Receiver<Message>,
-	pub stop_signal: Arc<AtomicBool>,
+	pub stop_signals: StopSignals,
 	pub last_effect: Effects,
 }
 
 impl KeyboardManager {
 	pub fn set_effect(&mut self, effect: Effects, color_array: &[u8; 12], speed: u8, brightness: u8) {
-		self.stop_signal.store(false, Ordering::SeqCst);
+		self.stop_signals.set_false();
 		self.last_effect = effect;
 		let mut thread_rng = thread_rng();
 
@@ -47,8 +47,8 @@ impl KeyboardManager {
 				self.keyboard.set_effect(BaseEffects::RightWave);
 			}
 			Effects::Lightning => {
-				while !self.stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signal.load(Ordering::SeqCst) {
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					let zone = thread_rng.gen_range(0..4);
@@ -70,8 +70,8 @@ impl KeyboardManager {
 					let (w, h) = (capturer.width(), capturer.height());
 
 					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
-					while !self.stop_signal.load(Ordering::SeqCst) {
-						if self.stop_signal.load(Ordering::SeqCst) {
+					while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
 						if let Ok(frame) = capturer.frame(0) {
@@ -107,14 +107,14 @@ impl KeyboardManager {
 			Effects::SmoothLeftWave => {
 				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 
-				while !self.stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signal.load(Ordering::SeqCst) {
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					shift_vec(&mut gradient, 3);
 					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.current_state.speed, 10);
-					if self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
@@ -123,22 +123,22 @@ impl KeyboardManager {
 			Effects::SmoothRightWave => {
 				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
 
-				while !self.stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signal.load(Ordering::SeqCst) {
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					shift_vec(&mut gradient, 9);
 					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.current_state.speed, 10);
-					if self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
 				}
 			}
 			Effects::LeftSwipe => {
-				while !self.stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signal.load(Ordering::SeqCst) {
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 
@@ -147,19 +147,19 @@ impl KeyboardManager {
 						shift_vec(&mut gradient, 3);
 						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.current_state.speed, 10);
-						if self.stop_signal.load(Ordering::SeqCst) {
+						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
 					}
-					if self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
 				}
 			}
 			Effects::RightSwipe => {
-				while !self.stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signal.load(Ordering::SeqCst) {
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 
@@ -168,18 +168,18 @@ impl KeyboardManager {
 						shift_vec(&mut gradient, 9);
 						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.current_state.speed, 10);
-						if self.stop_signal.load(Ordering::SeqCst) {
+						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
 					}
-					if self.stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
 				}
 			}
 			Effects::Disco => {
-				while !self.stop_signal.load(Ordering::SeqCst) {
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					let colors = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255]];
 					let colors_index = thread_rng.gen_range(0..6);
 					let new_values = colors[colors_index];
@@ -193,7 +193,7 @@ impl KeyboardManager {
 				let color_array = [255, 10, 10, 255, 255, 20, 30, 255, 30, 70, 70, 255];
 				let subeffect_count = 4;
 				let mut last_subeffect = -1;
-				while !self.stop_signal.load(Ordering::SeqCst) {
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					let mut subeffect = thread_rng.gen_range(0..subeffect_count);
 					while last_subeffect == subeffect {
 						subeffect = thread_rng.gen_range(0..subeffect_count);
@@ -281,7 +281,7 @@ impl KeyboardManager {
 				}
 			}
 		}
-		self.stop_signal.store(false, Ordering::SeqCst);
+		self.stop_signals.set_false();
 	}
 }
 
@@ -289,5 +289,22 @@ fn shift_vec<T>(vec: &mut Vec<T>, steps: u8) {
 	for _i in 0..steps {
 		let temp = vec.pop().unwrap();
 		vec.insert(0, temp);
+	}
+}
+
+#[derive(Clone)]
+pub struct StopSignals {
+	pub manager_stop_signal: Arc<AtomicBool>,
+	pub keyboard_stop_signal: Arc<AtomicBool>,
+}
+
+impl StopSignals {
+	pub fn set_true(&self) {
+		self.manager_stop_signal.store(true, Ordering::SeqCst);
+		self.keyboard_stop_signal.store(true, Ordering::SeqCst);
+	}
+	pub fn set_false(&self) {
+		self.manager_stop_signal.store(false, Ordering::SeqCst);
+		self.keyboard_stop_signal.store(false, Ordering::SeqCst);
 	}
 }

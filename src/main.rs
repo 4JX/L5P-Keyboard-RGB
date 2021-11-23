@@ -15,6 +15,8 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::{env, process};
 
+use crate::keyboard_manager::StopSignals;
+
 fn main() -> Result<()> {
 	color_eyre::install()?;
 	// Clear/Hide console if not running via one (Windows specific)
@@ -44,15 +46,18 @@ fn main() -> Result<()> {
 	}
 
 	let (tx, rx) = mpsc::channel::<Message>();
-	let stop_signal = Arc::new(AtomicBool::new(false));
-	let keyboard = match keyboard_utils::get_keyboard(stop_signal.clone()) {
+	let keyboard_stop_signal = Arc::new(AtomicBool::new(false));
+	let keyboard = match keyboard_utils::get_keyboard(keyboard_stop_signal.clone()) {
 		Ok(keyboard) => keyboard,
 		Err(err) => panic!("{}", err),
 	};
 	let mut manager = KeyboardManager {
 		keyboard,
 		rx,
-		stop_signal: stop_signal.clone(),
+		stop_signals: StopSignals {
+			manager_stop_signal: Arc::new(AtomicBool::new(false)),
+			keyboard_stop_signal,
+		},
 		last_effect: Effects::Static,
 	};
 
@@ -136,12 +141,12 @@ fn main() -> Result<()> {
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
-		start_with_gui(manager, tx, stop_signal);
+		start_with_gui(manager, tx);
 	}
 	Ok(())
 }
 
-fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
+fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>) {
 	let app = app::App::default();
 
 	//Windows logic
@@ -198,7 +203,7 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_sign
 
 	#[cfg(not(target_os = "windows"))]
 	{
-		gui::app::App::start_ui(manager, tx, stop_signal);
+		gui::app::App::start_ui(manager, tx);
 		app.run().unwrap();
 	}
 }

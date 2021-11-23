@@ -2,7 +2,7 @@ use super::color_tiles::{ColorTiles, ColorTilesState};
 use super::options_tile::OptionsTile;
 use super::{color_tiles, effect_browser_tile, options_tile};
 use crate::gui::menu_bar;
-use crate::keyboard_manager;
+use crate::keyboard_manager::{self, StopSignals};
 use crate::{
 	enums::{Effects, Message},
 	gui::dialog::{alert, panic},
@@ -17,9 +17,7 @@ use fltk::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
-use std::sync::Arc;
 use std::time::Duration;
 use std::{panic, thread};
 use std::{path, str::FromStr, sync::mpsc::Sender};
@@ -60,7 +58,7 @@ pub struct App {
 	pub effect_browser: HoldBrowser,
 	pub options_tile: OptionsTile,
 	pub tx: Sender<Message>,
-	pub stop_signal: Arc<AtomicBool>,
+	pub stop_signals: StopSignals,
 	pub buf: text::TextBuffer,
 	pub center: (i32, i32),
 }
@@ -91,7 +89,7 @@ impl App {
 					self.effect_browser.select(EFFECTS_LIST.iter().position(|&val| val == profile.effect.to_string()).unwrap() as i32 + 1);
 					self.options_tile.speed_choice.set_value(profile.speed);
 					self.options_tile.brightness_choice.set_value(profile.brightness);
-					self.stop_signal.store(true, Ordering::SeqCst);
+					self.stop_signals.set_true();
 					self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
 				} else {
 					alert(
@@ -99,14 +97,14 @@ impl App {
 						200,
 						"There was an error loading the profile.\nPlease make sure its a valid profile file and that it is compatible with this version of the program.",
 					);
-					self.stop_signal.store(true, Ordering::SeqCst);
+					self.stop_signals.set_true();
 					self.tx.send(Message::Refresh).unwrap();
 				}
 			} else if !is_default {
 				alert(800, 200, "File does not exist!");
 			}
 		} else {
-			self.stop_signal.store(true, Ordering::SeqCst);
+			self.stop_signals.set_true();
 			self.tx.send(Message::Refresh).unwrap();
 		}
 	}
@@ -131,10 +129,10 @@ impl App {
 			self.buf.save_file(filename).unwrap_or_else(|_| alert(800, 200, "Please specify a file name to use."));
 		}
 
-		self.stop_signal.store(true, Ordering::SeqCst);
+		self.stop_signals.set_true();
 		self.tx.send(Message::Refresh).unwrap();
 	}
-	pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> fltk::window::Window {
+	pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>) -> fltk::window::Window {
 		panic::set_hook(Box::new(|info| {
 			if let Some(s) = info.payload().downcast_ref::<&str>() {
 				panic(800, 400, s);
@@ -145,19 +143,19 @@ impl App {
 
 		//UI
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
-		let tiles = color_tiles::ColorTiles::new(0, 30, &tx, stop_signal.clone());
+		let tiles = color_tiles::ColorTiles::new(0, 30, &tx, manager.stop_signals.clone());
 
 		let mut app = Self {
 			color_tiles: tiles,
 			effect_browser: effect_browser_tile::EffectBrowserTile::create(540, 30, &EFFECTS_LIST).effect_browser,
-			options_tile: options_tile::OptionsTile::create(540, 390, &tx, &stop_signal.clone()),
+			options_tile: options_tile::OptionsTile::create(540, 390, &tx, &manager.stop_signals.clone()),
 			tx,
-			stop_signal,
+			stop_signals: manager.stop_signals.clone(),
 			buf: text::TextBuffer::default(),
 			center: screen_center(),
 		};
 
-		menu_bar::AppMenuBar::new(&app.tx, app.stop_signal.clone(), &app);
+		menu_bar::AppMenuBar::new(&app.tx, &app);
 
 		win.end();
 		win.make_resizable(false);
@@ -177,11 +175,11 @@ impl App {
 
 		// Effect choice
 		app.effect_browser.set_callback({
-			let stop_signal = app.stop_signal.clone();
+			let stop_signals = app.stop_signals.clone();
 			let tx = app.tx.clone();
 			let mut color_tiles = app.color_tiles.clone();
 			move |browser| {
-				stop_signal.store(true, Ordering::SeqCst);
+				stop_signals.set_true();
 				match browser.value() {
 					0 => {
 						browser.select(0);
