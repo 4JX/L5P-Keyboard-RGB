@@ -29,7 +29,7 @@ pub fn screen_center() -> (i32, i32) {
 	((app::screen_size().0 / 2.0) as i32, (app::screen_size().1 / 2.0) as i32)
 }
 
-pub const EFFECTS_LIST: [&str; 13] = [
+pub const EFFECTS_LIST: [&str; 14] = [
 	"Static",
 	"Breath",
 	"Smooth",
@@ -43,6 +43,7 @@ pub const EFFECTS_LIST: [&str; 13] = [
 	"RightSwipe",
 	"Disco",
 	"Christmas",
+	"Fade",
 ];
 
 #[derive(Serialize, Deserialize)]
@@ -89,7 +90,7 @@ impl App {
 					self.effect_browser.select(EFFECTS_LIST.iter().position(|&val| val == profile.effect.to_string()).unwrap() as i32 + 1);
 					self.options_tile.speed_choice.set_value(profile.speed);
 					self.options_tile.brightness_choice.set_value(profile.brightness);
-					self.stop_signals.set_true();
+					self.stop_signals.store_true();
 					self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
 				} else {
 					alert(
@@ -97,14 +98,14 @@ impl App {
 						200,
 						"There was an error loading the profile.\nPlease make sure its a valid profile file and that it is compatible with this version of the program.",
 					);
-					self.stop_signals.set_true();
+					self.stop_signals.store_true();
 					self.tx.send(Message::Refresh).unwrap();
 				}
 			} else if !is_default {
 				alert(800, 200, "File does not exist!");
 			}
 		} else {
-			self.stop_signals.set_true();
+			self.stop_signals.store_true();
 			self.tx.send(Message::Refresh).unwrap();
 		}
 	}
@@ -129,7 +130,7 @@ impl App {
 			self.buf.save_file(filename).unwrap_or_else(|_| alert(800, 200, "Please specify a file name to use."));
 		}
 
-		self.stop_signals.set_true();
+		self.stop_signals.store_true();
 		self.tx.send(Message::Refresh).unwrap();
 	}
 	pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>) -> fltk::window::Window {
@@ -179,7 +180,7 @@ impl App {
 			let tx = app.tx.clone();
 			let mut color_tiles = app.color_tiles.clone();
 			move |browser| {
-				stop_signals.set_true();
+				stop_signals.store_true();
 				match browser.value() {
 					0 => {
 						browser.select(0);
@@ -235,6 +236,10 @@ impl App {
 					13 => {
 						color_tiles.update(Effects::Christmas);
 						tx.send(Message::UpdateEffect { effect: Effects::Christmas }).unwrap();
+					}
+					14 => {
+						color_tiles.update(Effects::Fade);
+						tx.send(Message::UpdateEffect { effect: Effects::Fade }).unwrap();
 					}
 					_ => unreachable!("Effect index is out of range"),
 				}

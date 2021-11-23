@@ -255,7 +255,7 @@ impl ColorTiles {
 									if value > 255.0 {
 										input.set_value("255");
 									}
-									stop_signals.set_true();
+									stop_signals.store_true();
 									tx.send(Message::Refresh).unwrap();
 								}
 								Err(_) => {
@@ -284,7 +284,7 @@ impl ColorTiles {
 							color_tile.green_input.activate();
 							color_tile.blue_input.activate();
 						}
-						stop_signal.set_true();
+						stop_signal.store_true();
 						tx.send(Message::Refresh).unwrap();
 						true
 					}
@@ -318,7 +318,7 @@ impl ColorTiles {
 								input.set_value("255");
 							}
 							keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
-							stop_signals.set_true();
+							stop_signals.store_true();
 							tx.send(Message::Refresh).unwrap();
 						} else {
 							input.set_value("0");
@@ -350,7 +350,7 @@ impl ColorTiles {
 						master_tile.blue_input.activate();
 						keyboard_color_tiles.zones.activate();
 					}
-					stop_signals.set_true();
+					stop_signals.store_true();
 					tx.send(Message::Refresh).unwrap();
 					true
 				}
@@ -411,7 +411,7 @@ impl ColorTiles {
 
 	pub fn update(&mut self, effect: Effects) {
 		match effect {
-			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe => {
+			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe | Effects::Fade => {
 				self.activate();
 			}
 			Effects::Smooth

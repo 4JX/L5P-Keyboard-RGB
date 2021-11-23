@@ -403,6 +403,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "device_query"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0500656e17fa3bf720de64b28b6fb28c3602307fc7afbb078c6643d836acaa28"
+dependencies = [
+ "input-event-codes",
+ "pkg-config",
+ "readkey",
+ "readmouse",
+ "winapi",
+ "x11",
+]
+
+[[package]]
 name = "dtoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -578,6 +592,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
+name = "input-event-codes"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acb51da0fc0301c7b9a39fd88a5ce0c2b2c3af08f60e610f0a505bb0abfa0712"
+
+[[package]]
 name = "itoa"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -628,6 +648,7 @@ version = "0.11.0"
 dependencies = [
  "clap",
  "color-eyre",
+ "device_query",
  "fltk",
  "hidapi",
  "image",
@@ -1128,6 +1149,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "readkey"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86d401b6d6a1725a59f1b4e813275d289dff3ad09c72b373a10a7a8217ba3146"
+
+[[package]]
+name = "readmouse"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be105c72a1e6a5a1198acee3d5b506a15676b74a02ecd78060042a447f408d94"
+
+[[package]]
 name = "regex"
 version = "1.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1548,6 +1581,16 @@ name = "wyz"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
+
+[[package]]
+name = "x11"
+version = "2.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6dd0565fa8bfba8c5efe02725b14dff114c866724eff2cfd44d76cea74bcd87a"
+dependencies = [
+ "libc",
+ "pkg-config",
+]
 
 [[package]]
 name = "xml-rs"

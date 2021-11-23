@@ -1,6 +1,7 @@
 use crate::enums::{Effects, Message};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
 
+use device_query::{DeviceQuery, DeviceState, Keycode};
 use image::{buffer::ConvertBuffer, imageops, ImageBuffer};
 use rand::{thread_rng, Rng};
 use scrap::{Capturer, Display};
@@ -20,7 +21,7 @@ pub struct KeyboardManager {
 
 impl KeyboardManager {
 	pub fn set_effect(&mut self, effect: Effects, color_array: &[u8; 12], speed: u8, brightness: u8) {
-		self.stop_signals.set_false();
+		self.stop_signals.store_false();
 		self.last_effect = effect;
 		let mut thread_rng = thread_rng();
 
@@ -280,8 +281,35 @@ impl KeyboardManager {
 					}
 				}
 			}
+			Effects::Fade => {
+				let stop_signals = self.stop_signals.clone();
+				thread::spawn(move || {
+					let device_state = DeviceState::new();
+					while !stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+						let keys: Vec<Keycode> = device_state.get_keys();
+						if !keys.is_empty() {
+							stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
+						}
+					}
+				});
+
+				let device_state = DeviceState::new();
+				let mut now = Instant::now();
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+					let keys: Vec<Keycode> = device_state.get_keys();
+					if !keys.is_empty() {
+						self.keyboard.set_colors_to(&color_array);
+						self.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
+						now = Instant::now();
+					} else {
+						if now.elapsed() > Duration::from_secs(20 / speed as u64) {
+							self.keyboard.transition_colors_to(&[0.0; 12], 255, 5);
+						}
+					}
+				}
+			}
 		}
-		self.stop_signals.set_false();
+		self.stop_signals.store_false();
 	}
 }
 
@@ -299,11 +327,11 @@ pub struct StopSignals {
 }
 
 impl StopSignals {
-	pub fn set_true(&self) {
+	pub fn store_true(&self) {
 		self.manager_stop_signal.store(true, Ordering::SeqCst);
 		self.keyboard_stop_signal.store(true, Ordering::SeqCst);
 	}
-	pub fn set_false(&self) {
+	pub fn store_false(&self) {
 		self.manager_stop_signal.store(false, Ordering::SeqCst);
 		self.keyboard_stop_signal.store(false, Ordering::SeqCst);
 	}

@@ -25,14 +25,14 @@ impl AppMenuBar {
 		menu.add("&Profile/Save\t", Shortcut::None, menu::MenuFlag::Normal, {
 			let mut app = app.clone();
 			move |_some| {
-				app.stop_signals.set_true();
+				app.stop_signals.store_true();
 				app.save_profile();
 			}
 		});
 		menu.add("&Profile/Load\t", Shortcut::None, menu::MenuFlag::Normal, {
 			let mut app = app.clone();
 			move |_some| {
-				app.stop_signals.set_true();
+				app.stop_signals.store_true();
 				app.load_profile(false);
 			}
 		});

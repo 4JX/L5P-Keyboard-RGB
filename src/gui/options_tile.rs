@@ -50,7 +50,7 @@ impl OptionsTile {
 			let tx = tx.clone();
 			let stop_signal = stop_signals.clone();
 			move |choice| {
-				stop_signal.set_true();
+				stop_signal.store_true();
 				if let Some(value) = choice.choice() {
 					let speed = value.parse::<u8>().unwrap();
 					if (1..=4).contains(&speed) {
@@ -65,7 +65,7 @@ impl OptionsTile {
 			let tx = tx.clone();
 			let stop_signal = stop_signals.clone();
 			move |choice| {
-				stop_signal.set_true();
+				stop_signal.store_true();
 				if let Some(value) = choice.choice() {
 					let brightness = value.parse::<u8>().unwrap();
 					if (1..=2).contains(&brightness) {
