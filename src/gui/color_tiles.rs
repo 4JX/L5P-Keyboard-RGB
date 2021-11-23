@@ -49,6 +49,7 @@ impl ColorInput {
 		color_input.set_text_size(30);
 		color_input.set_label_size(30);
 		color_input.set_value("0");
+		color_input.set_maximum_size(4);
 		color_input
 	}
 }
@@ -106,15 +107,15 @@ impl ColorTile {
 impl ColorTile {
 	pub fn create(x: i32, y: i32, master_tile: bool) -> Self {
 		let button_size = 40;
-		let inputs_offset = 70;
+		let inputs_offset = 60;
 
 		//Begin tile
 		let exterior_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
 		let toggle_button = ToggleButton::new(x + 25, y + TILE_HEIGHT / 2 - button_size / 2, button_size, button_size, "");
 		let inputs_tile = Tile::new(x + TILE_HEIGHT, y, TILE_WIDTH - TILE_HEIGHT, TILE_HEIGHT, "");
-		let green_input = ColorInput::create(0, 0, 60, 40, BaseColor::Green).center_of_parent();
-		let red_input = ColorInput::create(0, 0, 60, 40, BaseColor::Red).left_of(&green_input, inputs_offset);
-		let blue_input = ColorInput::create(0, 0, 60, 40, BaseColor::Blue).right_of(&green_input, inputs_offset);
+		let green_input = ColorInput::create(0, 0, 70, 40, BaseColor::Green).center_of_parent();
+		let red_input = ColorInput::create(0, 0, 70, 40, BaseColor::Red).left_of(&green_input, inputs_offset);
+		let blue_input = ColorInput::create(0, 0, 70, 40, BaseColor::Blue).right_of(&green_input, inputs_offset);
 		inputs_tile.end();
 
 		let mut color_tile = Self {
