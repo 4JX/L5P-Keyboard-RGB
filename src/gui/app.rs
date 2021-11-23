@@ -113,7 +113,7 @@ impl App {
 	pub fn save_profile(&mut self) {
 		let profile = Profile {
 			color_tiles_state: self.color_tiles.get_state(),
-			effect: Effects::from_str(EFFECTS_LIST[self.effect_browser.value() as usize - 1]).unwrap(),
+			effect: Effects::from_str(self.effect_browser.selected_text().unwrap().as_str()).unwrap(),
 			speed: self.options_tile.speed_choice.value(),
 			brightness: self.options_tile.brightness_choice.value(),
 		};
