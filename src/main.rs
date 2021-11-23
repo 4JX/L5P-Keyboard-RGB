@@ -102,6 +102,7 @@ fn main() -> Result<()> {
 			),
 		)
 		.subcommand(SubCommand::with_name("Disco").about("Disco effect"))
+		.subcommand(SubCommand::with_name("Christmas").about("Christmas effect"))
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
