@@ -304,6 +304,8 @@ impl KeyboardManager {
 					} else {
 						if now.elapsed() > Duration::from_secs(20 / speed as u64) {
 							self.keyboard.transition_colors_to(&[0.0; 12], 255, 5);
+						} else {
+							thread::sleep(Duration::from_millis(20));
 						}
 					}
 				}
