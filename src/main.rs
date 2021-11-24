@@ -159,7 +159,7 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>) {
 
 		static mut WINDOW: HWND = std::ptr::null_mut();
 
-		let mut win = gui::app::App::start_ui(manager, tx, stop_signal);
+		let mut win = gui::app::App::start_ui(manager, tx);
 
 		unsafe {
 			WINDOW = win.raw_handle();
