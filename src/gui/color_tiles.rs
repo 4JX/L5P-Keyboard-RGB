@@ -251,7 +251,9 @@ impl ColorTiles {
 						Event::KeyUp => {
 							match input.value().parse::<f32>() {
 								Ok(value) => {
-									input.set_value(&value.to_string());
+									if input.value().len() > 3 {
+										input.set_value(&value.to_string());
+									}
 									if value > 255.0 {
 										input.set_value("255");
 									}
@@ -313,7 +315,9 @@ impl ColorTiles {
 				move |input, event| match event {
 					Event::KeyUp => {
 						if let Ok(value) = input.value().parse::<f32>() {
-							input.set_value(&value.to_string());
+							if input.value().len() > 3 {
+								input.set_value(&value.to_string());
+							}
 							if value > 255.0 {
 								input.set_value("255");
 							}
