@@ -303,7 +303,7 @@ impl KeyboardManager {
 						now = Instant::now();
 					} else {
 						if now.elapsed() > Duration::from_secs(20 / speed as u64) {
-							self.keyboard.transition_colors_to(&[0.0; 12], 255, 5);
+							self.keyboard.transition_colors_to(&[0.0; 12], 230, 3);
 						} else {
 							thread::sleep(Duration::from_millis(20));
 						}
