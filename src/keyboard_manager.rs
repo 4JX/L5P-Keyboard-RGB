@@ -330,11 +330,11 @@ pub struct StopSignals {
 
 impl StopSignals {
 	pub fn store_true(&self) {
-		self.manager_stop_signal.store(true, Ordering::SeqCst);
 		self.keyboard_stop_signal.store(true, Ordering::SeqCst);
+		self.manager_stop_signal.store(true, Ordering::SeqCst);
 	}
 	pub fn store_false(&self) {
-		self.manager_stop_signal.store(false, Ordering::SeqCst);
 		self.keyboard_stop_signal.store(false, Ordering::SeqCst);
+		self.manager_stop_signal.store(false, Ordering::SeqCst);
 	}
 }
