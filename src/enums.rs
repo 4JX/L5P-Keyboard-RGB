@@ -16,6 +16,7 @@ pub enum Effects {
 	RightSwipe,
 	Disco,
 	Christmas,
+	Fade,
 }
 
 #[allow(dead_code)]
@@ -28,6 +29,4 @@ pub enum Message {
 	UpdateBrightness { brightness: u8 },
 	UpdateSpeed { speed: u8 },
 	Refresh,
-	SaveProfile,
-	LoadProfile,
 }

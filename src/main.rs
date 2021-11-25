@@ -4,6 +4,7 @@ mod keyboard_manager;
 mod keyboard_utils;
 
 use clap::{crate_authors, crate_version, App, Arg, SubCommand};
+use color_eyre::Result;
 use enums::{Effects, Message};
 use fltk::app;
 use keyboard_manager::KeyboardManager;
@@ -14,7 +15,10 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use std::{env, process};
 
-fn main() {
+use crate::keyboard_manager::StopSignals;
+
+fn main() -> Result<()> {
+	color_eyre::install()?;
 	// Clear/Hide console if not running via one (Windows specific)
 	#[cfg(target_os = "windows")]
 	{
@@ -42,15 +46,18 @@ fn main() {
 	}
 
 	let (tx, rx) = mpsc::channel::<Message>();
-	let stop_signal = Arc::new(AtomicBool::new(false));
-	let keyboard = match keyboard_utils::get_keyboard(stop_signal.clone()) {
+	let keyboard_stop_signal = Arc::new(AtomicBool::new(false));
+	let keyboard = match keyboard_utils::get_keyboard(keyboard_stop_signal.clone()) {
 		Ok(keyboard) => keyboard,
 		Err(err) => panic!("{}", err),
 	};
 	let mut manager = KeyboardManager {
 		keyboard,
 		rx,
-		stop_signal: stop_signal.clone(),
+		stop_signals: StopSignals {
+			manager_stop_signal: Arc::new(AtomicBool::new(false)),
+			keyboard_stop_signal,
+		},
 		last_effect: Effects::Static,
 	};
 
@@ -100,6 +107,15 @@ fn main() {
 			),
 		)
 		.subcommand(SubCommand::with_name("Disco").about("Disco effect"))
+		.subcommand(SubCommand::with_name("Christmas").about("Christmas effect"))
+		.subcommand(
+			SubCommand::with_name("Fade").about("Fade effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
@@ -114,13 +130,12 @@ fn main() {
 		let matches = matches.subcommand_matches(input).unwrap();
 
 		let color_array: [u8; 12] = match effect {
-			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe => {
+			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe | Effects::Fade => {
 				let color_array = if let Some(value) = matches.value_of("colors") {
-					let color_array = parse_bytes_arg(value)
+					parse_bytes_arg(value)
 						.expect("Invalid input, please check you used the correct format for the colors")
 						.try_into()
-						.expect("Invalid input, please check you used the correct format for the colors");
-					color_array
+						.expect("Invalid input, please check you used the correct format for the colors")
 				} else {
 					println!("This effect requires specifying the colors to use.");
 					process::exit(0);
@@ -133,12 +148,13 @@ fn main() {
 		manager.set_effect(effect, &color_array, speed, brightness);
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
-		println!("No subcommands found, starting in GUI mode, to view the possible subcommands type \"{} --help\"", exec_name);
-		start_with_gui(manager, tx, &stop_signal);
+		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
+		start_with_gui(manager, tx);
 	}
+	Ok(())
 }
 
-fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_signal: &Arc<AtomicBool>) {
+fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>) {
 	let app = app::App::default();
 
 	//Windows logic
@@ -151,7 +167,7 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_sign
 
 		static mut WINDOW: HWND = std::ptr::null_mut();
 
-		let mut win = gui::builder::start_ui(manager, tx, stop_signal);
+		let mut win = gui::app::App::start_ui(manager, tx);
 
 		unsafe {
 			WINDOW = win.raw_handle();
@@ -195,7 +211,7 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>, stop_sign
 
 	#[cfg(not(target_os = "windows"))]
 	{
-		gui::builder::start_ui(manager, tx, stop_signal);
+		gui::app::App::start_ui(manager, tx);
 		app.run().unwrap();
 	}
 }

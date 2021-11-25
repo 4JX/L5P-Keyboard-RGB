@@ -1,11 +1,9 @@
-use std::sync::{
-	atomic::{AtomicBool, Ordering},
-	mpsc, Arc,
-};
-
-use crate::{enums::Message, gui::color_tiles};
-
 use super::enums::{BaseColor, Colors};
+use crate::{
+	enums::{Effects, Message},
+	gui::color_tiles,
+	keyboard_manager::StopSignals,
+};
 use fltk::{
 	button::ToggleButton,
 	enums::{Color, Event, FrameType},
@@ -14,6 +12,10 @@ use fltk::{
 	prelude::*,
 };
 use serde::{Deserialize, Serialize};
+use std::sync::mpsc;
+
+const TILE_WIDTH: i32 = 540;
+const TILE_HEIGHT: i32 = 90;
 
 pub struct ColorInput;
 
@@ -36,13 +38,14 @@ impl ColorInput {
 				color_input
 			}
 		};
-		color_input.set_frame(FrameType::FlatBox);
+		color_input.set_frame(FrameType::RFlatBox);
 		color_input.set_color(Color::from_u32(Colors::DarkGray as u32));
 		color_input.set_selection_color(Color::White);
 		color_input.set_text_color(Color::from_u32(Colors::White as u32));
 		color_input.set_text_size(30);
 		color_input.set_label_size(30);
 		color_input.set_value("0");
+		color_input.set_maximum_size(4);
 		color_input
 	}
 }
@@ -96,28 +99,31 @@ impl ColorTile {
 	}
 }
 
-#[allow(dead_code)]
 impl ColorTile {
-	pub fn create(master_tile: bool) -> Self {
-		let center_x = 540 / 2;
-		let center_y = 90 / 2 - 20;
-		let offset = 120;
+	pub fn create(x: i32, y: i32, master_tile: bool) -> Self {
+		let button_size = 40;
+		let inputs_offset = 60;
+
 		//Begin tile
+		let exterior_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
+		let toggle_button = ToggleButton::new(x + 25, y + TILE_HEIGHT / 2 - button_size / 2, button_size, button_size, "");
+		let inputs_tile = Tile::new(x + TILE_HEIGHT, y, TILE_WIDTH - TILE_HEIGHT, TILE_HEIGHT, "");
+		let green_input = ColorInput::create(0, 0, 70, 40, BaseColor::Green).center_of_parent();
+		let red_input = ColorInput::create(0, 0, 70, 40, BaseColor::Red).left_of(&green_input, inputs_offset);
+		let blue_input = ColorInput::create(0, 0, 70, 40, BaseColor::Blue).right_of(&green_input, inputs_offset);
+		inputs_tile.end();
+
 		let mut color_tile = Self {
-			exterior_tile: Tile::new(0, 0, 540, 90, ""),
-			toggle_button: ToggleButton::new(25, 25, 40, 40, ""),
-			red_input: ColorInput::create(center_x - offset, center_y, 60, 40, BaseColor::Red),
-			green_input: ColorInput::create(center_x, center_y, 60, 40, BaseColor::Green),
-			blue_input: ColorInput::create(center_x + offset, center_y, 60, 40, BaseColor::Blue),
+			exterior_tile,
+			toggle_button,
+			red_input,
+			green_input,
+			blue_input,
 		};
 
-		color_tile.exterior_tile.add(&color_tile.toggle_button);
-		color_tile.exterior_tile.add(&color_tile.red_input);
-		color_tile.exterior_tile.add(&color_tile.green_input);
-		color_tile.exterior_tile.add(&color_tile.blue_input);
 		color_tile.exterior_tile.end();
 
-		//Themeing
+		//Theming
 		color_tile.exterior_tile.set_frame(FrameType::FlatBox);
 		if master_tile {
 			color_tile.exterior_tile.set_color(Color::from_u32(Colors::LightGray as u32));
@@ -149,14 +155,13 @@ pub struct Zones {
 	pub right: ColorTile,
 }
 
-#[allow(dead_code)]
 impl Zones {
-	pub fn create() -> Self {
+	pub fn create(x: i32, y: i32) -> Self {
 		Zones {
-			left: ColorTile::create(false),
-			center_left: ColorTile::create(false),
-			center_right: ColorTile::create(false),
-			right: ColorTile::create(false),
+			left: ColorTile::create(x, y, false),
+			center_left: ColorTile::create(x, y + TILE_HEIGHT, false),
+			center_right: ColorTile::create(x, y + TILE_HEIGHT * 2, false),
+			right: ColorTile::create(x, y + TILE_HEIGHT * 3, false),
 		}
 	}
 	pub fn activate(&mut self) {
@@ -171,10 +176,7 @@ impl Zones {
 		self.center_right.deactivate();
 		self.right.deactivate();
 	}
-	pub fn change_color_value(&mut self, color: BaseColor, value: f32) {
-		if !(0.0..=255.0).contains(&value) {
-			panic!("Keyboard colors has value outside accepted range (0-255)");
-		}
+	pub fn change_color_value(&mut self, color: BaseColor, value: u8) {
 		match color {
 			BaseColor::Red => {
 				self.left.red_input.set_value(value.to_string().as_str());
@@ -224,34 +226,36 @@ impl Zones {
 
 #[derive(Clone)]
 pub struct ColorTiles {
-	pub master: ColorTile,
-	pub zones: Zones,
+	master: ColorTile,
+	zones: Zones,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ColorTilesState {
-	pub master: ColorTileState,
-	pub left: ColorTileState,
-	pub center_left: ColorTileState,
-	pub center_right: ColorTileState,
-	pub right: ColorTileState,
+	master: ColorTileState,
+	left: ColorTileState,
+	center_left: ColorTileState,
+	center_right: ColorTileState,
+	right: ColorTileState,
 }
 
 #[allow(dead_code)]
 impl ColorTiles {
-	pub fn new(tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) -> Self {
-		fn add_zone_tile_handle(color_tile: &mut color_tiles::ColorTile, tx: &mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
-			fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signal: Arc<AtomicBool>) {
+	pub fn new(x: i32, y: i32, tx: &mpsc::Sender<Message>, stop_signals: StopSignals) -> Self {
+		fn add_zone_tile_handle(color_tile: &mut color_tiles::ColorTile, tx: &mpsc::Sender<Message>, stop_signals: StopSignals) {
+			fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signals: StopSignals) {
 				input.handle({
 					move |input, event| match event {
 						Event::KeyUp => {
 							match input.value().parse::<f32>() {
 								Ok(value) => {
-									input.set_value(&value.to_string());
+									if input.value().len() > 3 {
+										input.set_value(&value.to_string());
+									}
 									if value > 255.0 {
 										input.set_value("255");
 									}
-									stop_signal.store(true, Ordering::SeqCst);
+									stop_signals.store_true();
 									tx.send(Message::Refresh).unwrap();
 								}
 								Err(_) => {
@@ -268,7 +272,7 @@ impl ColorTiles {
 			color_tile.toggle_button.handle({
 				let mut color_tile = color_tile.clone();
 				let tx = tx.clone();
-				let stop_signal = stop_signal.clone();
+				let stop_signal = stop_signals.clone();
 				move |button, event| match event {
 					Event::Released => {
 						if button.is_toggled() {
@@ -280,7 +284,7 @@ impl ColorTiles {
 							color_tile.green_input.activate();
 							color_tile.blue_input.activate();
 						}
-						stop_signal.store(true, Ordering::SeqCst);
+						stop_signal.store_true();
 						tx.send(Message::Refresh).unwrap();
 						true
 					}
@@ -288,37 +292,39 @@ impl ColorTiles {
 				}
 			});
 
-			add_input_handle(&mut color_tile.red_input, tx.clone(), stop_signal.clone());
-			add_input_handle(&mut color_tile.green_input, tx.clone(), stop_signal.clone());
-			add_input_handle(&mut color_tile.blue_input, tx.clone(), stop_signal);
+			add_input_handle(&mut color_tile.red_input, tx.clone(), stop_signals.clone());
+			add_input_handle(&mut color_tile.green_input, tx.clone(), stop_signals.clone());
+			add_input_handle(&mut color_tile.blue_input, tx.clone(), stop_signals);
 		}
 
 		let mut color_tiles = Self {
-			master: (color_tiles::ColorTile::create(true)),
-			zones: color_tiles::Zones::create(),
+			master: (color_tiles::ColorTile::create(x, y + TILE_HEIGHT * 4, true)),
+			zones: color_tiles::Zones::create(x, y),
 		};
 
-		add_zone_tile_handle(&mut color_tiles.zones.left, tx, stop_signal.clone());
-		add_zone_tile_handle(&mut color_tiles.zones.center_left, tx, stop_signal.clone());
-		add_zone_tile_handle(&mut color_tiles.zones.center_right, tx, stop_signal.clone());
-		add_zone_tile_handle(&mut color_tiles.zones.right, tx, stop_signal.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.left, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.center_left, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.center_right, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.right, tx, stop_signals.clone());
 
-		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, color_tiles: color_tiles::ColorTiles, stop_signal: Arc<AtomicBool>) {
+		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, color_tiles: color_tiles::ColorTiles, stop_signals: StopSignals) {
 			input.handle({
 				let mut keyboard_color_tiles = color_tiles;
 				move |input, event| match event {
 					Event::KeyUp => {
 						if let Ok(value) = input.value().parse::<f32>() {
-							input.set_value(&value.to_string());
+							if input.value().len() > 3 {
+								input.set_value(&value.to_string());
+							}
 							if value > 255.0 {
 								input.set_value("255");
 							}
 							keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
-							stop_signal.store(true, Ordering::SeqCst);
+							stop_signals.store_true();
 							tx.send(Message::Refresh).unwrap();
 						} else {
 							input.set_value("0");
-							keyboard_color_tiles.zones.change_color_value(color, 0.0);
+							keyboard_color_tiles.zones.change_color_value(color, 0);
 						}
 						true
 					}
@@ -332,7 +338,7 @@ impl ColorTiles {
 			let mut keyboard_color_tiles = color_tiles.clone();
 			let mut master_tile = master_tile.clone();
 			let tx = tx.clone();
-			let stop_signal = stop_signal.clone();
+			let stop_signals = stop_signals.clone();
 			move |button, event| match event {
 				Event::Released => {
 					if button.is_toggled() {
@@ -346,7 +352,7 @@ impl ColorTiles {
 						master_tile.blue_input.activate();
 						keyboard_color_tiles.zones.activate();
 					}
-					stop_signal.store(true, Ordering::SeqCst);
+					stop_signals.store_true();
 					tx.send(Message::Refresh).unwrap();
 					true
 				}
@@ -354,15 +360,20 @@ impl ColorTiles {
 			}
 		});
 
-		add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, tx.clone(), color_tiles.clone(), stop_signal.clone());
-		add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, tx.clone(), color_tiles.clone(), stop_signal.clone());
-		add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, tx.clone(), color_tiles.clone(), stop_signal);
+		add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, tx.clone(), color_tiles.clone(), stop_signals.clone());
+		add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, tx.clone(), color_tiles.clone(), stop_signals.clone());
+		add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, tx.clone(), color_tiles.clone(), stop_signals);
 
 		color_tiles
 	}
 	pub fn activate(&mut self) {
-		self.master.activate();
-		self.zones.activate();
+		if self.master.toggle_button.is_toggled() {
+			self.master.toggle_button.activate();
+			self.zones.deactivate();
+		} else {
+			self.master.activate();
+			self.zones.activate();
+		}
 	}
 	pub fn deactivate(&mut self) {
 		self.master.deactivate();
@@ -373,12 +384,13 @@ impl ColorTiles {
 		self.master.activate();
 		self.master.toggle_button.deactivate();
 	}
-	pub fn set_state(&mut self, state: &ColorTilesState) {
+	pub fn set_state(&mut self, state: &ColorTilesState, effect: Effects) {
 		self.master.set_state(state.master);
 		self.zones.left.set_state(state.left);
 		self.zones.center_left.set_state(state.center_left);
 		self.zones.center_right.set_state(state.center_right);
 		self.zones.right.set_state(state.right);
+		self.update(effect);
 	}
 
 	pub fn get_state(&mut self) -> ColorTilesState {
@@ -397,5 +409,24 @@ impl ColorTiles {
 			values = self.zones.get_values();
 		}
 		values
+	}
+
+	pub fn update(&mut self, effect: Effects) {
+		match effect {
+			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe | Effects::Fade => {
+				self.activate();
+			}
+			Effects::Smooth
+			| Effects::LeftWave
+			| Effects::RightWave
+			| Effects::Lightning
+			| Effects::AmbientLight
+			| Effects::SmoothLeftWave
+			| Effects::SmoothRightWave
+			| Effects::Disco
+			| Effects::Christmas => {
+				self.deactivate();
+			}
+		}
 	}
 }

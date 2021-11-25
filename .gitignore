@@ -10,3 +10,4 @@ target
 # Other
 things.md
 *.json
+.history

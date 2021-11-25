@@ -1,4 +1,4 @@
-use super::{builder::screen_center, enums::Colors};
+use super::{app::screen_center, enums::Colors};
 use fltk::{
 	button::Button,
 	enums::{Color, FrameType},

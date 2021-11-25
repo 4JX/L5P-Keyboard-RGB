@@ -1,18 +1,12 @@
-use std::sync::{
-	atomic::{AtomicBool, Ordering},
-	mpsc::Sender,
-	Arc,
-};
-
-use crate::enums::Message;
-
 use super::enums::Colors;
+use crate::{enums::Message, keyboard_manager::StopSignals};
 use fltk::{
 	enums::{Color, FrameType},
 	group::Tile,
 	menu::Choice,
 	prelude::*,
 };
+use std::sync::mpsc::Sender;
 
 struct OptionsChoice;
 
@@ -21,9 +15,9 @@ impl OptionsChoice {
 		let mut choice = Choice::new(x, y, width, height, "").with_label(title);
 		choice.add_choice(choices);
 
-		//Themeing
-		choice.set_frame(FrameType::BorderBox);
-		choice.set_color(Color::from_u32(Colors::DarkGray as u32));
+		//Theming
+		choice.set_frame(FrameType::RoundedBox);
+		choice.set_color(Color::from_u32(Colors::DarkerGray as u32));
 		choice.set_label_color(Color::from_u32(Colors::White as u32));
 		choice.set_selection_color(Color::White);
 		choice.set_text_color(Color::from_u32(Colors::White as u32));
@@ -33,13 +27,15 @@ impl OptionsChoice {
 		choice
 	}
 }
+
+#[derive(Clone)]
 pub struct OptionsTile {
 	pub speed_choice: Choice,
 	pub brightness_choice: Choice,
 }
 
 impl OptionsTile {
-	pub fn create(x: i32, y: i32, tx: &Sender<Message>, stop_signal: &Arc<AtomicBool>) -> Self {
+	pub fn create(x: i32, y: i32, tx: &Sender<Message>, stop_signals: &StopSignals) -> Self {
 		let mut options_tile = Tile::new(x, y, 360, 90, "");
 		let mut speed_choice = OptionsChoice::create(x + 100, y + 25, 45, 40, "Speed: ", "1|2|3|4");
 
@@ -52,9 +48,9 @@ impl OptionsTile {
 
 		speed_choice.set_callback({
 			let tx = tx.clone();
-			let stop_signal = stop_signal.clone();
+			let stop_signal = stop_signals.clone();
 			move |choice| {
-				stop_signal.store(true, Ordering::SeqCst);
+				stop_signal.store_true();
 				if let Some(value) = choice.choice() {
 					let speed = value.parse::<u8>().unwrap();
 					if (1..=4).contains(&speed) {
@@ -67,9 +63,9 @@ impl OptionsTile {
 		//Brightness
 		brightness_choice.set_callback({
 			let tx = tx.clone();
-			let stop_signal = stop_signal.clone();
+			let stop_signal = stop_signals.clone();
 			move |choice| {
-				stop_signal.store(true, Ordering::SeqCst);
+				stop_signal.store_true();
 				if let Some(value) = choice.choice() {
 					let brightness = value.parse::<u8>().unwrap();
 					if (1..=2).contains(&brightness) {

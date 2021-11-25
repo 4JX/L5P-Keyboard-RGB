@@ -31,18 +31,17 @@ pub enum BaseEffects {
 
 pub struct LightingState {
 	effect_type: BaseEffects,
-	pub speed: u8,
-	pub brightness: u8,
+	speed: u8,
+	brightness: u8,
 	rgb_values: [u8; 12],
 }
 
 pub struct Keyboard {
 	keyboard_hid: HidDevice,
-	pub current_state: LightingState,
-	pub stop_signal: Arc<AtomicBool>,
+	current_state: LightingState,
+	stop_signal: Arc<AtomicBool>,
 }
 
-#[allow(dead_code)]
 impl Keyboard {
 	fn build_payload(&self) -> Result<[u8; 33], &'static str> {
 		let keyboard_state = &self.current_state;
@@ -106,6 +105,10 @@ impl Keyboard {
 		self.refresh();
 	}
 
+	pub fn get_speed(&self) -> u8 {
+		self.current_state.speed
+	}
+
 	pub fn set_brightness(&mut self, brightness: u8) {
 		let brightness = brightness.clamp(BRIGHTNESS_RANGE.min().unwrap(), BRIGHTNESS_RANGE.max().unwrap());
 		self.current_state.brightness = brightness;
@@ -154,7 +157,7 @@ impl Keyboard {
 		}
 	}
 
-	pub fn solid_set_colors_to(&mut self, new_values: &[u8; 3]) {
+	pub fn solid_set_colors_to(&mut self, new_values: [u8; 3]) {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
 				for i in (0..12).step_by(3) {
@@ -168,14 +171,13 @@ impl Keyboard {
 		}
 	}
 
-	pub fn transition_colors_to(&mut self, target_colors: &[f32; 12], steps: u8, delay_between_steps: u64) {
+	pub fn transition_colors_to(&mut self, target_colors: &[u8; 12], steps: u8, delay_between_steps: u64) {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
-				target_colors.map(|val| val.clamp(0.0, 255.0));
 				let mut new_values = self.current_state.rgb_values.map(f32::from);
 				let mut color_differences: [f32; 12] = [0.0; 12];
 				for index in 0..12 {
-					color_differences[index] = (target_colors[index].clamp(0.0, 255.0) - f32::from(self.current_state.rgb_values[index])) / f32::from(steps);
+					color_differences[index] = (f32::from(target_colors[index]) - f32::from(self.current_state.rgb_values[index])) / f32::from(steps);
 				}
 				if !self.stop_signal.load(Ordering::SeqCst) {
 					for _step_num in 1..=steps {
