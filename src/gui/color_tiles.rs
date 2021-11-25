@@ -99,7 +99,6 @@ impl ColorTile {
 	}
 }
 
-#[allow(dead_code)]
 impl ColorTile {
 	pub fn create(x: i32, y: i32, master_tile: bool) -> Self {
 		let button_size = 40;
@@ -156,7 +155,6 @@ pub struct Zones {
 	pub right: ColorTile,
 }
 
-#[allow(dead_code)]
 impl Zones {
 	pub fn create(x: i32, y: i32) -> Self {
 		Zones {
