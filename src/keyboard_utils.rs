@@ -31,15 +31,15 @@ pub enum BaseEffects {
 
 pub struct LightingState {
 	effect_type: BaseEffects,
-	pub speed: u8,
-	pub brightness: u8,
+	speed: u8,
+	brightness: u8,
 	rgb_values: [u8; 12],
 }
 
 pub struct Keyboard {
 	keyboard_hid: HidDevice,
-	pub current_state: LightingState,
-	pub stop_signal: Arc<AtomicBool>,
+	current_state: LightingState,
+	stop_signal: Arc<AtomicBool>,
 }
 
 impl Keyboard {
@@ -103,6 +103,10 @@ impl Keyboard {
 		let speed = speed.clamp(SPEED_RANGE.min().unwrap(), SPEED_RANGE.max().unwrap());
 		self.current_state.speed = speed;
 		self.refresh();
+	}
+
+	pub fn get_speed(&self) -> u8 {
+		self.current_state.speed
 	}
 
 	pub fn set_brightness(&mut self, brightness: u8) {

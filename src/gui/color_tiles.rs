@@ -226,17 +226,17 @@ impl Zones {
 
 #[derive(Clone)]
 pub struct ColorTiles {
-	pub master: ColorTile,
-	pub zones: Zones,
+	master: ColorTile,
+	zones: Zones,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ColorTilesState {
-	pub master: ColorTileState,
-	pub left: ColorTileState,
-	pub center_left: ColorTileState,
-	pub center_right: ColorTileState,
-	pub right: ColorTileState,
+	master: ColorTileState,
+	left: ColorTileState,
+	center_left: ColorTileState,
+	center_right: ColorTileState,
+	right: ColorTileState,
 }
 
 #[allow(dead_code)]

@@ -26,8 +26,8 @@ impl KeyboardManager {
 		let mut thread_rng = thread_rng();
 
 		self.keyboard.set_effect(BaseEffects::Static);
-		self.keyboard.current_state.speed = speed;
-		self.keyboard.current_state.brightness = brightness;
+		self.keyboard.set_speed(speed);
+		self.keyboard.set_brightness(brightness);
 
 		match effect {
 			Effects::Static => {
@@ -55,7 +55,7 @@ impl KeyboardManager {
 					let zone = thread_rng.gen_range(0..4);
 					let steps = thread_rng.gen_range(50..=200);
 					self.keyboard.set_zone_by_index(zone, [255; 3]);
-					self.keyboard.transition_colors_to(&[0.0; 12], steps / self.keyboard.current_state.speed, 5);
+					self.keyboard.transition_colors_to(&[0.0; 12], steps / self.keyboard.get_speed(), 5);
 					let sleep_time = thread_rng.gen_range(100..=2000);
 					thread::sleep(Duration::from_millis(sleep_time));
 				}
@@ -114,7 +114,7 @@ impl KeyboardManager {
 					}
 					shift_vec(&mut gradient, 3);
 					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
-					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.current_state.speed, 10);
+					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
@@ -130,7 +130,7 @@ impl KeyboardManager {
 					}
 					shift_vec(&mut gradient, 9);
 					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
-					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.current_state.speed, 10);
+					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
@@ -147,7 +147,7 @@ impl KeyboardManager {
 					for _i in 0..4 {
 						shift_vec(&mut gradient, 3);
 						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
-						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.current_state.speed, 10);
+						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
@@ -168,7 +168,7 @@ impl KeyboardManager {
 					for _i in 0..4 {
 						shift_vec(&mut gradient, 9);
 						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
-						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.current_state.speed, 10);
+						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
@@ -187,7 +187,7 @@ impl KeyboardManager {
 
 					let zone_index = thread_rng.gen_range(0..4);
 					self.keyboard.set_zone_by_index(zone_index, new_values);
-					thread::sleep(Duration::from_millis(2000 / (u64::from(self.keyboard.current_state.speed) * 4)));
+					thread::sleep(Duration::from_millis(2000 / (u64::from(self.keyboard.get_speed()) * 4)));
 				}
 			}
 			Effects::Christmas => {
