@@ -77,7 +77,10 @@ impl App {
 			filename = dlg.filename().to_string_lossy().to_string();
 		}
 
-		if !filename.is_empty() {
+		if filename.is_empty() {
+			self.stop_signals.store_true();
+			self.tx.send(Message::Refresh).unwrap();
+		} else {
 			fn parse_profile(profile_text: &str) -> Result<Profile> {
 				serde_json::from_str(profile_text)
 			}
@@ -104,9 +107,6 @@ impl App {
 			} else if !is_default {
 				alert(800, 200, "File does not exist!");
 			}
-		} else {
-			self.stop_signals.store_true();
-			self.tx.send(Message::Refresh).unwrap();
 		}
 	}
 	pub fn save_profile(&mut self) {
@@ -149,7 +149,7 @@ impl App {
 		let mut app = Self {
 			color_tiles: tiles,
 			effect_browser: effect_browser_tile::EffectBrowserTile::create(540, 30, &EFFECTS_LIST).effect_browser,
-			options_tile: options_tile::OptionsTile::create(540, 390, &tx, &manager.stop_signals.clone()),
+			options_tile: options_tile::OptionsTile::create(540, 390, &tx, &manager.stop_signals),
 			tx,
 			stop_signals: manager.stop_signals.clone(),
 			buf: text::TextBuffer::default(),
