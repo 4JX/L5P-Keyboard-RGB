@@ -55,7 +55,7 @@ impl KeyboardManager {
 					let zone = thread_rng.gen_range(0..4);
 					let steps = thread_rng.gen_range(50..=200);
 					self.keyboard.set_zone_by_index(zone, [255; 3]);
-					self.keyboard.transition_colors_to(&[0.0; 12], steps / self.keyboard.get_speed(), 5);
+					self.keyboard.transition_colors_to(&[0; 12], steps / self.keyboard.get_speed(), 5);
 					let sleep_time = thread_rng.gen_range(100..=2000);
 					thread::sleep(Duration::from_millis(sleep_time));
 				}
@@ -80,12 +80,8 @@ impl KeyboardManager {
 							let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
 							let rgb_img: image::RgbImage = bgra_img.convert();
 							let resized = imageops::resize(&rgb_img, 4, 1, imageops::FilterType::Lanczos3);
-							let dst = resized.into_vec();
+							let result: [u8; 12] = resized.into_vec().try_into().unwrap();
 
-							let mut result: [f32; 12] = [0.0; 12];
-							for i in 0..12 {
-								result[i] = f32::from(dst[i]);
-							}
 							self.keyboard.transition_colors_to(&result, 4, 1);
 							let elapsed_time = now.elapsed();
 							if elapsed_time < seconds_per_frame {
@@ -106,14 +102,14 @@ impl KeyboardManager {
 				}
 			}
 			Effects::SmoothLeftWave => {
-				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
+				let mut gradient = vec![255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					shift_vec(&mut gradient, 3);
-					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+					let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
@@ -122,14 +118,14 @@ impl KeyboardManager {
 				}
 			}
 			Effects::SmoothRightWave => {
-				let mut gradient = vec![255.0, 0.0, 0.0, 0.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 0.0, 255.0];
+				let mut gradient = vec![255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					shift_vec(&mut gradient, 9);
-					let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+					let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
@@ -143,10 +139,10 @@ impl KeyboardManager {
 						break;
 					}
 
-					let mut gradient = color_array.map(f32::from).to_vec();
+					let mut gradient = color_array.to_vec();
 					for _i in 0..4 {
 						shift_vec(&mut gradient, 3);
-						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
@@ -164,10 +160,10 @@ impl KeyboardManager {
 						break;
 					}
 
-					let mut gradient = color_array.map(f32::from).to_vec();
+					let mut gradient = color_array.to_vec();
 					for _i in 0..4 {
 						shift_vec(&mut gradient, 9);
-						let colors: [f32; 12] = gradient.clone().try_into().unwrap();
+						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
@@ -231,44 +227,44 @@ impl KeyboardManager {
 						}
 						2 => {
 							let steps = 100;
-							self.keyboard.transition_colors_to(&[0.0; 12], steps, 1);
-							let mut used_colors_array: [f32; 12] = [0.0; 12];
+							self.keyboard.transition_colors_to(&[0; 12], steps, 1);
+							let mut used_colors_array: [u8; 12] = [0; 12];
 							let left_or_right = thread_rng.gen_range(0..2);
 							if left_or_right == 0 {
 								for i in (0..12).step_by(3) {
 									for j in (0..12).step_by(3) {
-										used_colors_array[j] = f32::from(xmas_color_array[i]);
-										used_colors_array[j + 1] = f32::from(xmas_color_array[i + 1]);
-										used_colors_array[j + 2] = f32::from(xmas_color_array[i + 2]);
+										used_colors_array[j] = xmas_color_array[i];
+										used_colors_array[j + 1] = xmas_color_array[i + 1];
+										used_colors_array[j + 2] = xmas_color_array[i + 2];
 										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
 									}
 									for j in (0..12).step_by(3) {
-										used_colors_array[j] = 0.0;
-										used_colors_array[j + 1] = 0.0;
-										used_colors_array[j + 2] = 0.0;
+										used_colors_array[j] = 0;
+										used_colors_array[j + 1] = 0;
+										used_colors_array[j + 2] = 0;
 										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
 									}
 								}
 							} else {
 								for i in (0..12).step_by(3) {
 									for j in (0..12).step_by(3) {
-										used_colors_array[11 - j] = f32::from(xmas_color_array[11 - i]);
-										used_colors_array[11 - (j + 1)] = f32::from(xmas_color_array[11 - (i + 1)]);
-										used_colors_array[11 - (j + 2)] = f32::from(xmas_color_array[11 - (i + 2)]);
+										used_colors_array[11 - j] = xmas_color_array[11 - i];
+										used_colors_array[11 - (j + 1)] = xmas_color_array[11 - (i + 1)];
+										used_colors_array[11 - (j + 2)] = xmas_color_array[11 - (i + 2)];
 										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
 									}
 									for j in (0..12).step_by(3) {
-										used_colors_array[11 - j] = 0.0;
-										used_colors_array[11 - (j + 1)] = 0.0;
-										used_colors_array[11 - (j + 2)] = 0.0;
+										used_colors_array[11 - j] = 0;
+										used_colors_array[11 - (j + 1)] = 0;
+										used_colors_array[11 - (j + 2)] = 0;
 										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
 									}
 								}
 							}
 						}
 						3 => {
-							let state1 = [255.0, 255.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 255.0, 0.0, 0.0, 0.0];
-							let state2 = [0.0, 0.0, 0.0, 255.0, 255.0, 255.0, 0.0, 0.0, 0.0, 255.0, 255.0, 255.0];
+							let state1 = [255, 255, 255, 0, 0, 0, 255, 255, 255, 0, 0, 0];
+							let state2 = [0, 0, 0, 255, 255, 255, 0, 0, 0, 255, 255, 255];
 							let steps = 30;
 							for _i in 0..4 {
 								self.keyboard.transition_colors_to(&state1, steps, 1);
@@ -299,7 +295,7 @@ impl KeyboardManager {
 					let keys: Vec<Keycode> = device_state.get_keys();
 					if keys.is_empty() {
 						if now.elapsed() > Duration::from_secs(20 / u64::from(speed)) {
-							self.keyboard.transition_colors_to(&[0.0; 12], 230, 3);
+							self.keyboard.transition_colors_to(&[0; 12], 230, 3);
 						} else {
 							thread::sleep(Duration::from_millis(20));
 						}

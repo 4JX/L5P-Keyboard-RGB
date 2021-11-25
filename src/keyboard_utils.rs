@@ -171,14 +171,13 @@ impl Keyboard {
 		}
 	}
 
-	pub fn transition_colors_to(&mut self, target_colors: &[f32; 12], steps: u8, delay_between_steps: u64) {
+	pub fn transition_colors_to(&mut self, target_colors: &[u8; 12], steps: u8, delay_between_steps: u64) {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
-				target_colors.map(|val| val.clamp(0.0, 255.0));
 				let mut new_values = self.current_state.rgb_values.map(f32::from);
 				let mut color_differences: [f32; 12] = [0.0; 12];
 				for index in 0..12 {
-					color_differences[index] = (target_colors[index].clamp(0.0, 255.0) - f32::from(self.current_state.rgb_values[index])) / f32::from(steps);
+					color_differences[index] = (f32::from(target_colors[index]) - f32::from(self.current_state.rgb_values[index])) / f32::from(steps);
 				}
 				if !self.stop_signal.load(Ordering::SeqCst) {
 					for _step_num in 1..=steps {
