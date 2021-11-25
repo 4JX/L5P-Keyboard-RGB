@@ -108,6 +108,14 @@ fn main() -> Result<()> {
 		)
 		.subcommand(SubCommand::with_name("Disco").about("Disco effect"))
 		.subcommand(SubCommand::with_name("Christmas").about("Christmas effect"))
+		.subcommand(
+			SubCommand::with_name("Fade").about("Fade effect").arg(
+				Arg::with_name("colors")
+					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+					.index(1)
+					.required(true),
+			),
+		)
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
@@ -122,7 +130,7 @@ fn main() -> Result<()> {
 		let matches = matches.subcommand_matches(input).unwrap();
 
 		let color_array: [u8; 12] = match effect {
-			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe => {
+			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe | Effects::Fade => {
 				let color_array = if let Some(value) = matches.value_of("colors") {
 					parse_bytes_arg(value)
 						.expect("Invalid input, please check you used the correct format for the colors")
