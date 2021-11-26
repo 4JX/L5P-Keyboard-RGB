@@ -63,9 +63,6 @@ impl KeyboardManager {
 				}
 			}
 			Effects::AmbientLight => {
-				let wait_base: i32 = 17;
-				let mut wait = wait_base;
-
 				//Display setup
 				let display = Display::all().unwrap().remove(0);
 
@@ -73,6 +70,8 @@ impl KeyboardManager {
 				let (w, h) = (capturer.width(), capturer.height());
 
 				let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 60);
+				let wait_base: i32 = seconds_per_frame.as_millis() as i32;
+				let mut wait = wait_base;
 				let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Lanczos3));
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -119,7 +118,7 @@ impl KeyboardManager {
 								dst[2] = src[0];
 							}
 
-							self.keyboard.transition_colors_to(&rgb, 4, 1);
+							self.keyboard.set_colors_to(&rgb);
 							let elapsed_time = now.elapsed();
 							if elapsed_time < seconds_per_frame {
 								thread::sleep(seconds_per_frame - elapsed_time);
