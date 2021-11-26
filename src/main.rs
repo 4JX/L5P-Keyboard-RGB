@@ -54,7 +54,7 @@ fn main() -> Result<()> {
 	let mut manager = KeyboardManager {
 		keyboard,
 		rx,
-		tx: tx.clone(),
+		tx,
 		stop_signals: StopSignals {
 			manager_stop_signal: Arc::new(AtomicBool::new(false)),
 			keyboard_stop_signal,

@@ -129,7 +129,7 @@ impl KeyboardManager {
 							std::io::ErrorKind::WouldBlock => {
 								wait = wait_base - now.elapsed().as_millis() as i32;
 								if wait < 0 {
-									wait = 0
+									wait = 0;
 								}
 							}
 							std::io::ErrorKind::InvalidData => {
