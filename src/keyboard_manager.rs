@@ -2,10 +2,11 @@ use crate::enums::{Effects, Message};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
-use image::{buffer::ConvertBuffer, imageops, ImageBuffer};
+use fast_image_resize as fr;
 use rand::{thread_rng, Rng};
 use scrap::{Capturer, Display};
 use std::convert::TryInto;
+use std::num::NonZeroU32;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
@@ -64,25 +65,58 @@ impl KeyboardManager {
 				//Display setup
 				let displays = Display::all().unwrap().len();
 				for i in 0..displays {
-					type BgraImage<V> = ImageBuffer<image::Bgra<u8>, V>;
 					let display = Display::all().unwrap().remove(i);
 
 					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
 					let (w, h) = (capturer.width(), capturer.height());
 
-					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
+					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 60);
+					let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Lanczos3));
+
 					while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
 						if let Ok(frame) = capturer.frame(0) {
 							let now = Instant::now();
-							let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
-							let rgb_img: image::RgbImage = bgra_img.convert();
-							let resized = imageops::resize(&rgb_img, 4, 1, imageops::FilterType::Lanczos3);
-							let result: [u8; 12] = resized.into_vec().try_into().unwrap();
 
-							self.keyboard.transition_colors_to(&result, 4, 1);
+							// Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
+							// Read source image from file
+							let width = NonZeroU32::new(w as u32).unwrap();
+							let height = NonZeroU32::new(h as u32).unwrap();
+							let mut src_image = fr::Image::from_vec_u8(width, height, frame.to_vec(), fr::PixelType::U8x4).unwrap();
+
+							// Create MulDiv instance
+							let alpha_mul_div: fr::MulDiv = Default::default();
+							// Multiple RGB channels of source image by alpha channel
+							alpha_mul_div.multiply_alpha_inplace(&mut src_image.view_mut()).unwrap();
+
+							// Create container for data of destination image
+							let dst_width = NonZeroU32::new(4).unwrap();
+							let dst_height = NonZeroU32::new(1).unwrap();
+							let mut dst_image = fr::Image::new(dst_width, dst_height, fr::PixelType::U8x4);
+
+							// Get mutable view of destination image data
+							let mut dst_view = dst_image.view_mut();
+
+							// Create Resizer instance and resize source image
+							// into buffer of destination image
+							resizer.resize(&src_image.view(), &mut dst_view).unwrap();
+
+							// Divide RGB channels of destination image by alpha
+							alpha_mul_div.divide_alpha_inplace(&mut dst_view).unwrap();
+
+							let bgr_arr = dst_image.buffer();
+
+							// BGRA -> RGB
+							let mut rgb: [u8; 12] = [0; 12];
+							for (src, dst) in bgr_arr.chunks_exact(4).zip(rgb.chunks_exact_mut(3)) {
+								dst[0] = src[2];
+								dst[1] = src[1];
+								dst[2] = src[0];
+							}
+
+							self.keyboard.transition_colors_to(&rgb, 4, 1);
 							let elapsed_time = now.elapsed();
 							if elapsed_time < seconds_per_frame {
 								thread::sleep(seconds_per_frame - elapsed_time);
