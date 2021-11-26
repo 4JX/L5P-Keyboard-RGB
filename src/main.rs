@@ -54,6 +54,7 @@ fn main() -> Result<()> {
 	let mut manager = KeyboardManager {
 		keyboard,
 		rx,
+		tx: tx.clone(),
 		stop_signals: StopSignals {
 			manager_stop_signal: Arc::new(AtomicBool::new(false)),
 			keyboard_stop_signal,
@@ -149,12 +150,12 @@ fn main() -> Result<()> {
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
-		start_with_gui(manager, tx);
+		start_with_gui(manager);
 	}
 	Ok(())
 }
 
-fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>) {
+fn start_with_gui(manager: KeyboardManager) {
 	let app = app::App::default();
 
 	//Windows logic
@@ -167,7 +168,7 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>) {
 
 		static mut WINDOW: HWND = std::ptr::null_mut();
 
-		let mut win = gui::app::App::start_ui(manager, tx);
+		let mut win = gui::app::App::start_ui(manager);
 
 		unsafe {
 			WINDOW = win.raw_handle();
@@ -211,7 +212,7 @@ fn start_with_gui(manager: KeyboardManager, tx: mpsc::Sender<Message>) {
 
 	#[cfg(not(target_os = "windows"))]
 	{
-		gui::app::App::start_ui(manager, tx);
+		gui::app::App::start_ui(manager);
 		app.run().unwrap();
 	}
 }

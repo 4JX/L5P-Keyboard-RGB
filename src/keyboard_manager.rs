@@ -8,7 +8,7 @@ use scrap::{Capturer, Display};
 use std::convert::TryInto;
 use std::num::NonZeroU32;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 pub struct KeyboardManager {
 	pub keyboard: Keyboard,
 	pub rx: Receiver<Message>,
+	pub tx: Sender<Message>,
 	pub stop_signals: StopSignals,
 	pub last_effect: Effects,
 }
@@ -62,24 +63,26 @@ impl KeyboardManager {
 				}
 			}
 			Effects::AmbientLight => {
+				let wait_base: i32 = 17;
+				let mut wait = wait_base;
+
 				//Display setup
-				let displays = Display::all().unwrap().len();
-				for i in 0..displays {
-					let display = Display::all().unwrap().remove(i);
+				let display = Display::all().unwrap().remove(0);
 
-					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-					let (w, h) = (capturer.width(), capturer.height());
+				let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+				let (w, h) = (capturer.width(), capturer.height());
 
-					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 60);
-					let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Lanczos3));
+				let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 60);
+				let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Lanczos3));
 
-					while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-							break;
-						}
-						if let Ok(frame) = capturer.frame(0) {
-							let now = Instant::now();
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+						break;
+					}
 
+					let now = Instant::now();
+					match capturer.frame(wait as u32) {
+						Ok(frame) => {
 							// Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
 							// Read source image from file
 							let width = NonZeroU32::new(w as u32).unwrap();
@@ -121,18 +124,22 @@ impl KeyboardManager {
 							if elapsed_time < seconds_per_frame {
 								thread::sleep(seconds_per_frame - elapsed_time);
 							}
-						} else {
-							//Janky recover from error because it does not like admin prompts on windows
-							let displays = Display::all().unwrap().len();
-							for i in 0..displays {
-								let display = Display::all().unwrap().remove(i);
-
-								capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-							}
 						}
-						thread::sleep(Duration::from_millis(20));
+						Err(error) => match error.kind() {
+							std::io::ErrorKind::WouldBlock => {
+								wait = wait_base - now.elapsed().as_millis() as i32;
+								if wait < 0 {
+									wait = 0
+								}
+							}
+							std::io::ErrorKind::InvalidData => {
+								self.stop_signals.store_true();
+								self.tx.send(Message::Refresh).unwrap();
+							}
+
+							_ => {}
+						},
 					}
-					drop(capturer);
 				}
 			}
 			Effects::SmoothLeftWave => {

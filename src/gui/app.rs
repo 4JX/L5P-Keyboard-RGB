@@ -17,7 +17,6 @@ use fltk::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-use std::sync::mpsc;
 use std::time::Duration;
 use std::{panic, thread};
 use std::{path, str::FromStr, sync::mpsc::Sender};
@@ -133,7 +132,7 @@ impl App {
 		self.stop_signals.store_true();
 		self.tx.send(Message::Refresh).unwrap();
 	}
-	pub fn start_ui(mut manager: keyboard_manager::KeyboardManager, tx: mpsc::Sender<Message>) -> fltk::window::Window {
+	pub fn start_ui(mut manager: keyboard_manager::KeyboardManager) -> fltk::window::Window {
 		panic::set_hook(Box::new(|info| {
 			if let Some(s) = info.payload().downcast_ref::<&str>() {
 				panic(800, 400, s);
@@ -144,19 +143,19 @@ impl App {
 
 		//UI
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
-		let tiles = color_tiles::ColorTiles::new(0, 30, &tx, manager.stop_signals.clone());
+		let tiles = color_tiles::ColorTiles::new(0, 30, &manager.tx, manager.stop_signals.clone());
 
 		let mut app = Self {
 			color_tiles: tiles,
 			effect_browser: effect_browser_tile::EffectBrowserTile::create(540, 30, &EFFECTS_LIST).effect_browser,
-			options_tile: options_tile::OptionsTile::create(540, 390, &tx, &manager.stop_signals),
-			tx,
+			options_tile: options_tile::OptionsTile::create(540, 390, &manager.tx, &manager.stop_signals),
+			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),
 			buf: text::TextBuffer::default(),
 			center: screen_center(),
 		};
 
-		menu_bar::AppMenuBar::new(&app.tx, &app);
+		menu_bar::AppMenuBar::new(&app);
 
 		win.end();
 		win.make_resizable(false);

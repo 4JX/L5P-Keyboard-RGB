@@ -3,9 +3,6 @@ use fltk::{
 	menu,
 	prelude::*,
 };
-use std::sync::mpsc;
-
-use crate::enums::Message;
 
 use super::{app::App, dialog, enums::Colors};
 
@@ -14,7 +11,7 @@ pub struct AppMenuBar {
 }
 
 impl AppMenuBar {
-	pub fn new(_tx: &mpsc::Sender<Message>, app: &App) -> Self {
+	pub fn new(app: &App) -> Self {
 		let mut menu = menu::SysMenuBar::default().with_size(900, 35);
 		menu.set_color(Color::from_u32(Colors::DarkGray as u32));
 		menu.set_selection_color(Color::from_u32(Colors::DarkerGray as u32));
