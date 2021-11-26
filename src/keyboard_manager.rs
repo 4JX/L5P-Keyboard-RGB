@@ -142,7 +142,7 @@ impl KeyboardManager {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
-					shift_vec(&mut gradient, 3);
+					gradient.rotate_right(3);
 					let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -158,7 +158,7 @@ impl KeyboardManager {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
-					shift_vec(&mut gradient, 9);
+					gradient.rotate_left(3);
 					let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -175,7 +175,7 @@ impl KeyboardManager {
 
 					let mut gradient = color_array.to_vec();
 					for _i in 0..4 {
-						shift_vec(&mut gradient, 3);
+						gradient.rotate_right(3);
 						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -196,7 +196,7 @@ impl KeyboardManager {
 
 					let mut gradient = color_array.to_vec();
 					for _i in 0..4 {
-						shift_vec(&mut gradient, 9);
+						gradient.rotate_left(3);
 						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -342,13 +342,6 @@ impl KeyboardManager {
 			}
 		}
 		self.stop_signals.store_false();
-	}
-}
-
-fn shift_vec<T>(vec: &mut Vec<T>, steps: u8) {
-	for _i in 0..steps {
-		let temp = vec.pop().unwrap();
-		vec.insert(0, temp);
 	}
 }
 
