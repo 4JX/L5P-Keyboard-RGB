@@ -89,7 +89,7 @@ impl KeyboardManager {
 							let mut src_image = fr::Image::from_vec_u8(width, height, frame.to_vec(), fr::PixelType::U8x4).unwrap();
 
 							// Create MulDiv instance
-							let alpha_mul_div: fr::MulDiv = Default::default();
+							let alpha_mul_div: fr::MulDiv = fr::MulDiv::default();
 							// Multiple RGB channels of source image by alpha channel
 							alpha_mul_div.multiply_alpha_inplace(&mut src_image.view_mut()).unwrap();
 
@@ -361,25 +361,22 @@ impl KeyboardManager {
 				sys.refresh_all();
 
 				for component in sys.components_mut() {
-					match component.label() {
-						"Tctl" => {
-							while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-								component.refresh();
-								let mut adjusted_temp = component.temperature() - safe_temp;
-								if adjusted_temp < 0.0 {
-									adjusted_temp = 0.0
-								}
-								let temp_percent = (adjusted_temp / 100.0) * ramp_boost;
-
-								let mut target = [0.0; 12];
-								for index in 0..12 {
-									target[index] = temp_cool[index] + color_differences[index] * temp_percent;
-								}
-								self.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1);
-								thread::sleep(Duration::from_millis(20));
+					if component.label() == "Tctl" {
+						while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+							component.refresh();
+							let mut adjusted_temp = component.temperature() - safe_temp;
+							if adjusted_temp < 0.0 {
+								adjusted_temp = 0.0;
 							}
+							let temp_percent = (adjusted_temp / 100.0) * ramp_boost;
+
+							let mut target = [0.0; 12];
+							for index in 0..12 {
+								target[index] = temp_cool[index] + color_differences[index] * temp_percent;
+							}
+							self.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1);
+							thread::sleep(Duration::from_millis(20));
 						}
-						_ => {}
 					}
 				}
 			}
