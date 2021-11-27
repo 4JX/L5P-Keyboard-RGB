@@ -38,7 +38,7 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 - **Disco:** A portable dance floor!
 - **Christmas:** Even keyboards can get festive.
 - **Fade:** Turns off the keyboard lights after a period of inactivity.
-- **Temperature:** Displays a gradient based on the current CPU temperature.
+- **Temperature:** Displays a gradient based on the current CPU temperature. (Linux only)
 
 ## Usage
 
