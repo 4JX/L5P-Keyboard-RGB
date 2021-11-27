@@ -17,6 +17,7 @@ pub enum Effects {
 	Disco,
 	Christmas,
 	Fade,
+	Temperature,
 }
 
 #[allow(dead_code)]

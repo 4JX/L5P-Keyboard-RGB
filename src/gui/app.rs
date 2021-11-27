@@ -28,7 +28,7 @@ pub fn screen_center() -> (i32, i32) {
 	((app::screen_size().0 / 2.0) as i32, (app::screen_size().1 / 2.0) as i32)
 }
 
-pub const EFFECTS_LIST: [&str; 14] = [
+pub const EFFECTS_LIST: [&str; 15] = [
 	"Static",
 	"Breath",
 	"Smooth",
@@ -43,6 +43,7 @@ pub const EFFECTS_LIST: [&str; 14] = [
 	"Disco",
 	"Christmas",
 	"Fade",
+	"Temperature",
 ];
 
 #[derive(Serialize, Deserialize)]
@@ -239,6 +240,10 @@ impl App {
 					14 => {
 						color_tiles.update(Effects::Fade);
 						tx.send(Message::UpdateEffect { effect: Effects::Fade }).unwrap();
+					}
+					15 => {
+						color_tiles.update(Effects::Fade);
+						tx.send(Message::UpdateEffect { effect: Effects::Temperature }).unwrap();
 					}
 					_ => unreachable!("Effect index is out of range"),
 				}

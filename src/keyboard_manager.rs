@@ -1,6 +1,5 @@
 use crate::enums::{Effects, Message};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
-
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use fast_image_resize as fr;
 use rand::{thread_rng, Rng};
@@ -12,6 +11,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use sysinfo::{ComponentExt, System, SystemExt};
 
 pub struct KeyboardManager {
 	pub keyboard: Keyboard,
@@ -343,6 +343,43 @@ impl KeyboardManager {
 						self.keyboard.set_colors_to(color_array);
 						self.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
 						now = Instant::now();
+					}
+				}
+			}
+			Effects::Temperature => {
+				let safe_temp = 30.0;
+				let ramp_boost = 1.6;
+				let temp_cool: [f32; 12] = [0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0];
+				let temp_hot: [f32; 12] = [255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0];
+
+				let mut color_differences: [f32; 12] = [0.0; 12];
+				for index in 0..12 {
+					color_differences[index] = temp_hot[index] - temp_cool[index];
+				}
+
+				let mut sys = System::new_all();
+				sys.refresh_all();
+
+				for component in sys.components_mut() {
+					match component.label() {
+						"Tctl" => {
+							while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+								component.refresh();
+								let mut adjusted_temp = component.temperature() - safe_temp;
+								if adjusted_temp < 0.0 {
+									adjusted_temp = 0.0
+								}
+								let temp_percent = (adjusted_temp / 100.0) * ramp_boost;
+
+								let mut target = [0.0; 12];
+								for index in 0..12 {
+									target[index] = temp_cool[index] + color_differences[index] * temp_percent;
+								}
+								self.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1);
+								thread::sleep(Duration::from_millis(20));
+							}
+						}
+						_ => {}
 					}
 				}
 			}

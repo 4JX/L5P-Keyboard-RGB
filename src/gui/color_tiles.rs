@@ -424,7 +424,8 @@ impl ColorTiles {
 			| Effects::SmoothLeftWave
 			| Effects::SmoothRightWave
 			| Effects::Disco
-			| Effects::Christmas => {
+			| Effects::Christmas
+			| Effects::Temperature => {
 				self.deactivate();
 			}
 		}

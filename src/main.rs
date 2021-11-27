@@ -117,6 +117,7 @@ fn main() -> Result<()> {
 					.required(true),
 			),
 		)
+		.subcommand(SubCommand::with_name("Temperature").about("Temperature effect"))
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
