@@ -1,6 +1,6 @@
 use super::color_tiles::{ColorTiles, ColorTilesState};
-use super::options_tile::OptionsTile;
-use super::{color_tiles, effect_browser_tile, options_tile};
+use super::options::OptionsTile;
+use super::{color_tiles, effect_browser, options};
 use crate::gui::menu_bar;
 use crate::keyboard_manager::{self, StopSignals};
 use crate::{
@@ -128,6 +128,7 @@ impl App {
 			}
 		}
 	}
+
 	pub fn save_profile(&mut self) {
 		let profile = Profile {
 			color_tiles_state: self.color_tiles.get_state(),
@@ -152,6 +153,7 @@ impl App {
 		self.stop_signals.store_true();
 		self.tx.send(Message::Refresh).unwrap();
 	}
+
 	pub fn start_ui(mut manager: keyboard_manager::KeyboardManager) -> fltk::window::Window {
 		panic::set_hook(Box::new(|info| {
 			if let Some(s) = info.payload().downcast_ref::<&str>() {
@@ -167,8 +169,8 @@ impl App {
 
 		let mut app = Self {
 			color_tiles: tiles,
-			effect_browser: effect_browser_tile::EffectBrowserTile::create(540, 30, &EFFECTS_LIST).effect_browser,
-			options_tile: options_tile::OptionsTile::create(540, 390, &manager.tx, &manager.stop_signals),
+			effect_browser: effect_browser::EffectBrowserTile::create(540, 30, &EFFECTS_LIST).effect_browser,
+			options_tile: options::OptionsTile::create(540, 390, &manager.tx, &manager.stop_signals),
 			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),
 			buf: text::TextBuffer::default(),

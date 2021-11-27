@@ -215,7 +215,7 @@ fn start_with_gui(manager: KeyboardManager) {
 		}
 	}
 
-	#[cfg(not(target_os = "windows"))]
+	#[cfg(target_os = "linux")]
 	{
 		gui::app::App::start_ui(manager);
 		app.run().unwrap();

@@ -13,9 +13,9 @@ use std::{
 const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0, 0);
 #[cfg(target_os = "linux")]
 const DEVICE_INFO_2020: (u16, u16, u16, u16) = (0x048d, 0xc955, 0, 0);
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "windows")]
 const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0xff89, 0x00cc);
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "windows")]
 const DEVICE_INFO_2020: (u16, u16, u16, u16) = (0x048d, 0xc955, 0xff89, 0x00cc);
 
 const SPEED_RANGE: std::ops::RangeInclusive<u8> = 1..=4;

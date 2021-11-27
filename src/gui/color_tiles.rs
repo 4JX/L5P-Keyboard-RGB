@@ -366,6 +366,7 @@ impl ColorTiles {
 
 		color_tiles
 	}
+
 	pub fn activate(&mut self) {
 		if self.master.toggle_button.is_toggled() {
 			self.master.toggle_button.activate();
@@ -375,15 +376,18 @@ impl ColorTiles {
 			self.zones.activate();
 		}
 	}
+
 	pub fn deactivate(&mut self) {
 		self.master.deactivate();
 		self.zones.deactivate();
 	}
+
 	pub fn master_only(&mut self) {
 		self.deactivate();
 		self.master.activate();
 		self.master.toggle_button.deactivate();
 	}
+
 	pub fn set_state(&mut self, state: &ColorTilesState, effect: Effects) {
 		self.master.set_state(state.master);
 		self.zones.left.set_state(state.left);
