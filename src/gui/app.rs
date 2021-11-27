@@ -197,7 +197,6 @@ impl App {
 		app.effect_browser.set_callback({
 			let stop_signals = app.stop_signals.clone();
 			let tx = app.tx.clone();
-			let mut color_tiles = app.color_tiles.clone();
 			move |browser| {
 				stop_signals.store_true();
 				match browser.value() {
@@ -205,63 +204,48 @@ impl App {
 						browser.select(0);
 					}
 					1 => {
-						color_tiles.update(Effects::Static);
 						tx.send(Message::UpdateEffect { effect: Effects::Static }).unwrap();
 					}
 					2 => {
-						color_tiles.update(Effects::Breath);
 						tx.send(Message::UpdateEffect { effect: Effects::Breath }).unwrap();
 					}
 					3 => {
-						color_tiles.update(Effects::Smooth);
 						tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
 					}
 					4 => {
-						color_tiles.update(Effects::LeftWave);
 						tx.send(Message::UpdateEffect { effect: Effects::LeftWave }).unwrap();
 					}
 					5 => {
-						color_tiles.update(Effects::RightWave);
 						tx.send(Message::UpdateEffect { effect: Effects::RightWave }).unwrap();
 					}
 					6 => {
-						color_tiles.update(Effects::Lightning);
 						tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
 					}
 					7 => {
-						color_tiles.update(Effects::AmbientLight);
 						tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
 					}
 					8 => {
-						color_tiles.update(Effects::SmoothLeftWave);
 						tx.send(Message::UpdateEffect { effect: Effects::SmoothLeftWave }).unwrap();
 					}
 					9 => {
-						color_tiles.update(Effects::SmoothRightWave);
 						tx.send(Message::UpdateEffect { effect: Effects::SmoothRightWave }).unwrap();
 					}
 					10 => {
-						color_tiles.update(Effects::LeftSwipe);
 						tx.send(Message::UpdateEffect { effect: Effects::LeftSwipe }).unwrap();
 					}
 					11 => {
-						color_tiles.update(Effects::RightSwipe);
 						tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
 					}
 					12 => {
-						color_tiles.update(Effects::Disco);
 						tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
 					}
 					13 => {
-						color_tiles.update(Effects::Christmas);
 						tx.send(Message::UpdateEffect { effect: Effects::Christmas }).unwrap();
 					}
 					14 => {
-						color_tiles.update(Effects::Fade);
 						tx.send(Message::UpdateEffect { effect: Effects::Fade }).unwrap();
 					}
 					15 => {
-						color_tiles.update(Effects::Fade);
 						tx.send(Message::UpdateEffect { effect: Effects::Temperature }).unwrap();
 					}
 					_ => unreachable!("Effect index is out of range"),
@@ -274,6 +258,8 @@ impl App {
 				Some(message) => {
 					match message {
 						Message::UpdateEffect { effect } => {
+							app.color_tiles.update(effect);
+							app::awake();
 							let color_array = app.color_tiles.get_zone_values();
 							let speed = app.options_tile.speed_choice.choice().unwrap().parse::<u8>().unwrap();
 							let brightness = app.options_tile.brightness_choice.choice().unwrap().parse::<u8>().unwrap();
