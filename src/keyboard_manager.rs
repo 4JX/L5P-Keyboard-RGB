@@ -142,15 +142,14 @@ impl KeyboardManager {
 				}
 			}
 			Effects::SmoothLeftWave => {
-				let mut gradient = vec![255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
+				let mut gradient = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					gradient.rotate_right(3);
-					let colors: [u8; 12] = gradient.clone().try_into().unwrap();
-					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
+					self.keyboard.transition_colors_to(&gradient, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
@@ -158,15 +157,14 @@ impl KeyboardManager {
 				}
 			}
 			Effects::SmoothRightWave => {
-				let mut gradient = vec![255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
+				let mut gradient = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					gradient.rotate_left(3);
-					let colors: [u8; 12] = gradient.clone().try_into().unwrap();
-					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
+					self.keyboard.transition_colors_to(&gradient, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
