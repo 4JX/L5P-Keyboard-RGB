@@ -13,12 +13,8 @@
   - ["How about X model"](#how-about-x-model)
 - [Building from source](#building-from-source)
   - [Prerequisites](#prerequisites)
-    - [Ubuntu](#ubuntu)
-    - [Arch Linux](#arch-linux)
   - [Using `cargo-make`](#using-cargo-make)
   - [Building manually](#building-manually)
-    - [Windows](#windows)
-    - [Linux](#linux)
 - [Crashes, freezes, etc](#crashes-freezes-etc)
 
 ## Download
