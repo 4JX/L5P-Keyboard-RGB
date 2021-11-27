@@ -104,7 +104,6 @@ impl ColorTile {
 		let button_size = 40;
 		let inputs_offset = 60;
 
-		//Begin tile
 		let exterior_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
 		let toggle_button = ToggleButton::new(x + 25, y + TILE_HEIGHT / 2 - button_size / 2, button_size, button_size, "");
 		let inputs_tile = Tile::new(x + TILE_HEIGHT, y, TILE_WIDTH - TILE_HEIGHT, TILE_HEIGHT, "");
@@ -123,7 +122,6 @@ impl ColorTile {
 
 		color_tile.exterior_tile.end();
 
-		//Theming
 		color_tile.exterior_tile.set_frame(FrameType::FlatBox);
 		if master_tile {
 			color_tile.exterior_tile.set_color(Color::from_u32(Colors::LightGray as u32));
@@ -131,7 +129,6 @@ impl ColorTile {
 			color_tile.exterior_tile.set_color(Color::from_u32(Colors::Gray as u32));
 		}
 
-		//Button
 		color_tile.toggle_button.set_frame(FrameType::OFlatFrame);
 		color_tile.toggle_button.set_color(Color::from_u32(Colors::White as u32));
 		color_tile

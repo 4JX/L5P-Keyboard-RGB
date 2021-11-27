@@ -163,7 +163,6 @@ impl App {
 			}
 		}));
 
-		//UI
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
 		let tiles = color_tiles::ColorTiles::new(0, 30, &manager.tx, manager.stop_signals.clone());
 
@@ -183,7 +182,6 @@ impl App {
 		win.make_resizable(false);
 		win.show();
 
-		// Theming
 		app::background(51, 51, 51);
 		app::background2(119, 119, 119);
 		app::foreground(0, 0, 0);
@@ -195,7 +193,6 @@ impl App {
 
 		app.load_profile(true);
 
-		// Effect choice
 		app.effect_browser.set_callback({
 			let stop_signals = app.stop_signals.clone();
 			let tx = app.tx.clone();

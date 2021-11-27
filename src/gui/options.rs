@@ -15,7 +15,6 @@ impl OptionsChoice {
 		let mut choice = Choice::new(x, y, width, height, "").with_label(title);
 		choice.add_choice(choices);
 
-		//Theming
 		choice.set_frame(FrameType::RoundedBox);
 		choice.set_color(Color::from_u32(Colors::DarkerGray as u32));
 		choice.set_label_color(Color::from_u32(Colors::White as u32));
@@ -42,7 +41,6 @@ impl OptionsTile {
 		let mut brightness_choice = OptionsChoice::create(x + 100 + 190, y + 25, 45, 40, "Brightness: ", "1|2");
 		options_tile.end();
 
-		// Options tile
 		options_tile.set_frame(FrameType::FlatBox);
 		options_tile.set_color(Color::from_u32(Colors::DarkGray as u32));
 
@@ -60,7 +58,6 @@ impl OptionsTile {
 			}
 		});
 
-		//Brightness
 		brightness_choice.set_callback({
 			let tx = tx.clone();
 			let stop_signal = stop_signals.clone();

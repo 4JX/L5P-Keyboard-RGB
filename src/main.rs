@@ -65,9 +65,22 @@ fn main() -> Result<()> {
 	let matches = App::new("Legion Keyboard Control")
 		.version(crate_version!())
 		.author(crate_authors!())
-		// .about("Placeholder")
-		.arg(Arg::with_name("brightness").help("The brightness of the effect").takes_value(true).short("b").possible_values(&["1","2"]).default_value("1"))
-		.arg(Arg::with_name("speed").help("The speed of the effect").takes_value(true).short("s").possible_values(&["1","2", "3", "4"]).default_value("1"))
+		.arg(
+			Arg::with_name("brightness")
+				.help("The brightness of the effect")
+				.takes_value(true)
+				.short("b")
+				.possible_values(&["1", "2"])
+				.default_value("1"),
+		)
+		.arg(
+			Arg::with_name("speed")
+				.help("The speed of the effect")
+				.takes_value(true)
+				.short("s")
+				.possible_values(&["1", "2", "3", "4"])
+				.default_value("1"),
+		)
 		.subcommand(
 			SubCommand::with_name("Static").about("Static effect").arg(
 				Arg::with_name("colors")
@@ -205,7 +218,6 @@ fn start_with_gui(manager: KeyboardManager) {
 		})
 		.unwrap();
 
-		//Tray loop
 		loop {
 			if win.shown() {
 				app.run().unwrap();
