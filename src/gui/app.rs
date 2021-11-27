@@ -5,7 +5,7 @@ use crate::gui::menu_bar;
 use crate::keyboard_manager::{self, StopSignals};
 use crate::{
 	enums::{Effects, Message},
-	gui::dialog::{alert, panic},
+	gui::dialog as appdialog,
 };
 use fltk::enums::FrameType;
 use fltk::{app, enums::Font, prelude::*, window::Window};
@@ -115,7 +115,7 @@ impl App {
 					self.stop_signals.store_true();
 					self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
 				} else {
-					alert(
+					appdialog::alert(
 						800,
 						200,
 						"There was an error loading the profile.\nPlease make sure its a valid profile file and that it is compatible with this version of the program.",
@@ -124,7 +124,7 @@ impl App {
 					self.tx.send(Message::Refresh).unwrap();
 				}
 			} else if !is_default {
-				alert(800, 200, "File does not exist!");
+				appdialog::alert(800, 200, "File does not exist!");
 			}
 		}
 	}
@@ -147,7 +147,7 @@ impl App {
 			if !filename.rsplit('.').next().map(|ext| ext.eq_ignore_ascii_case("json")).unwrap() {
 				filename = format!("{}{}", &filename, ".json");
 			}
-			self.buf.save_file(filename).unwrap_or_else(|_| alert(800, 200, "Please specify a file name to use."));
+			self.buf.save_file(filename).unwrap_or_else(|_| appdialog::alert(800, 200, "Please specify a file name to use."));
 		}
 
 		self.stop_signals.store_true();
@@ -157,9 +157,9 @@ impl App {
 	pub fn start_ui(mut manager: keyboard_manager::KeyboardManager) -> fltk::window::Window {
 		panic::set_hook(Box::new(|info| {
 			if let Some(s) = info.payload().downcast_ref::<&str>() {
-				panic(800, 400, s);
+				appdialog::panic(800, 400, s);
 			} else {
-				panic(800, 400, &info.to_string());
+				appdialog::panic(800, 400, &info.to_string());
 			}
 		}));
 
