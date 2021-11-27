@@ -46,7 +46,27 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 
 ## Usage
 
-- **Note**: If you are using the program on Linux, you'll need to run the program as root.
+**Note**: By default, on Linux you will have to run the program with root privileges, however, you can remedy this by adding the following `udev` rule:
+
+- **2021 Models:**
+
+```sh
+# /etc/udev/rules.d/99-kblight.rules
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c965", MODE="0666"
+```
+
+- **2020 Models:**
+
+```sh
+# /etc/udev/rules.d/99-kblight.rules
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c955", MODE="0666"
+```
+
+And then reloading the rules:
+
+```sh
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
 
 ### With GUI
 
