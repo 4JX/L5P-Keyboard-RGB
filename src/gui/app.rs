@@ -28,6 +28,25 @@ pub fn screen_center() -> (i32, i32) {
 	((app::screen_size().0 / 2.0) as i32, (app::screen_size().1 / 2.0) as i32)
 }
 
+#[cfg(target_os = "windows")]
+pub const EFFECTS_LIST: [&str; 14] = [
+	"Static",
+	"Breath",
+	"Smooth",
+	"LeftWave",
+	"RightWave",
+	"Lightning",
+	"AmbientLight",
+	"SmoothLeftWave",
+	"SmoothRightWave",
+	"LeftSwipe",
+	"RightSwipe",
+	"Disco",
+	"Christmas",
+	"Fade",
+];
+
+#[cfg(target_os = "linux")]
 pub const EFFECTS_LIST: [&str; 15] = [
 	"Static",
 	"Breath",

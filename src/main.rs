@@ -144,6 +144,10 @@ fn main() -> Result<()> {
 				};
 				color_array
 			}
+			#[cfg(target_os = "windows")]
+			Effects::Temperature => {
+				panic!("This effect is not supported on Windows");
+			}
 			_ => [0; 12],
 		};
 
