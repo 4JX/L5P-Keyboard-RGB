@@ -4,14 +4,14 @@ use fltk::{
 	prelude::*,
 };
 
-use super::{app::App, dialog, enums::Colors};
+use super::enums::Colors;
 
 pub struct AppMenuBar {
 	_menu: menu::SysMenuBar,
 }
 
 impl AppMenuBar {
-	pub fn new(app: &App) -> Self {
+	pub fn new() -> Self {
 		let mut menu = menu::SysMenuBar::default().with_size(900, 35);
 		menu.set_color(Color::from_u32(Colors::DarkGray as u32));
 		menu.set_selection_color(Color::from_u32(Colors::DarkerGray as u32));

@@ -1,18 +1,12 @@
 use super::enums::{BaseColor, Colors};
-use crate::{
-	enums::{Effects, Message},
-	gui::color_tiles,
-	keyboard_manager::StopSignals,
-};
+use crate::gui::color_tiles;
 use fltk::{
 	button::ToggleButton,
-	enums::{Color, Event, FrameType},
+	enums::{Color, FrameType},
 	group::Tile,
 	input::IntInput,
 	prelude::*,
 };
-use serde::{Deserialize, Serialize};
-use std::sync::mpsc;
 
 const TILE_WIDTH: i32 = 540;
 const TILE_HEIGHT: i32 = 90;
@@ -123,7 +117,7 @@ impl Zones {
 	}
 	pub fn activate(&mut self) {}
 	pub fn deactivate(&mut self) {}
-	pub fn change_color_value(&mut self, color: BaseColor, value: u8) {}
+	pub fn change_color_value(&mut self) {}
 	pub fn get_values(&mut self) {}
 }
 
@@ -134,7 +128,7 @@ pub struct ColorTiles {
 }
 
 impl ColorTiles {
-	pub fn new(x: i32, y: i32, tx: &mpsc::Sender<Message>, stop_signals: StopSignals) -> Self {
+	pub fn new(x: i32, y: i32) -> Self {
 		let color_tiles = Self {
 			master: (color_tiles::ColorTile::create(x, y + TILE_HEIGHT * 4, true)),
 			zones: color_tiles::Zones::create(x, y),
@@ -155,5 +149,5 @@ impl ColorTiles {
 
 	pub fn get_zone_values(&mut self) {}
 
-	pub fn update(&mut self, effect: Effects) {}
+	pub fn update(&mut self) {}
 }

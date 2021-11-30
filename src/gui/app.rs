@@ -3,23 +3,13 @@ use super::options::OptionsTile;
 use super::{color_tiles, effect_browser, options};
 use crate::gui::menu_bar;
 use crate::keyboard_manager::{self, StopSignals};
-use crate::{
-	enums::{Effects, Message},
-	gui::dialog as appdialog,
-};
+use crate::{enums::Message, gui::dialog as appdialog};
 use fltk::enums::FrameType;
 use fltk::{app, enums::Font, prelude::*, window::Window};
-use fltk::{
-	browser::HoldBrowser,
-	dialog,
-	prelude::{BrowserExt, MenuExt},
-	text,
-};
-use serde::{Deserialize, Serialize};
-use serde_json::Result;
-use std::time::Duration;
-use std::{panic, thread};
-use std::{path, str::FromStr, sync::mpsc::Sender};
+use fltk::{browser::HoldBrowser, text};
+
+use std::panic;
+use std::sync::mpsc::Sender;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 480;
@@ -58,7 +48,7 @@ pub struct App {
 }
 
 impl App {
-	pub fn load_profile(&mut self, is_default: bool) {}
+	pub fn load_profile(&mut self) {}
 
 	pub fn save_profile(&mut self) {}
 
@@ -72,19 +62,19 @@ impl App {
 		}));
 
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
-		let tiles = color_tiles::ColorTiles::new(0, 30, &manager.tx, manager.stop_signals.clone());
+		let tiles = color_tiles::ColorTiles::new(0, 30);
 
-		let app = Self {
+		let _app = Self {
 			color_tiles: tiles,
 			effect_browser: effect_browser::EffectBrowserTile::create(540, 30, &EFFECTS_LIST).effect_browser,
-			options_tile: options::OptionsTile::create(540, 390, &manager.tx, &manager.stop_signals),
+			options_tile: options::OptionsTile::create(540, 390),
 			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),
 			buf: text::TextBuffer::default(),
 			center: screen_center(),
 		};
 
-		menu_bar::AppMenuBar::new(&app);
+		menu_bar::AppMenuBar::new();
 
 		win.end();
 		win.make_resizable(false);

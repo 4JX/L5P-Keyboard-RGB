@@ -1,12 +1,10 @@
 use super::enums::Colors;
-use crate::{enums::Message, keyboard_manager::StopSignals};
 use fltk::{
 	enums::{Color, FrameType},
 	group::Tile,
 	menu::Choice,
 	prelude::*,
 };
-use std::sync::mpsc::Sender;
 
 struct OptionsChoice;
 
@@ -34,7 +32,7 @@ pub struct OptionsTile {
 }
 
 impl OptionsTile {
-	pub fn create(x: i32, y: i32, tx: &Sender<Message>, stop_signals: &StopSignals) -> Self {
+	pub fn create(x: i32, y: i32) -> Self {
 		let mut options_tile = Tile::new(x, y, 360, 90, "");
 		let speed_choice = OptionsChoice::create(x + 100, y + 25, 45, 40, "Speed: ", "1|2|3|4");
 
