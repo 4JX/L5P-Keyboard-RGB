@@ -166,12 +166,12 @@ fn main() -> Result<()> {
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
-		start_with_gui(manager);
+		start_with_gui();
 	}
 	Ok(())
 }
 
-fn start_with_gui(manager: KeyboardManager) {
+fn start_with_gui() {
 	let app = app::App::default();
 
 	//Windows logic
@@ -184,7 +184,7 @@ fn start_with_gui(manager: KeyboardManager) {
 
 		static mut WINDOW: HWND = std::ptr::null_mut();
 
-		let mut win = gui::app::App::start_ui(manager);
+		let mut win = gui::app::App::start_ui();
 
 		unsafe {
 			WINDOW = win.raw_handle();
@@ -227,7 +227,7 @@ fn start_with_gui(manager: KeyboardManager) {
 
 	#[cfg(target_os = "linux")]
 	{
-		gui::app::App::start_ui(manager);
+		gui::app::App::start_ui();
 		app.run().unwrap();
 	}
 }

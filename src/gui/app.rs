@@ -1,15 +1,10 @@
-use super::color_tiles::ColorTiles;
-use super::options::OptionsTile;
 use super::{color_tiles, effect_browser, options};
+use crate::gui::dialog as appdialog;
 use crate::gui::menu_bar;
-use crate::keyboard_manager::{self, StopSignals};
-use crate::{enums::Message, gui::dialog as appdialog};
 use fltk::enums::FrameType;
 use fltk::{app, enums::Font, prelude::*, window::Window};
-use fltk::{browser::HoldBrowser, text};
 
 use std::panic;
-use std::sync::mpsc::Sender;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 480;
@@ -37,22 +32,14 @@ pub const EFFECTS_LIST: [&str; 15] = [
 ];
 
 #[derive(Clone)]
-pub struct App {
-	pub color_tiles: ColorTiles,
-	pub effect_browser: HoldBrowser,
-	pub options_tile: OptionsTile,
-	pub tx: Sender<Message>,
-	pub stop_signals: StopSignals,
-	pub buf: text::TextBuffer,
-	pub center: (i32, i32),
-}
+pub struct App {}
 
 impl App {
 	pub fn load_profile(&mut self) {}
 
 	pub fn save_profile(&mut self) {}
 
-	pub fn start_ui(manager: keyboard_manager::KeyboardManager) -> fltk::window::Window {
+	pub fn start_ui() -> fltk::window::Window {
 		panic::set_hook(Box::new(|info| {
 			if let Some(s) = info.payload().downcast_ref::<&str>() {
 				appdialog::panic(800, 400, s);
@@ -62,17 +49,9 @@ impl App {
 		}));
 
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
-		let tiles = color_tiles::ColorTiles::new(0, 30);
-
-		let _app = Self {
-			color_tiles: tiles,
-			effect_browser: effect_browser::EffectBrowserTile::create(540, 30, &EFFECTS_LIST).effect_browser,
-			options_tile: options::OptionsTile::create(540, 390),
-			tx: manager.tx.clone(),
-			stop_signals: manager.stop_signals.clone(),
-			buf: text::TextBuffer::default(),
-			center: screen_center(),
-		};
+		color_tiles::ColorTiles::new(0, 30);
+		effect_browser::EffectBrowserTile::create(540, 30, &EFFECTS_LIST);
+		options::OptionsTile::create(540, 390);
 
 		menu_bar::AppMenuBar::new();
 
