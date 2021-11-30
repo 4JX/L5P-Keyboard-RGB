@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
 mod enums;
 mod gui;
 mod keyboard_manager;
@@ -156,10 +160,6 @@ fn main() -> Result<()> {
 					process::exit(0);
 				};
 				color_array
-			}
-			#[cfg(target_os = "windows")]
-			Effects::Temperature => {
-				panic!("This effect is not supported on Windows");
 			}
 			_ => [0; 12],
 		};

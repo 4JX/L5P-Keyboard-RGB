@@ -20,28 +20,26 @@ impl AppMenuBar {
 		menu.set_text_font(Font::Helvetica);
 		menu.set_text_color(Color::from_u32(Colors::White as u32));
 		menu.add("&Profile/Save\t", Shortcut::None, menu::MenuFlag::Normal, {
-			let mut app = app.clone();
 			move |_some| {
-				app.stop_signals.store_true();
-				app.save_profile();
+				// app.stop_signals.store_true();
+				// app.save_profile();
 			}
 		});
 		menu.add("&Profile/Load\t", Shortcut::None, menu::MenuFlag::Normal, {
-			let mut app = app.clone();
 			move |_some| {
-				app.stop_signals.store_true();
-				app.load_profile(false);
+				// app.stop_signals.store_true();
+				// app.load_profile(false);
 			}
 		});
 
 		menu.add("&About", Shortcut::None, menu::MenuFlag::Normal, {
 			move |_some| {
-				dialog::about(800, 200);
+				// dialog::about(800, 200);
 			}
 		});
 		menu.add("Exit", Shortcut::None, menu::MenuFlag::Normal, {
 			move |_some| {
-				std::process::exit(0);
+				// std::process::exit(0);
 			}
 		});
 

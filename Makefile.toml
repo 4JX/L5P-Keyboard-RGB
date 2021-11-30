@@ -52,7 +52,7 @@ cls && cargo run --release
 [tasks.run-linux]
 env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 script = '''
-clear && cargo build --release && sudo ./target/release/legion-kb-rgb
+clear && cargo build --release && ./target/release/legion-kb-rgb
 '''
 
 # Clippy
