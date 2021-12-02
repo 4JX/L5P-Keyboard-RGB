@@ -99,39 +99,21 @@ impl ColorTile {
 }
 
 #[derive(Clone)]
-pub struct Zones {
-	pub left: ColorTile,
-	pub center_left: ColorTile,
-	pub center_right: ColorTile,
-	pub right: ColorTile,
-}
-
-impl Zones {
-	pub fn create(x: i32, y: i32) -> Self {
-		Zones {
-			left: ColorTile::create(x, y, false),
-			center_left: ColorTile::create(x, y + TILE_HEIGHT, false),
-			center_right: ColorTile::create(x, y + TILE_HEIGHT * 2, false),
-			right: ColorTile::create(x, y + TILE_HEIGHT * 3, false),
-		}
-	}
-	pub fn activate(&mut self) {}
-	pub fn deactivate(&mut self) {}
-	pub fn change_color_value(&mut self) {}
-	pub fn get_values(&mut self) {}
-}
-
-#[derive(Clone)]
 pub struct ColorTiles {
 	master: ColorTile,
-	zones: Zones,
+	zones: (ColorTile, ColorTile, ColorTile, ColorTile),
 }
 
 impl ColorTiles {
 	pub fn new(x: i32, y: i32) -> Self {
+		let left = ColorTile::create(x, y, false);
+		let center_left = ColorTile::create(x, y + TILE_HEIGHT, false);
+		let center_right = ColorTile::create(x, y + TILE_HEIGHT * 2, false);
+		let right = ColorTile::create(x, y + TILE_HEIGHT * 3, false);
+
 		let color_tiles = Self {
 			master: (color_tiles::ColorTile::create(x, y + TILE_HEIGHT * 4, true)),
-			zones: color_tiles::Zones::create(x, y),
+			zones: (left, center_left, center_right, right),
 		};
 
 		color_tiles
