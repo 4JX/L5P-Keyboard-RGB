@@ -6,16 +6,15 @@ mod gui;
 mod keyboard_manager;
 mod keyboard_utils;
 
+use crate::keyboard_manager::StopSignals;
 use color_eyre::Result;
 use enums::{Effects, Message};
 use fltk::app;
+use flume;
 use keyboard_manager::KeyboardManager;
 use std::env;
 use std::sync::atomic::AtomicBool;
-use std::sync::mpsc;
 use std::sync::Arc;
-
-use crate::keyboard_manager::StopSignals;
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
@@ -45,7 +44,7 @@ fn main() -> Result<()> {
 		}
 	}
 
-	let (tx, rx) = mpsc::channel::<Message>();
+	let (tx, rx) = flume::unbounded::<Message>();
 	let keyboard_stop_signal = Arc::new(AtomicBool::new(false));
 	let keyboard = match keyboard_utils::get_keyboard(keyboard_stop_signal.clone()) {
 		Ok(keyboard) => keyboard,
