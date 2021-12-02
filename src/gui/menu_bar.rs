@@ -39,7 +39,7 @@ impl AppMenuBar {
 		});
 		menu.add("Exit", Shortcut::None, menu::MenuFlag::Normal, {
 			move |_some| {
-				// std::process::exit(0);
+				std::process::exit(0);
 			}
 		});
 

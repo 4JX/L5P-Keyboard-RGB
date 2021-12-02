@@ -29,7 +29,7 @@ pub struct EffectBrowserTile {
 }
 
 impl EffectBrowserTile {
-	pub fn create(x: i32, y: i32, effects_list: &[&str]) -> EffectBrowserTile {
+	pub fn create(x: i32, y: i32, effects_list: &[&str]) -> Self {
 		let mut effect_browser_tile = Tile::new(x, y, 360, 360, "");
 		let effect_browser = EffectBrowser::create(effects_list);
 		effect_browser_tile.end();

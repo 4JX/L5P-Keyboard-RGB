@@ -1,17 +1,13 @@
+use super::utils::screen_center;
 use super::{color_tiles, effect_browser, options};
 use crate::gui::dialog as appdialog;
 use crate::gui::menu_bar;
 use fltk::enums::FrameType;
 use fltk::{app, enums::Font, prelude::*, window::Window};
-
 use std::panic;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 480;
-
-pub fn screen_center() -> (i32, i32) {
-	((app::screen_size().0 / 2.0) as i32, (app::screen_size().1 / 2.0) as i32)
-}
 
 pub const EFFECTS_LIST: [&str; 15] = [
 	"Static",
