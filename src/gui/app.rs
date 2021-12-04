@@ -9,24 +9,6 @@ use std::panic;
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 480;
 
-pub const EFFECTS_LIST: [&str; 15] = [
-	"Static",
-	"Breath",
-	"Smooth",
-	"LeftWave",
-	"RightWave",
-	"Lightning",
-	"AmbientLight",
-	"SmoothLeftWave",
-	"SmoothRightWave",
-	"LeftSwipe",
-	"RightSwipe",
-	"Disco",
-	"Christmas",
-	"Fade",
-	"Temperature",
-];
-
 #[derive(Clone)]
 pub struct App {}
 
@@ -46,7 +28,7 @@ impl App {
 
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
 		color_tiles::ColorTiles::new(0, 30);
-		effect_browser::EffectBrowserTile::create(540, 30, &EFFECTS_LIST);
+		effect_browser::EffectBrowserTile::create(540, 30);
 		options::OptionsTile::create(540, 390);
 
 		menu_bar::AppMenuBar::new();

@@ -1,3 +1,5 @@
+use crate::enums::Effects;
+
 use super::enums::Colors;
 use fltk::{
 	browser::HoldBrowser,
@@ -5,14 +7,15 @@ use fltk::{
 	group::Tile,
 	prelude::*,
 };
+use strum::IntoEnumIterator;
 
 pub struct EffectBrowser;
 
 impl EffectBrowser {
-	pub fn create(effects_list: &[&str]) -> HoldBrowser {
+	pub fn create() -> HoldBrowser {
 		let mut effect_browser = HoldBrowser::new(0, 0, 310, 310, "").center_of_parent();
-		for effect in effects_list.iter() {
-			effect_browser.add(effect);
+		for effect in Effects::iter() {
+			effect_browser.add(effect.to_string().as_str());
 		}
 
 		effect_browser.set_frame(FrameType::RFlatBox);
@@ -29,9 +32,9 @@ pub struct EffectBrowserTile {
 }
 
 impl EffectBrowserTile {
-	pub fn create(x: i32, y: i32, effects_list: &[&str]) -> Self {
+	pub fn create(x: i32, y: i32) -> Self {
 		let mut effect_browser_tile = Tile::new(x, y, 360, 360, "");
-		let effect_browser = EffectBrowser::create(effects_list);
+		let effect_browser = EffectBrowser::create();
 		effect_browser_tile.end();
 
 		effect_browser_tile.set_frame(FrameType::FlatBox);
