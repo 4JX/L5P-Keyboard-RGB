@@ -2,12 +2,14 @@
 
 mod cli;
 mod enums;
+mod error;
 mod gui;
 mod keyboard_manager;
 mod keyboard_utils;
+mod profile;
 
 use crate::keyboard_manager::StopSignals;
-use color_eyre::Result;
+use color_eyre::{Report, Result};
 use enums::{Effects, Message};
 use fltk::app;
 use flume;
@@ -16,8 +18,9 @@ use std::env;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Report> {
 	color_eyre::install()?;
+
 	// Clear/Hide console if not running via one (Windows specific)
 	#[cfg(target_os = "windows")]
 	{
@@ -61,11 +64,13 @@ fn main() -> Result<()> {
 		last_effect: Effects::Static,
 	};
 
-	cli::try_cli(&mut manager);
+	let used_cli = cli::try_cli(&mut manager)?;
 
-	let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
-	println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
-	start_with_gui();
+	if !used_cli {
+		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
+		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
+		start_with_gui();
+	}
 
 	Ok(())
 }

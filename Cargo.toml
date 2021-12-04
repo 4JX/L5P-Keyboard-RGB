@@ -23,6 +23,8 @@ color-eyre = "0.5.11"
 device_query = "0.2.8"
 sysinfo = "0.21.1"
 flume = "0.10.9"
+dirs = "4.0.0"
+thiserror = "1.0.30"
 
 [dependencies.hidapi]
 version = "1.2.6"
