@@ -25,10 +25,10 @@ impl Profile {
 			ui_toggle_button_state,
 		}
 	}
-	pub fn save(&self, profile_name: &str) -> std::io::Result<()> {
+	pub fn save(&self, profile_name: &str) -> Result<(), error::Error> {
 		let profile_path = Self::get_full_path(profile_name);
-		let file = File::create(&profile_path).unwrap();
-		let struct_json = serde_json::to_string(self).unwrap();
+		let file = File::create(&profile_path)?;
+		let struct_json = serde_json::to_string(self)?;
 		println!("{}", struct_json);
 		let mut w = BufWriter::new(file);
 		w.write_all(struct_json.as_bytes()).unwrap();
@@ -39,7 +39,7 @@ impl Profile {
 
 	pub fn from_file(mut path_string: String) -> Result<Self, error::Error> {
 		if !path_string.ends_with(".json") {
-			path_string = format!("{}{}", path_string.to_owned(), ".json");
+			path_string = format!("{}{}", path_string, ".json");
 		}
 		let path = Path::new(&path_string);
 		let full_path = fs::canonicalize(path)?;
