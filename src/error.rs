@@ -4,8 +4,8 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-	#[error(transparent)]
+	#[error("IoError: {}", .0)]
 	IoError(#[from] IoError),
-	#[error(transparent)]
+	#[error("SerdeError: {}",.0)]
 	SerdeError(#[from] SerdeError),
 }
