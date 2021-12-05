@@ -17,7 +17,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use std::{panic, path, thread};
 
-const WIDTH: i32 = 900;
+const WIDTH: i32 = 1140;
 const HEIGHT: i32 = 480;
 
 #[derive(Clone)]
@@ -104,7 +104,7 @@ impl App {
 		let mut app = Self {
 			color_tiles: color_tiles::ColorTiles::new(0, 30, &manager.tx, &manager.stop_signals),
 			effect_browser: effect_browser::EffectBrowserTile::create(540, 30, &manager.tx, &manager.stop_signals).effect_browser,
-			options_tile: options::OptionsTile::create(540, 390, manager.tx.clone(), &manager.stop_signals),
+			options_tile: options::OptionsTile::create(540, 30, manager.tx.clone(), &manager.stop_signals),
 			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),
 			center: screen_center(),

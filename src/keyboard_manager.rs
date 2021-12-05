@@ -332,7 +332,7 @@ impl KeyboardManager {
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					let keys: Vec<Keycode> = device_state.get_keys();
 					if keys.is_empty() {
-						if now.elapsed() > Duration::from_secs(20 / u64::from(speed)) {
+						if now.elapsed() > Duration::from_secs(20 / u64::from(self.keyboard.get_speed())) {
 							self.keyboard.transition_colors_to(&[0; 12], 230, 3);
 						} else {
 							thread::sleep(Duration::from_millis(20));

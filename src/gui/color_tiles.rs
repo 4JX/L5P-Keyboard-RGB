@@ -120,7 +120,7 @@ impl ColorTile {
 }
 
 impl ColorTile {
-	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals, master_tile: bool) -> Self {
+	pub fn new(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals, master_tile: bool) -> Self {
 		let button_size = 40;
 		let inputs_offset = 60;
 
@@ -183,13 +183,13 @@ pub struct ColorTiles {
 
 impl ColorTiles {
 	pub fn new(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
-		let left = ColorTile::create(x, y, &tx.clone(), &stop_signals.clone(), false);
-		let center_left = ColorTile::create(x, y + TILE_HEIGHT, &tx.clone(), &stop_signals.clone(), false);
-		let center_right = ColorTile::create(x, y + TILE_HEIGHT * 2, &tx.clone(), &stop_signals.clone(), false);
-		let right = ColorTile::create(x, y + TILE_HEIGHT * 3, &tx.clone(), &stop_signals.clone(), false);
+		let left = ColorTile::new(x, y, &tx.clone(), &stop_signals.clone(), false);
+		let center_left = ColorTile::new(x, y + TILE_HEIGHT, &tx.clone(), &stop_signals.clone(), false);
+		let center_right = ColorTile::new(x, y + TILE_HEIGHT * 2, &tx.clone(), &stop_signals.clone(), false);
+		let right = ColorTile::new(x, y + TILE_HEIGHT * 3, &tx.clone(), &stop_signals.clone(), false);
 
 		let mut color_tiles = Self {
-			master: (color_tiles::ColorTile::create(x, y + TILE_HEIGHT * 4, &tx.clone(), &stop_signals.clone(), true)),
+			master: (color_tiles::ColorTile::new(x, y + TILE_HEIGHT * 4, &tx.clone(), &stop_signals.clone(), true)),
 			zones: [left, center_left, center_right, right],
 		};
 

@@ -2,7 +2,7 @@ use crate::{enums::Message, keyboard_manager::StopSignals};
 
 use super::enums::Colors;
 use fltk::{
-	enums::{Color, FrameType},
+	enums::{Align, Color, FrameType},
 	group::Tile,
 	menu::Choice,
 	prelude::*,
@@ -13,6 +13,7 @@ struct OptionsChoice;
 impl OptionsChoice {
 	fn create(x: i32, y: i32, width: i32, height: i32, title: &str, choices: &str) -> Choice {
 		let mut choice = Choice::new(x, y, width, height, "").with_label(title);
+		choice.set_align(Align::Right);
 		choice.add_choice(choices);
 
 		choice.set_frame(FrameType::RoundedBox);
@@ -35,10 +36,12 @@ pub struct OptionsTile {
 
 impl OptionsTile {
 	pub fn create(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
-		let mut options_tile = Tile::new(x, y, 360, 90, "");
-		let mut speed_choice = OptionsChoice::create(x + 100, y + 25, 45, 40, "Speed: ", "1|2|3|4");
+		let x = x + 360;
+		let mut options_tile = Tile::new(x, y, 240, 450, "");
+		let mut speed_choice = OptionsChoice::create(x + 25, y + 25, 45, 35, " Speed", "1|2|3|4");
 
-		let mut brightness_choice = OptionsChoice::create(x + 100 + 190, y + 25, 45, 40, "Brightness: ", "1|2");
+		let mut brightness_choice = OptionsChoice::create(x + 25, y + 80, 45, 35, " Brightness", "1|2");
+
 		options_tile.end();
 
 		options_tile.set_frame(FrameType::FlatBox);
