@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod cli;
 mod enums;
 mod error;
@@ -12,7 +10,6 @@ use crate::keyboard_manager::StopSignals;
 use color_eyre::{Report, Result};
 use enums::{Effects, Message};
 use fltk::app;
-use flume;
 use keyboard_manager::KeyboardManager;
 use std::env;
 use std::sync::atomic::AtomicBool;
@@ -69,13 +66,13 @@ fn main() -> Result<(), Report> {
 	if !used_cli {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
-		start_with_gui();
+		start_with_gui(manager);
 	}
 
 	Ok(())
 }
 
-fn start_with_gui() {
+fn start_with_gui(manager: KeyboardManager) {
 	let app = app::App::default();
 
 	//Windows logic
@@ -131,7 +128,7 @@ fn start_with_gui() {
 
 	#[cfg(target_os = "linux")]
 	{
-		gui::app::App::start_ui();
+		gui::app::App::start_ui(manager);
 		app.run().unwrap();
 	}
 }

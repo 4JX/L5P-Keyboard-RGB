@@ -112,13 +112,11 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 
 			match matches.value_of("save") {
 				Some(filename) => {
-					println!("{}", filename);
 					let profile = Profile::new(rgb_array, effect, speed, brightness, [false; 5]);
-					println!("AA");
-					profile.save(filename).expect("Failed to save");
+					profile.save(filename).expect("Failed to save.");
 				}
 				None => {
-					println!("None");
+					// Do nothing
 				}
 			}
 

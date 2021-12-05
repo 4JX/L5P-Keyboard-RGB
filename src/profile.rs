@@ -26,7 +26,7 @@ impl Profile {
 		}
 	}
 	pub fn save(&self, profile_name: &str) -> Result<(), error::Error> {
-		let profile_path = Self::get_full_path(profile_name);
+		let profile_path = Self::get_full_path(profile_name.to_string());
 		let file = File::create(&profile_path)?;
 		let struct_json = serde_json::to_string(self)?;
 		println!("{}", struct_json);
@@ -53,8 +53,11 @@ impl Profile {
 		current_dir
 	}
 
-	fn get_full_path(profile_name: &str) -> PathBuf {
+	fn get_full_path(mut profile_name: String) -> PathBuf {
 		let config_dir = Self::get_current_dir();
+		if !profile_name.ends_with(".json") {
+			profile_name = format!("{}{}", profile_name, ".json");
+		}
 		Path::new(&config_dir).join(format! {"{}{}", profile_name, ".json"})
 	}
 }

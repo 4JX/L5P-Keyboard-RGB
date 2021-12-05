@@ -42,6 +42,7 @@ pub struct Keyboard {
 	stop_signal: Arc<AtomicBool>,
 }
 
+#[allow(dead_code)]
 impl Keyboard {
 	fn build_payload(&self) -> Result<[u8; 33], &'static str> {
 		let keyboard_state = &self.current_state;
