@@ -34,7 +34,7 @@ pub struct OptionsTile {
 }
 
 impl OptionsTile {
-	pub fn create(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: StopSignals) -> Self {
+	pub fn create(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
 		let mut options_tile = Tile::new(x, y, 360, 90, "");
 		let mut speed_choice = OptionsChoice::create(x + 100, y + 25, 45, 40, "Speed: ", "1|2|3|4");
 
@@ -46,9 +46,9 @@ impl OptionsTile {
 
 		speed_choice.set_callback({
 			let tx = tx.clone();
-			let stop_signal = stop_signals.clone();
+			let stop_signals = stop_signals.clone();
 			move |choice| {
-				stop_signal.store_true();
+				stop_signals.store_true();
 				if let Some(value) = choice.choice() {
 					let speed = value.parse::<u8>().unwrap();
 					if (1..=4).contains(&speed) {
@@ -59,10 +59,9 @@ impl OptionsTile {
 		});
 
 		brightness_choice.set_callback({
-			let tx = tx.clone();
-			let stop_signal = stop_signals.clone();
+			let stop_signals = stop_signals.clone();
 			move |choice| {
-				stop_signal.store_true();
+				stop_signals.store_true();
 				if let Some(value) = choice.choice() {
 					let brightness = value.parse::<u8>().unwrap();
 					if (1..=2).contains(&brightness) {

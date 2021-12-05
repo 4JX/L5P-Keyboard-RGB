@@ -15,7 +15,7 @@ use strum::IntoEnumIterator;
 pub struct EffectBrowser;
 
 impl EffectBrowser {
-	pub fn create(tx: flume::Sender<Message>, stop_signals: StopSignals) -> HoldBrowser {
+	pub fn create(tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> HoldBrowser {
 		let mut effect_browser = HoldBrowser::new(0, 0, 310, 310, "").center_of_parent();
 		for effect in Effects::iter() {
 			effect_browser.add(effect.to_string().as_str());
@@ -95,7 +95,7 @@ pub struct EffectBrowserTile {
 }
 
 impl EffectBrowserTile {
-	pub fn create(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: StopSignals) -> Self {
+	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
 		let mut effect_browser_tile = Tile::new(x, y, 360, 360, "");
 		let effect_browser = EffectBrowser::create(tx, stop_signals);
 		effect_browser_tile.end();

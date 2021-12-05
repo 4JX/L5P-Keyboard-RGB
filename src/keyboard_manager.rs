@@ -370,7 +370,7 @@ impl KeyboardManager {
 
 							let mut target = [0.0; 12];
 							for index in 0..12 {
-								target[index] = temp_cool[index] + color_differences[index] * temp_percent;
+								target[index] = color_differences[index].mul_add(temp_percent, temp_cool[index]);
 							}
 							self.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1);
 							thread::sleep(Duration::from_millis(20));

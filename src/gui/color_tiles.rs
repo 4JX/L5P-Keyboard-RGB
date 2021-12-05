@@ -107,7 +107,7 @@ impl ColorTile {
 		self.input_deactivate();
 	}
 
-	pub fn set_state(&mut self, rgb_values: &[u8; 3], button_toggle_state: bool) {
+	pub fn set_state(&mut self, rgb_values: [u8; 3], button_toggle_state: bool) {
 		self.red_input.set_value(rgb_values[0].to_string().as_str());
 		self.green_input.set_value(rgb_values[1].to_string().as_str());
 		self.blue_input.set_value(rgb_values[2].to_string().as_str());
@@ -120,7 +120,7 @@ impl ColorTile {
 }
 
 impl ColorTile {
-	pub fn create(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: StopSignals, master_tile: bool) -> Self {
+	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals, master_tile: bool) -> Self {
 		let button_size = 40;
 		let inputs_offset = 60;
 
@@ -182,14 +182,14 @@ pub struct ColorTiles {
 }
 
 impl ColorTiles {
-	pub fn new(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: StopSignals) -> Self {
-		let left = ColorTile::create(x, y, tx.clone(), stop_signals.clone(), false);
-		let center_left = ColorTile::create(x, y + TILE_HEIGHT, tx.clone(), stop_signals.clone(), false);
-		let center_right = ColorTile::create(x, y + TILE_HEIGHT * 2, tx.clone(), stop_signals.clone(), false);
-		let right = ColorTile::create(x, y + TILE_HEIGHT * 3, tx.clone(), stop_signals.clone(), false);
+	pub fn new(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
+		let left = ColorTile::create(x, y, &tx.clone(), &stop_signals.clone(), false);
+		let center_left = ColorTile::create(x, y + TILE_HEIGHT, &tx.clone(), &stop_signals.clone(), false);
+		let center_right = ColorTile::create(x, y + TILE_HEIGHT * 2, &tx.clone(), &stop_signals.clone(), false);
+		let right = ColorTile::create(x, y + TILE_HEIGHT * 3, &tx.clone(), &stop_signals.clone(), false);
 
 		let mut color_tiles = Self {
-			master: (color_tiles::ColorTile::create(x, y + TILE_HEIGHT * 4, tx.clone(), stop_signals.clone(), true)),
+			master: (color_tiles::ColorTile::create(x, y + TILE_HEIGHT * 4, &tx.clone(), &stop_signals.clone(), true)),
 			zones: [left, center_left, center_right, right],
 		};
 
@@ -248,11 +248,11 @@ impl ColorTiles {
 	}
 
 	pub fn get_values(&mut self) -> [u8; 12] {
-		let mut values = [0; 12];
-		if !self.master.toggle_button.is_toggled() {
-			values = self.get_zone_values();
+		if self.master.toggle_button.is_toggled() {
+			[0; 12]
+		} else {
+			self.get_zone_values()
 		}
-		values
 	}
 
 	pub fn get_zone_values(&mut self) -> [u8; 12] {
@@ -303,7 +303,7 @@ impl ColorTiles {
 	pub fn set_state(&mut self, rgb_array: &[u8; 12], buttons_toggle_state: [bool; 5], effect: Effects) {
 		for (i, (_val, zone)) in rgb_array.iter().step_by(3).zip(self.zones.iter_mut()).enumerate() {
 			let rgb_values: [u8; 3] = [rgb_array[i], rgb_array[i + 1], rgb_array[i + 2]];
-			zone.set_state(&rgb_values, buttons_toggle_state[i]);
+			zone.set_state(rgb_values, buttons_toggle_state[i]);
 		}
 		self.update(effect);
 	}

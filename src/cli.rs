@@ -110,26 +110,19 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 				_ => [0; 12],
 			};
 
-			match matches.value_of("save") {
-				Some(filename) => {
-					let profile = Profile::new(rgb_array, effect, speed, brightness, [false; 5]);
-					profile.save(filename).expect("Failed to save.");
-				}
-				None => {
-					// Do nothing
-				}
+			if let Some(filename) = matches.value_of("save") {
+				let profile = Profile::new(rgb_array, effect, speed, brightness, [false; 5]);
+				profile.save(filename).expect("Failed to save.");
 			}
 
 			manager.set_effect(effect, &rgb_array, speed, brightness);
-		} else {
-			if let Some(path_string) = input_matches.value_of("path") {
-				match Profile::from_file(path_string.to_string()) {
-					Ok(profile) => {
-						manager.set_effect(profile.effect, &profile.rgb_array, profile.speed, profile.brightness);
-					}
-					Err(err) => {
-						return Err(eyre!("{} ", err.to_string()));
-					}
+		} else if let Some(path_string) = input_matches.value_of("path") {
+			match Profile::from_file(path_string.to_string()) {
+				Ok(profile) => {
+					manager.set_effect(profile.effect, &profile.rgb_array, profile.speed, profile.brightness);
+				}
+				Err(err) => {
+					return Err(eyre!("{} ", err.to_string()));
 				}
 			}
 		}

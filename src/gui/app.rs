@@ -32,42 +32,39 @@ pub struct App {
 
 impl App {
 	pub fn load_profile(&mut self, is_default: bool) {
-		let filename: String;
-		if is_default {
-			filename = "default.json".to_string();
+		let filename = if is_default {
+			"default.json".to_string()
 		} else {
 			let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseFile);
 			dlg.set_option(dialog::FileDialogOptions::NoOptions);
 			dlg.set_filter("*.json");
 			dlg.show();
-			filename = dlg.filename().to_string_lossy().to_string();
-		}
+			dlg.filename().to_string_lossy().to_string()
+		};
 
 		if filename.is_empty() {
 			self.stop_signals.store_true();
 			self.tx.send(Message::Refresh).unwrap();
-		} else {
-			if path::Path::new(&filename).exists() {
-				if let Ok(profile) = Profile::from_file(filename) {
-					self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state, profile.effect);
-					self.effect_browser.select(profile.effect as i32 + 1);
-					self.options_tile.speed_choice.set_value(profile.speed.into());
-					self.options_tile.brightness_choice.set_value(profile.brightness.into());
+		} else if path::Path::new(&filename).exists() {
+			if let Ok(profile) = Profile::from_file(filename) {
+				self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state, profile.effect);
+				self.effect_browser.select(profile.effect as i32 + 1);
+				self.options_tile.speed_choice.set_value(profile.speed.into());
+				self.options_tile.brightness_choice.set_value(profile.brightness.into());
 
-					self.stop_signals.store_true();
-					self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
-				} else {
-					appdialog::alert(
-						800,
-						200,
-						"There was an error loading the profile.\nPlease make sure its a valid profile file and that it is compatible with this version of the program.",
-					);
-					self.stop_signals.store_true();
-					self.tx.send(Message::Refresh).unwrap();
-				}
-			} else if !is_default {
-				appdialog::alert(800, 200, "File does not exist!");
+				self.stop_signals.store_true();
+				self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
+			} else {
+				appdialog::alert(
+					800,
+					200,
+					"There was an error loading the profile.\nPlease make sure its a valid profile file and that it is compatible with this version of the program.",
+				);
+				self.stop_signals.store_true();
+				self.tx.send(Message::Refresh).unwrap();
 			}
+		} else if !is_default {
+			appdialog::alert(800, 200, "File does not exist!");
 		}
 	}
 
@@ -105,9 +102,9 @@ impl App {
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
 
 		let mut app = Self {
-			color_tiles: color_tiles::ColorTiles::new(0, 30, manager.tx.clone(), manager.stop_signals.clone()),
-			effect_browser: effect_browser::EffectBrowserTile::create(540, 30, manager.tx.clone(), manager.stop_signals.clone()).effect_browser,
-			options_tile: options::OptionsTile::create(540, 390, manager.tx.clone(), manager.stop_signals.clone()),
+			color_tiles: color_tiles::ColorTiles::new(0, 30, &manager.tx, &manager.stop_signals),
+			effect_browser: effect_browser::EffectBrowserTile::create(540, 30, &manager.tx, &manager.stop_signals).effect_browser,
+			options_tile: options::OptionsTile::create(540, 390, manager.tx.clone(), &manager.stop_signals),
 			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),
 			center: screen_center(),

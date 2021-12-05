@@ -106,7 +106,7 @@ impl Keyboard {
 		self.refresh();
 	}
 
-	pub fn get_speed(&self) -> u8 {
+	pub const fn get_speed(&self) -> u8 {
 		self.current_state.speed
 	}
 
@@ -117,17 +117,13 @@ impl Keyboard {
 	}
 
 	pub fn set_value_by_index(&mut self, color_index: u8, new_value: u8) {
-		if !(0..12).contains(&color_index) {
-			panic!("Color index is outside valid range (0-11)");
-		}
+		assert!((0..12).contains(&color_index), "Color index is outside valid range (0-11)");
 		let full_index: usize = color_index as usize;
 		self.current_state.rgb_values[full_index] = new_value;
 		self.refresh();
 	}
 	pub fn solid_set_value_by_index(&mut self, color_index: u8, new_value: u8) {
-		if !(0..3).contains(&color_index) {
-			panic!("Color index is outside valid range (0-2)");
-		}
+		assert!((0..3).contains(&color_index), "Color index is outside valid range (0-2)");
 		for i in 0..4 {
 			let full_index: usize = ((i * 3) + color_index) as usize;
 			self.current_state.rgb_values[full_index] = new_value;
@@ -136,9 +132,7 @@ impl Keyboard {
 	}
 
 	pub fn set_zone_by_index(&mut self, zone_index: u8, new_values: [u8; 3]) {
-		if !(0..4).contains(&zone_index) {
-			panic!("Zone index is outside valid range (0-3)");
-		}
+		assert!((0..4).contains(&zone_index), "Zone index is outside valid range (0-3)");
 		for (i, _) in new_values.iter().enumerate() {
 			let full_index = (zone_index * 3 + i as u8) as usize;
 			self.current_state.rgb_values[full_index] = new_values[i];
