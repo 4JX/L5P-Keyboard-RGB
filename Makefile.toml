@@ -63,11 +63,11 @@ linux_alias = "clippy-all-linux"
 [tasks.clippy-all-windows]
 env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 script = '''
-cls && cargo clippy -- -W clippy::pedantic -A clippy::unreadable_literal -A clippy::too_many_lines -A clippy::items-after-statements -A clippy::module-name-repetitions
+cls && cargo clippy -- -W clippy::pedantic -W clippy::nursery -A clippy::unreadable_literal -A clippy::too_many_lines -A clippy::items-after-statements -A clippy::module-name-repetitions
 '''
 
 [tasks.clippy-all-linux]
 env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 script = '''
-clear && cargo clippy -- -W clippy::pedantic -A clippy::unreadable_literal -A clippy::too_many_lines -A clippy::items-after-statements -A clippy::module-name-repetitions
+clear && cargo clippy -- -W clippy::pedantic -W clippy::nursery -A clippy::unreadable_literal -A clippy::too_many_lines -A clippy::items-after-statements -A clippy::module-name-repetitions
 '''
