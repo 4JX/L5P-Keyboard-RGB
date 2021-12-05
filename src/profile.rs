@@ -1,4 +1,7 @@
-use crate::{enums::Effects, error};
+use crate::{
+	enums::{Direction, Effects},
+	error,
+};
 use serde::{Deserialize, Serialize};
 use std::{
 	fs::{self, File},
@@ -10,16 +13,18 @@ use std::{
 pub struct Profile {
 	pub rgb_array: [u8; 12],
 	pub effect: Effects,
+	pub direction: Direction,
 	pub speed: u8,
 	pub brightness: u8,
 	pub ui_toggle_button_state: [bool; 5],
 }
 
 impl Profile {
-	pub const fn new(rgb_array: [u8; 12], effect: Effects, speed: u8, brightness: u8, ui_toggle_button_state: [bool; 5]) -> Self {
+	pub const fn new(rgb_array: [u8; 12], effect: Effects, direction: Direction, speed: u8, brightness: u8, ui_toggle_button_state: [bool; 5]) -> Self {
 		Self {
 			rgb_array,
 			effect,
+			direction,
 			speed,
 			brightness,
 			ui_toggle_button_state,

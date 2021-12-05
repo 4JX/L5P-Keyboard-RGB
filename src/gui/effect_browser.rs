@@ -50,39 +50,30 @@ impl EffectBrowser {
 						tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
 					}
 					4 => {
-						tx.send(Message::UpdateEffect { effect: Effects::LeftWave }).unwrap();
+						tx.send(Message::UpdateEffect { effect: Effects::Wave }).unwrap();
 					}
 					5 => {
-						tx.send(Message::UpdateEffect { effect: Effects::RightWave }).unwrap();
-					}
-					6 => {
 						tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
 					}
-					7 => {
+					6 => {
 						tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
 					}
+					7 => {
+						tx.send(Message::UpdateEffect { effect: Effects::SmoothWave }).unwrap();
+					}
 					8 => {
-						tx.send(Message::UpdateEffect { effect: Effects::SmoothLeftWave }).unwrap();
+						tx.send(Message::UpdateEffect { effect: Effects::Swipe }).unwrap();
 					}
 					9 => {
-						tx.send(Message::UpdateEffect { effect: Effects::SmoothRightWave }).unwrap();
-					}
-					10 => {
-						tx.send(Message::UpdateEffect { effect: Effects::LeftSwipe }).unwrap();
-					}
-					11 => {
-						tx.send(Message::UpdateEffect { effect: Effects::RightSwipe }).unwrap();
-					}
-					12 => {
 						tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
 					}
-					13 => {
+					10 => {
 						tx.send(Message::UpdateEffect { effect: Effects::Christmas }).unwrap();
 					}
-					14 => {
+					11 => {
 						tx.send(Message::UpdateEffect { effect: Effects::Fade }).unwrap();
 					}
-					15 => {
+					12 => {
 						tx.send(Message::UpdateEffect { effect: Effects::Temperature }).unwrap();
 					}
 					_ => unreachable!("Effect index is out of range"),

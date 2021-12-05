@@ -1,4 +1,4 @@
-use crate::enums::{Effects, Message};
+use crate::enums::{Direction, Effects, Message};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use fast_image_resize as fr;
@@ -22,7 +22,7 @@ pub struct KeyboardManager {
 }
 
 impl KeyboardManager {
-	pub fn set_effect(&mut self, effect: Effects, color_array: &[u8; 12], speed: u8, brightness: u8) {
+	pub fn set_effect(&mut self, effect: Effects, direction: Direction, color_array: &[u8; 12], speed: u8, brightness: u8) {
 		self.stop_signals.store_false();
 		self.last_effect = effect;
 		let mut thread_rng = thread_rng();
@@ -43,12 +43,11 @@ impl KeyboardManager {
 			Effects::Smooth => {
 				self.keyboard.set_effect(BaseEffects::Smooth);
 			}
-			Effects::LeftWave => {
-				self.keyboard.set_effect(BaseEffects::LeftWave);
-			}
-			Effects::RightWave => {
-				self.keyboard.set_effect(BaseEffects::RightWave);
-			}
+			Effects::Wave => match direction {
+				Direction::Left => self.keyboard.set_effect(BaseEffects::LeftWave),
+				Direction::Right => self.keyboard.set_effect(BaseEffects::RightWave),
+			},
+
 			Effects::Lightning => {
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -141,14 +140,17 @@ impl KeyboardManager {
 					}
 				}
 			}
-			Effects::SmoothLeftWave => {
+			Effects::SmoothWave => {
 				let mut gradient = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
-					gradient.rotate_right(3);
+					match direction {
+						Direction::Left => gradient.rotate_right(3),
+						Direction::Right => gradient.rotate_left(3),
+					}
 					self.keyboard.transition_colors_to(&gradient, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
@@ -156,22 +158,7 @@ impl KeyboardManager {
 					thread::sleep(Duration::from_millis(20));
 				}
 			}
-			Effects::SmoothRightWave => {
-				let mut gradient = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
-
-				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						break;
-					}
-					gradient.rotate_left(3);
-					self.keyboard.transition_colors_to(&gradient, 70 / self.keyboard.get_speed(), 10);
-					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						break;
-					}
-					thread::sleep(Duration::from_millis(20));
-				}
-			}
-			Effects::LeftSwipe => {
+			Effects::Swipe => {
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
@@ -179,28 +166,10 @@ impl KeyboardManager {
 
 					let mut gradient = color_array.to_vec();
 					for _i in 0..4 {
-						gradient.rotate_right(3);
-						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
-						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
-						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-							break;
+						match direction {
+							Direction::Left => gradient.rotate_right(3),
+							Direction::Right => gradient.rotate_left(3),
 						}
-					}
-					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						break;
-					}
-					thread::sleep(Duration::from_millis(20));
-				}
-			}
-			Effects::RightSwipe => {
-				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						break;
-					}
-
-					let mut gradient = color_array.to_vec();
-					for _i in 0..4 {
-						gradient.rotate_left(3);
 						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
 						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {

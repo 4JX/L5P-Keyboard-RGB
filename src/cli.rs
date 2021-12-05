@@ -3,7 +3,11 @@ use std::{convert::TryInto, process, str::FromStr};
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 use color_eyre::{eyre::eyre, Report};
 
-use crate::{enums::Effects, keyboard_manager::KeyboardManager, profile::Profile};
+use crate::{
+	enums::{Direction, Effects},
+	keyboard_manager::KeyboardManager,
+	profile::Profile,
+};
 
 pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 	let matches = App::new("Legion Keyboard Control")
@@ -25,6 +29,13 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 				.short("s")
 				.possible_values(&["1", "2", "3", "4"])
 				.default_value("1"),
+		)
+		.arg(
+			Arg::with_name("direction")
+				.help("The direction of the effect (If applicable)")
+				.takes_value(true)
+				.short("d")
+				.possible_values(&["Left", "Right"]),
 		)
 		.arg(Arg::with_name("save").help("Saves the typed profile").short("p").takes_value(true))
 		.subcommand(
@@ -49,22 +60,12 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 			),
 		)
 		.subcommand(SubCommand::with_name("Smooth").about("Smooth effect"))
-		.subcommand(SubCommand::with_name("LeftWave").about("Left Wave effect"))
-		.subcommand(SubCommand::with_name("RightWave").about("Right Wave effect"))
+		.subcommand(SubCommand::with_name("Wave").about("Wave effect"))
 		.subcommand(SubCommand::with_name("Lightning").about("Lightning effect"))
 		.subcommand(SubCommand::with_name("AmbientLight").about("AmbientLight effect"))
-		.subcommand(SubCommand::with_name("SmoothLeftWave").about("SmoothLeftWave effect"))
-		.subcommand(SubCommand::with_name("SmoothRightWave").about("SmoothRightWave effect"))
+		.subcommand(SubCommand::with_name("SmoothWave").about("SmoothWave effect"))
 		.subcommand(
-			SubCommand::with_name("LeftSwipe").about("Swipe effect").arg(
-				Arg::with_name("colors")
-					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
-					.index(1)
-					.required(true),
-			),
-		)
-		.subcommand(
-			SubCommand::with_name("RightSwipe").about("Swipe effect").arg(
+			SubCommand::with_name("Swipe").about("Swipe effect").arg(
 				Arg::with_name("colors")
 					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
 					.index(1)
@@ -96,7 +97,7 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 			let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
 
 			let rgb_array: [u8; 12] = match effect {
-				Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe | Effects::Fade => {
+				Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
 					let color_array = if let Some(value) = input_matches.value_of("colors") {
 						parse_bytes_arg(value)
 							.expect("Invalid input, please check you used the correct format for the colors")
@@ -115,16 +116,29 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 				_ => [0; 12],
 			};
 
+			let direction: Direction = match effect {
+				Effects::Wave | Effects::SmoothWave | Effects::Swipe => {
+					let direction = if let Some(value) = matches.value_of("direction") {
+						Direction::from_str(value).expect("Invalid direction")
+					} else {
+						println!("This effect requires specifying the colors to use.");
+						process::exit(0);
+					};
+					direction
+				}
+				_ => Direction::Right,
+			};
+
 			if let Some(filename) = matches.value_of("save") {
-				let profile = Profile::new(rgb_array, effect, speed, brightness, [false; 5]);
+				let profile = Profile::new(rgb_array, effect, direction, speed, brightness, [false; 5]);
 				profile.save(filename).expect("Failed to save.");
 			}
 
-			manager.set_effect(effect, &rgb_array, speed, brightness);
+			manager.set_effect(effect, direction, &rgb_array, speed, brightness);
 		} else if let Some(path_string) = input_matches.value_of("path") {
 			match Profile::from_file(path_string.to_string()) {
 				Ok(profile) => {
-					manager.set_effect(profile.effect, &profile.rgb_array, profile.speed, profile.brightness);
+					manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
 				}
 				Err(err) => {
 					return Err(eyre!("{} ", err.to_string()));

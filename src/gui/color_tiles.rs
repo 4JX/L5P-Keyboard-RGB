@@ -282,19 +282,10 @@ impl ColorTiles {
 
 	pub fn update(&mut self, effect: Effects) {
 		match effect {
-			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe | Effects::Fade => {
+			Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
 				self.activate();
 			}
-			Effects::Smooth
-			| Effects::LeftWave
-			| Effects::RightWave
-			| Effects::Lightning
-			| Effects::AmbientLight
-			| Effects::SmoothLeftWave
-			| Effects::SmoothRightWave
-			| Effects::Disco
-			| Effects::Christmas
-			| Effects::Temperature => {
+			Effects::Smooth | Effects::Wave | Effects::Lightning | Effects::AmbientLight | Effects::SmoothWave | Effects::Disco | Effects::Christmas | Effects::Temperature => {
 				self.deactivate();
 			}
 		}

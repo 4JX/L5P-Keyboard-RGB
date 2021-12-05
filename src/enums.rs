@@ -6,25 +6,26 @@ pub enum Effects {
 	Static,
 	Breath,
 	Smooth,
-	LeftWave,
-	RightWave,
+	Wave,
 	Lightning,
 	AmbientLight,
-	SmoothLeftWave,
-	SmoothRightWave,
-	LeftSwipe,
-	RightSwipe,
+	SmoothWave,
+	Swipe,
 	Disco,
 	Christmas,
 	Fade,
 	Temperature,
 }
 
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize)]
+pub enum Direction {
+	Left,
+	Right,
+}
+
 #[allow(dead_code)]
 pub enum Message {
 	UpdateAllValues { value: [u8; 12] },
 	UpdateEffect { effect: Effects },
-	UpdateBrightness { brightness: u8 },
-	UpdateSpeed { speed: u8 },
 	Refresh,
 }

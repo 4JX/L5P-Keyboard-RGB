@@ -32,6 +32,7 @@ impl OptionsChoice {
 pub struct OptionsTile {
 	pub speed_choice: Choice,
 	pub brightness_choice: Choice,
+	pub direction_choice: Choice,
 }
 
 impl OptionsTile {
@@ -41,6 +42,8 @@ impl OptionsTile {
 		let mut speed_choice = OptionsChoice::create(x + 25, y + 25, 45, 35, " Speed", "1|2|3|4");
 
 		let mut brightness_choice = OptionsChoice::create(x + 25, y + 80, 45, 35, " Brightness", "1|2");
+
+		let mut direction_choice = OptionsChoice::create(x + 25, y + 80 + 55, 90, 35, " Direction", "Left|Right");
 
 		options_tile.end();
 
@@ -55,25 +58,41 @@ impl OptionsTile {
 				if let Some(value) = choice.choice() {
 					let speed = value.parse::<u8>().unwrap();
 					if (1..=4).contains(&speed) {
-						tx.send(Message::UpdateSpeed { speed }).unwrap();
+						tx.send(Message::Refresh).unwrap();
 					}
 				}
 			}
 		});
 
 		brightness_choice.set_callback({
+			let tx = tx.clone();
 			let stop_signals = stop_signals.clone();
 			move |choice| {
 				stop_signals.store_true();
 				if let Some(value) = choice.choice() {
 					let brightness = value.parse::<u8>().unwrap();
 					if (1..=2).contains(&brightness) {
-						tx.send(Message::UpdateBrightness { brightness }).unwrap();
+						tx.send(Message::Refresh).unwrap();
 					}
 				}
 			}
 		});
 
-		Self { speed_choice, brightness_choice }
+		direction_choice.set_callback({
+			let tx = tx.clone();
+			let stop_signals = stop_signals.clone();
+			move |choice| {
+				stop_signals.store_true();
+				if let Some(_value) = choice.choice() {
+					tx.send(Message::Refresh).unwrap();
+				}
+			}
+		});
+
+		Self {
+			speed_choice,
+			brightness_choice,
+			direction_choice,
+		}
 	}
 }

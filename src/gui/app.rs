@@ -2,7 +2,7 @@ use super::color_tiles::ColorTiles;
 use super::options::OptionsTile;
 use super::utils::screen_center;
 use super::{color_tiles, effect_browser, options};
-use crate::enums::{Effects, Message};
+use crate::enums::{Direction, Effects, Message};
 use crate::gui::dialog as appdialog;
 use crate::gui::menu_bar;
 use crate::keyboard_manager::{KeyboardManager, StopSignals};
@@ -71,10 +71,11 @@ impl App {
 	pub fn save_profile(&mut self) {
 		let rgb_array = self.color_tiles.get_values();
 		let effect = Effects::from_str(self.effect_browser.selected_text().unwrap().as_str()).unwrap();
+		let direction = Direction::from_str(self.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
 		let speed = self.options_tile.speed_choice.value();
 		let brightness = self.options_tile.brightness_choice.value();
 
-		let profile = Profile::new(rgb_array, effect, speed.try_into().unwrap(), brightness.try_into().unwrap(), [false; 5]);
+		let profile = Profile::new(rgb_array, effect, direction, speed.try_into().unwrap(), brightness.try_into().unwrap(), [false; 5]);
 
 		let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseSaveFile);
 		dlg.set_option(dialog::FileDialogOptions::SaveAsConfirm);
@@ -135,19 +136,12 @@ impl App {
 							let color_array = app.color_tiles.get_values();
 							let speed = app.options_tile.speed_choice.choice().unwrap().parse::<u8>().unwrap();
 							let brightness = app.options_tile.brightness_choice.choice().unwrap().parse::<u8>().unwrap();
-							manager.set_effect(effect, &color_array, speed, brightness);
+							let direction = Direction::from_str(app.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
+
+							manager.set_effect(effect, direction, &color_array, speed, brightness);
 						}
 						Message::UpdateAllValues { value } => {
 							manager.keyboard.set_colors_to(&value);
-						}
-
-						Message::UpdateBrightness { brightness } => {
-							manager.keyboard.set_brightness(brightness);
-							app.tx.send(Message::Refresh).unwrap();
-						}
-						Message::UpdateSpeed { speed } => {
-							manager.keyboard.set_speed(speed);
-							app.tx.send(Message::Refresh).unwrap();
 						}
 						Message::Refresh => {
 							app.tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
