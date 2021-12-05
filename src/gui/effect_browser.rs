@@ -18,6 +18,10 @@ impl EffectBrowser {
 	pub fn create(tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> HoldBrowser {
 		let mut effect_browser = HoldBrowser::new(0, 0, 310, 310, "").center_of_parent();
 		for effect in Effects::iter() {
+			#[cfg(target_os = "windows")]
+			if effect == Effects::Temperature {
+				continue;
+			}
 			effect_browser.add(effect.to_string().as_str());
 		}
 

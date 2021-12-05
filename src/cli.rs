@@ -107,6 +107,10 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 					};
 					color_array
 				}
+				#[cfg(target_os = "windows")]
+				Effects::Temperature => {
+					panic!("This effect is not supported on Windows");
+				}
 				_ => [0; 12],
 			};
 
