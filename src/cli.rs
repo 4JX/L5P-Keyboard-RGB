@@ -1,12 +1,13 @@
 use std::{convert::TryInto, process, str::FromStr};
 
-use clap::{crate_authors, crate_version, App, Arg, SubCommand};
+use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
 use color_eyre::{eyre::eyre, Report};
 
 use crate::{enums::Effects, keyboard_manager::KeyboardManager, profile::Profile};
 
 pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 	let matches = App::new("Legion Keyboard Control")
+		.setting(AppSettings::ColoredHelp)
 		.version(crate_version!())
 		.author(crate_authors!())
 		.arg(
