@@ -28,9 +28,9 @@ dependencies = [
 
 [[package]]
 name = "ansi_term"
-version = "0.11.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b"
+checksum = "d52a9bb7ec0cf484c551830a7ce27bd20d67eac647e1befb56b0be4ee39a55d2"
 dependencies = [
  "winapi",
 ]
@@ -160,9 +160,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "2.33.3"
+version = "2.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37e58ac78573c40708d45522f0d80fa2f01cc4f9b4e2bf749807255454312002"
+checksum = "a0610544180c38b88101fecf2dd634b174a62eef6946f84dfc6a7127512b381c"
 dependencies = [
  "ansi_term",
  "atty",
@@ -446,9 +446,9 @@ dependencies = [
 
 [[package]]
 name = "fltk"
-version = "1.2.12"
+version = "1.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6e19643808aac2a6773d764f8c27d017e4dc0d072e60611c308b24b5975ede3"
+checksum = "e1047ed32bcb49609956d1da35703267a733179e514ad606e030ca711da45574"
 dependencies = [
  "bitflags",
  "fltk-sys",
@@ -457,9 +457,9 @@ dependencies = [
 
 [[package]]
 name = "fltk-sys"
-version = "1.2.11"
+version = "1.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ce0fcdcd1244a1f28c111583a381309899c66a735ca034a9a01a346d0b25043"
+checksum = "76f644df7b9b362dad4361de2491e844281c98d95b56e0b07ff8e591311962b1"
 dependencies = [
  "cmake",
 ]
@@ -561,9 +561,9 @@ dependencies = [
 
 [[package]]
 name = "hidapi"
-version = "1.2.6"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81e07da7e8614133e88b3a93b7352eb3729e3ccd82d5ab661adf23bef1761bf8"
+checksum = "8d6f5e247bc66f3255d755e96d9d43f6b191f4e182072b811d55584ff58c510f"
 dependencies = [
  "cc",
  "libc",
@@ -648,7 +648,7 @@ dependencies = [
  "rand 0.8.4",
  "scrap",
  "serde 1.0.130",
- "serde_json 1.0.71",
+ "serde_json 1.0.72",
  "strum",
  "strum_macros",
  "sysinfo",
@@ -1268,9 +1268,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.71"
+version = "1.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "063bf466a64011ac24040a49009724ee60a57da1b437617ceb32e53ad61bfb19"
+checksum = "d0ffa0837f2dfa6fb90868c2b5468cad482e175f7dad97e7421951e663f2b527"
 dependencies = [
  "itoa 0.4.8",
  "ryu",
