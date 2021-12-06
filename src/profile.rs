@@ -34,7 +34,6 @@ impl Profile {
 		let profile_path = Self::get_full_path(profile_name.to_string());
 		let file = File::create(&profile_path)?;
 		let struct_json = serde_json::to_string(self)?;
-		println!("{}", struct_json);
 		let mut w = BufWriter::new(file);
 		w.write_all(struct_json.as_bytes()).unwrap();
 		w.flush().unwrap();
