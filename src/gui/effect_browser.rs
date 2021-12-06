@@ -76,6 +76,9 @@ impl EffectBrowser {
 					12 => {
 						tx.send(Message::UpdateEffect { effect: Effects::Temperature }).unwrap();
 					}
+					13 => {
+						tx.send(Message::UpdateEffect { effect: Effects::Sound }).unwrap();
+					}
 					_ => unreachable!("Effect index is out of range"),
 				}
 			}

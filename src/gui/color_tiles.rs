@@ -285,7 +285,7 @@ impl ColorTiles {
 			Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
 				self.activate();
 			}
-			Effects::Smooth | Effects::Wave | Effects::Lightning | Effects::AmbientLight | Effects::SmoothWave | Effects::Disco | Effects::Christmas | Effects::Temperature => {
+			_ => {
 				self.deactivate();
 			}
 		}
