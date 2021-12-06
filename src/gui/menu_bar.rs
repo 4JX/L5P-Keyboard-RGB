@@ -11,7 +11,7 @@ pub struct AppMenuBar {
 }
 
 impl AppMenuBar {
-	pub fn new(app: &App) -> Self {
+	pub fn new(mut app: App) -> Self {
 		let mut menu = menu::SysMenuBar::default().with_size(900, 35);
 		menu.set_color(Color::from_u32(Colors::DarkGray as u32));
 		menu.set_selection_color(Color::from_u32(Colors::DarkerGray as u32));
@@ -19,6 +19,7 @@ impl AppMenuBar {
 		menu.set_down_frame(FrameType::FlatBox);
 		menu.set_text_font(Font::Helvetica);
 		menu.set_text_color(Color::from_u32(Colors::White as u32));
+
 		menu.add("&Profile/Save\t", Shortcut::None, menu::MenuFlag::Normal, {
 			let mut app = app.clone();
 			move |_some| {
@@ -26,8 +27,8 @@ impl AppMenuBar {
 				app.save_profile();
 			}
 		});
+
 		menu.add("&Profile/Load\t", Shortcut::None, menu::MenuFlag::Normal, {
-			let mut app = app.clone();
 			move |_some| {
 				app.stop_signals.store_true();
 				app.load_profile(false);

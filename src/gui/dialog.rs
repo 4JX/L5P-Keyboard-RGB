@@ -1,4 +1,4 @@
-use super::{app::screen_center, enums::Colors};
+use super::{enums::Colors, utils::screen_center};
 use fltk::{
 	button::Button,
 	enums::{Color, FrameType},
@@ -47,6 +47,7 @@ pub fn message(width: i32, height: i32, message: &str) {
 	});
 }
 
+#[allow(dead_code)]
 pub fn alert(width: i32, height: i32, message: &str) {
 	let width_center = width / 2;
 	let height_center = height / 2;
