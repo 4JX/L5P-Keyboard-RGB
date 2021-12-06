@@ -24,6 +24,10 @@ jobs:
             os: windows-latest
             artifact_name: target/release/legion-kb-rgb.exe
             asset_name: legion-kb-rgb-windows
+          - name: macos
+            os: macos-latest
+            artifact_name: target/release/legion-kb-rgb
+            asset_name: legion-kb-rgb-macos
 
     steps:
       - uses: actions/cache@v2

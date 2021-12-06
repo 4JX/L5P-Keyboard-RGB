@@ -11,6 +11,8 @@ use fltk::{
 	input::IntInput,
 	prelude::*,
 };
+use serde::{Deserialize, Serialize};
+use std::sync::mpsc;
 
 const TILE_WIDTH: i32 = 540;
 const TILE_HEIGHT: i32 = 90;
@@ -18,7 +20,7 @@ const TILE_HEIGHT: i32 = 90;
 pub struct ColorInput;
 
 impl ColorInput {
-	pub fn create(x: i32, y: i32, width: i32, height: i32, color: BaseColor, tx: flume::Sender<Message>, stop_signals: StopSignals) -> IntInput {
+	pub fn create(x: i32, y: i32, width: i32, height: i32, color: BaseColor) -> IntInput {
 		let mut color_input = match color {
 			BaseColor::Red => {
 				let mut color_input = IntInput::new(x, y, width, height, "R:");
@@ -44,31 +46,6 @@ impl ColorInput {
 		color_input.set_label_size(30);
 		color_input.set_value("0");
 		color_input.set_maximum_size(4);
-
-		color_input.handle({
-			move |input, event| match event {
-				Event::KeyUp => {
-					match input.value().parse::<f32>() {
-						Ok(value) => {
-							if input.value().len() > 3 {
-								input.set_value(&value.to_string());
-							}
-							if value > 255.0 {
-								input.set_value("255");
-							}
-							stop_signals.store_true();
-							tx.send(Message::Refresh).unwrap();
-						}
-						Err(_) => {
-							input.set_value("0");
-						}
-					}
-					true
-				}
-				_ => true,
-			}
-		});
-
 		color_input
 	}
 }
@@ -82,54 +59,58 @@ pub struct ColorTile {
 	pub blue_input: IntInput,
 }
 
-impl ColorTile {
-	pub fn input_activate(&mut self) {
-		self.red_input.activate();
-		self.green_input.activate();
-		self.blue_input.activate();
-	}
+#[derive(Copy, Clone, Serialize, Deserialize)]
+pub struct ColorTileState {
+	pub rgb_values: [u8; 3],
+	pub button_toggle_state: bool,
+}
 
-	pub fn input_deactivate(&mut self) {
+impl ColorTile {
+	pub fn activate(&mut self) {
+		self.toggle_button.activate();
+		if !self.toggle_button.is_toggled() {
+			self.red_input.activate();
+			self.green_input.activate();
+			self.blue_input.activate();
+		}
+	}
+	pub fn deactivate(&mut self) {
+		self.toggle_button.deactivate();
 		self.red_input.deactivate();
 		self.green_input.deactivate();
 		self.blue_input.deactivate();
 	}
 
-	pub fn activate(&mut self) {
-		self.toggle_button.activate();
-		if !self.toggle_button.is_toggled() {
-			self.input_activate();
+	pub fn set_state(&mut self, state: ColorTileState) {
+		self.red_input.set_value(state.rgb_values[0].to_string().as_str());
+		self.green_input.set_value(state.rgb_values[1].to_string().as_str());
+		self.blue_input.set_value(state.rgb_values[2].to_string().as_str());
+
+		self.toggle_button.toggle(state.button_toggle_state);
+		if state.button_toggle_state {
+			self.deactivate();
 		}
 	}
-
-	pub fn deactivate(&mut self) {
-		self.toggle_button.deactivate();
-		self.input_deactivate();
-	}
-
-	pub fn set_state(&mut self, rgb_values: [u8; 3], button_toggle_state: bool) {
-		self.red_input.set_value(rgb_values[0].to_string().as_str());
-		self.green_input.set_value(rgb_values[1].to_string().as_str());
-		self.blue_input.set_value(rgb_values[2].to_string().as_str());
-
-		self.toggle_button.toggle(button_toggle_state);
-		if button_toggle_state {
-			self.deactivate();
+	pub fn get_state(&mut self) -> ColorTileState {
+		ColorTileState {
+			rgb_values: self.get_values(),
+			button_toggle_state: self.toggle_button.is_toggled(),
 		}
 	}
 }
 
 impl ColorTile {
-	pub fn new(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals, master_tile: bool) -> Self {
+	pub fn create(x: i32, y: i32, master_tile: bool) -> Self {
 		let button_size = 40;
 		let inputs_offset = 60;
 
+		//Begin tile
 		let exterior_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
 		let toggle_button = ToggleButton::new(x + 25, y + TILE_HEIGHT / 2 - button_size / 2, button_size, button_size, "");
 		let inputs_tile = Tile::new(x + TILE_HEIGHT, y, TILE_WIDTH - TILE_HEIGHT, TILE_HEIGHT, "");
-		let green_input = ColorInput::create(0, 0, 70, 40, BaseColor::Green, tx.clone(), stop_signals.clone()).center_of_parent();
-		let red_input = ColorInput::create(0, 0, 70, 40, BaseColor::Red, tx.clone(), stop_signals.clone()).left_of(&green_input, inputs_offset);
-		let blue_input = ColorInput::create(0, 0, 70, 40, BaseColor::Blue, tx.clone(), stop_signals.clone()).right_of(&green_input, inputs_offset);
+		let green_input = ColorInput::create(0, 0, 70, 40, BaseColor::Green).center_of_parent();
+		let red_input = ColorInput::create(0, 0, 70, 40, BaseColor::Red).left_of(&green_input, inputs_offset);
+		let blue_input = ColorInput::create(0, 0, 70, 40, BaseColor::Blue).right_of(&green_input, inputs_offset);
 		inputs_tile.end();
 
 		let mut color_tile = Self {
@@ -142,11 +123,151 @@ impl ColorTile {
 
 		color_tile.exterior_tile.end();
 
+		//Theming
 		color_tile.exterior_tile.set_frame(FrameType::FlatBox);
 		if master_tile {
 			color_tile.exterior_tile.set_color(Color::from_u32(Colors::LightGray as u32));
 		} else {
 			color_tile.exterior_tile.set_color(Color::from_u32(Colors::Gray as u32));
+		}
+
+		//Button
+		color_tile.toggle_button.set_frame(FrameType::OFlatFrame);
+		color_tile.toggle_button.set_color(Color::from_u32(Colors::White as u32));
+		color_tile
+	}
+	pub fn get_values(&mut self) -> [u8; 3] {
+		let mut values = [0; 3];
+		if !self.toggle_button.is_toggled() {
+			values[0] = self.red_input.value().parse::<u8>().unwrap_or(255);
+			values[1] = self.green_input.value().parse::<u8>().unwrap_or(255);
+			values[2] = self.blue_input.value().parse::<u8>().unwrap_or(255);
+		};
+		values
+	}
+}
+
+#[derive(Clone)]
+pub struct Zones {
+	pub left: ColorTile,
+	pub center_left: ColorTile,
+	pub center_right: ColorTile,
+	pub right: ColorTile,
+}
+
+impl Zones {
+	pub fn create(x: i32, y: i32) -> Self {
+		Zones {
+			left: ColorTile::create(x, y, false),
+			center_left: ColorTile::create(x, y + TILE_HEIGHT, false),
+			center_right: ColorTile::create(x, y + TILE_HEIGHT * 2, false),
+			right: ColorTile::create(x, y + TILE_HEIGHT * 3, false),
+		}
+	}
+	pub fn activate(&mut self) {
+		self.left.activate();
+		self.center_left.activate();
+		self.center_right.activate();
+		self.right.activate();
+	}
+	pub fn deactivate(&mut self) {
+		self.left.deactivate();
+		self.center_left.deactivate();
+		self.center_right.deactivate();
+		self.right.deactivate();
+	}
+	pub fn change_color_value(&mut self, color: BaseColor, value: u8) {
+		match color {
+			BaseColor::Red => {
+				self.left.red_input.set_value(value.to_string().as_str());
+				self.center_left.red_input.set_value(value.to_string().as_str());
+				self.center_right.red_input.set_value(value.to_string().as_str());
+				self.right.red_input.set_value(value.to_string().as_str());
+			}
+			BaseColor::Green => {
+				self.left.green_input.set_value(value.to_string().as_str());
+				self.center_left.green_input.set_value(value.to_string().as_str());
+				self.center_right.green_input.set_value(value.to_string().as_str());
+				self.right.green_input.set_value(value.to_string().as_str());
+			}
+			BaseColor::Blue => {
+				self.left.blue_input.set_value(value.to_string().as_str());
+				self.center_left.blue_input.set_value(value.to_string().as_str());
+				self.center_right.blue_input.set_value(value.to_string().as_str());
+				self.right.blue_input.set_value(value.to_string().as_str());
+			}
+		}
+	}
+	pub fn get_values(&mut self) -> [u8; 12] {
+		let mut values = [0; 12];
+		if !self.left.toggle_button.is_toggled() {
+			values[0] = self.left.red_input.value().parse::<u8>().unwrap_or(255);
+			values[1] = self.left.green_input.value().parse::<u8>().unwrap_or(255);
+			values[2] = self.left.blue_input.value().parse::<u8>().unwrap_or(255);
+		};
+		if !self.center_left.toggle_button.is_toggled() {
+			values[3] = self.center_left.red_input.value().parse::<u8>().unwrap_or(255);
+			values[4] = self.center_left.green_input.value().parse::<u8>().unwrap_or(255);
+			values[5] = self.center_left.blue_input.value().parse::<u8>().unwrap_or(255);
+		};
+		if !self.center_right.toggle_button.is_toggled() {
+			values[6] = self.center_right.red_input.value().parse::<u8>().unwrap_or(255);
+			values[7] = self.center_right.green_input.value().parse::<u8>().unwrap_or(255);
+			values[8] = self.center_right.blue_input.value().parse::<u8>().unwrap_or(255);
+		};
+		if !self.right.toggle_button.is_toggled() {
+			values[9] = self.right.red_input.value().parse::<u8>().unwrap_or(255);
+			values[10] = self.right.green_input.value().parse::<u8>().unwrap_or(255);
+			values[11] = self.right.blue_input.value().parse::<u8>().unwrap_or(255);
+		};
+		values
+	}
+}
+
+#[derive(Clone)]
+pub struct ColorTiles {
+	master: ColorTile,
+	zones: Zones,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ColorTilesState {
+	master: ColorTileState,
+	left: ColorTileState,
+	center_left: ColorTileState,
+	center_right: ColorTileState,
+	right: ColorTileState,
+}
+
+#[allow(dead_code)]
+impl ColorTiles {
+	pub fn new(x: i32, y: i32, tx: &mpsc::Sender<Message>, stop_signals: StopSignals) -> Self {
+		fn add_zone_tile_handle(color_tile: &mut color_tiles::ColorTile, tx: &mpsc::Sender<Message>, stop_signals: StopSignals) {
+			fn add_input_handle(input: &mut IntInput, tx: mpsc::Sender<Message>, stop_signals: StopSignals) {
+				input.handle({
+					move |input, event| match event {
+						Event::KeyUp => {
+							match input.value().parse::<f32>() {
+								Ok(value) => {
+									if input.value().len() > 3 {
+										input.set_value(&value.to_string());
+									}
+									if value > 255.0 {
+										input.set_value("255");
+									}
+									stop_signals.store_true();
+									tx.send(Message::Refresh).unwrap();
+								}
+								Err(_) => {
+									input.set_value("0");
+								}
+							}
+							true
+						}
+						_ => false,
+					}
+				});
+			}
 
 			color_tile.toggle_button.handle({
 				let mut color_tile = color_tile.clone();
@@ -155,9 +276,13 @@ impl ColorTile {
 				move |button, event| match event {
 					Event::Released => {
 						if button.is_toggled() {
-							color_tile.input_deactivate();
+							color_tile.red_input.deactivate();
+							color_tile.green_input.deactivate();
+							color_tile.blue_input.deactivate();
 						} else {
-							color_tile.input_activate();
+							color_tile.red_input.activate();
+							color_tile.green_input.activate();
+							color_tile.blue_input.activate();
 						}
 						stop_signal.store_true();
 						tx.send(Message::Refresh).unwrap();
@@ -166,46 +291,66 @@ impl ColorTile {
 					_ => false,
 				}
 			});
+
+			add_input_handle(&mut color_tile.red_input, tx.clone(), stop_signals.clone());
+			add_input_handle(&mut color_tile.green_input, tx.clone(), stop_signals.clone());
+			add_input_handle(&mut color_tile.blue_input, tx.clone(), stop_signals);
 		}
 
-		color_tile.toggle_button.set_frame(FrameType::OFlatFrame);
-		color_tile.toggle_button.set_color(Color::from_u32(Colors::White as u32));
-
-		color_tile
-	}
-}
-
-#[derive(Clone)]
-pub struct ColorTiles {
-	master: ColorTile,
-	zones: [ColorTile; 4],
-}
-
-impl ColorTiles {
-	pub fn new(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
-		let left = ColorTile::new(x, y, &tx.clone(), &stop_signals.clone(), false);
-		let center_left = ColorTile::new(x, y + TILE_HEIGHT, &tx.clone(), &stop_signals.clone(), false);
-		let center_right = ColorTile::new(x, y + TILE_HEIGHT * 2, &tx.clone(), &stop_signals.clone(), false);
-		let right = ColorTile::new(x, y + TILE_HEIGHT * 3, &tx.clone(), &stop_signals.clone(), false);
-
 		let mut color_tiles = Self {
-			master: (color_tiles::ColorTile::new(x, y + TILE_HEIGHT * 4, &tx.clone(), &stop_signals.clone(), true)),
-			zones: [left, center_left, center_right, right],
+			master: (color_tiles::ColorTile::create(x, y + TILE_HEIGHT * 4, true)),
+			zones: color_tiles::Zones::create(x, y),
 		};
 
-		color_tiles.master.toggle_button.handle({
-			let mut color_tiles = color_tiles.clone();
-			let mut master_tile = color_tiles.master.clone();
+		add_zone_tile_handle(&mut color_tiles.zones.left, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.center_left, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.center_right, tx, stop_signals.clone());
+		add_zone_tile_handle(&mut color_tiles.zones.right, tx, stop_signals.clone());
+
+		fn add_master_input_handle(input: &mut IntInput, color: BaseColor, tx: mpsc::Sender<Message>, color_tiles: color_tiles::ColorTiles, stop_signals: StopSignals) {
+			input.handle({
+				let mut keyboard_color_tiles = color_tiles;
+				move |input, event| match event {
+					Event::KeyUp => {
+						if let Ok(value) = input.value().parse::<f32>() {
+							if input.value().len() > 3 {
+								input.set_value(&value.to_string());
+							}
+							if value > 255.0 {
+								input.set_value("255");
+							}
+							keyboard_color_tiles.zones.change_color_value(color, input.value().parse().unwrap());
+							stop_signals.store_true();
+							tx.send(Message::Refresh).unwrap();
+						} else {
+							input.set_value("0");
+							keyboard_color_tiles.zones.change_color_value(color, 0);
+						}
+						true
+					}
+					_ => false,
+				}
+			});
+		}
+		let mut master_tile = color_tiles.master.clone();
+
+		master_tile.toggle_button.handle({
+			let mut keyboard_color_tiles = color_tiles.clone();
+			let mut master_tile = master_tile.clone();
 			let tx = tx.clone();
 			let stop_signals = stop_signals.clone();
 			move |button, event| match event {
 				Event::Released => {
 					if button.is_toggled() {
-						master_tile.input_deactivate();
-						color_tiles.zones_deactivate();
+						master_tile.red_input.deactivate();
+						master_tile.green_input.deactivate();
+						master_tile.blue_input.deactivate();
+						keyboard_color_tiles.zones.deactivate();
 					} else {
-						master_tile.input_activate();
-						color_tiles.zones_activate();
+						master_tile.red_input.activate();
+						master_tile.green_input.activate();
+						master_tile.blue_input.activate();
+						keyboard_color_tiles.zones.activate();
 					}
 					stop_signals.store_true();
 					tx.send(Message::Refresh).unwrap();
@@ -215,87 +360,73 @@ impl ColorTiles {
 			}
 		});
 
+		add_master_input_handle(&mut master_tile.red_input, BaseColor::Red, tx.clone(), color_tiles.clone(), stop_signals.clone());
+		add_master_input_handle(&mut master_tile.green_input, BaseColor::Green, tx.clone(), color_tiles.clone(), stop_signals.clone());
+		add_master_input_handle(&mut master_tile.blue_input, BaseColor::Blue, tx.clone(), color_tiles.clone(), stop_signals);
+
 		color_tiles
 	}
-
-	pub fn zones_activate(&mut self) {
-		self.zones[0].activate();
-		self.zones[1].activate();
-		self.zones[2].activate();
-		self.zones[3].activate();
-	}
-
-	pub fn zones_deactivate(&mut self) {
-		self.zones[0].deactivate();
-		self.zones[1].deactivate();
-		self.zones[2].deactivate();
-		self.zones[3].deactivate();
-	}
-
 	pub fn activate(&mut self) {
 		if self.master.toggle_button.is_toggled() {
 			self.master.toggle_button.activate();
-			self.zones_deactivate();
+			self.zones.deactivate();
 		} else {
 			self.master.activate();
-			self.zones_activate();
+			self.zones.activate();
 		}
 	}
-
 	pub fn deactivate(&mut self) {
 		self.master.deactivate();
-		self.zones_deactivate();
+		self.zones.deactivate();
+	}
+	pub fn master_only(&mut self) {
+		self.deactivate();
+		self.master.activate();
+		self.master.toggle_button.deactivate();
+	}
+	pub fn set_state(&mut self, state: &ColorTilesState, effect: Effects) {
+		self.master.set_state(state.master);
+		self.zones.left.set_state(state.left);
+		self.zones.center_left.set_state(state.center_left);
+		self.zones.center_right.set_state(state.center_right);
+		self.zones.right.set_state(state.right);
+		self.update(effect);
 	}
 
-	pub fn get_values(&mut self) -> [u8; 12] {
-		if self.master.toggle_button.is_toggled() {
-			[0; 12]
-		} else {
-			self.get_zone_values()
+	pub fn get_state(&mut self) -> ColorTilesState {
+		ColorTilesState {
+			master: self.master.get_state(),
+			left: self.zones.left.get_state(),
+			center_left: self.zones.center_left.get_state(),
+			center_right: self.zones.center_right.get_state(),
+			right: self.zones.right.get_state(),
 		}
 	}
 
 	pub fn get_zone_values(&mut self) -> [u8; 12] {
 		let mut values = [0; 12];
-		if !self.zones[0].toggle_button.is_toggled() {
-			values[0] = self.zones[0].red_input.value().parse::<u8>().unwrap_or(255);
-			values[1] = self.zones[0].green_input.value().parse::<u8>().unwrap_or(255);
-			values[2] = self.zones[0].blue_input.value().parse::<u8>().unwrap_or(255);
-		};
-		if !self.zones[1].toggle_button.is_toggled() {
-			values[3] = self.zones[1].red_input.value().parse::<u8>().unwrap_or(255);
-			values[4] = self.zones[1].green_input.value().parse::<u8>().unwrap_or(255);
-			values[5] = self.zones[1].blue_input.value().parse::<u8>().unwrap_or(255);
-		};
-		if !self.zones[2].toggle_button.is_toggled() {
-			values[6] = self.zones[2].red_input.value().parse::<u8>().unwrap_or(255);
-			values[7] = self.zones[2].green_input.value().parse::<u8>().unwrap_or(255);
-			values[8] = self.zones[2].blue_input.value().parse::<u8>().unwrap_or(255);
-		};
-		if !self.zones[3].toggle_button.is_toggled() {
-			values[9] = self.zones[3].red_input.value().parse::<u8>().unwrap_or(255);
-			values[10] = self.zones[3].green_input.value().parse::<u8>().unwrap_or(255);
-			values[11] = self.zones[3].blue_input.value().parse::<u8>().unwrap_or(255);
-		};
+		if !self.master.toggle_button.is_toggled() {
+			values = self.zones.get_values();
+		}
 		values
 	}
 
 	pub fn update(&mut self, effect: Effects) {
 		match effect {
-			Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
+			Effects::Static | Effects::Breath | Effects::LeftSwipe | Effects::RightSwipe | Effects::Fade => {
 				self.activate();
 			}
-			Effects::Smooth | Effects::Wave | Effects::Lightning | Effects::AmbientLight | Effects::SmoothWave | Effects::Disco | Effects::Christmas | Effects::Temperature => {
+			Effects::Smooth
+			| Effects::LeftWave
+			| Effects::RightWave
+			| Effects::Lightning
+			| Effects::AmbientLight
+			| Effects::SmoothLeftWave
+			| Effects::SmoothRightWave
+			| Effects::Disco
+			| Effects::Christmas => {
 				self.deactivate();
 			}
 		}
-	}
-
-	pub fn set_state(&mut self, rgb_array: &[u8; 12], buttons_toggle_state: [bool; 5], effect: Effects) {
-		for (i, (_val, zone)) in rgb_array.iter().step_by(3).zip(self.zones.iter_mut()).enumerate() {
-			let rgb_values: [u8; 3] = [rgb_array[i], rgb_array[i + 1], rgb_array[i + 2]];
-			zone.set_state(rgb_values, buttons_toggle_state[i]);
-		}
-		self.update(effect);
 	}
 }
