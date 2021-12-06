@@ -37,13 +37,12 @@ pub struct OptionsTile {
 
 impl OptionsTile {
 	pub fn create(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
-		let x = x + 360;
-		let mut options_tile = Tile::new(x, y, 240, 450, "");
-		let mut speed_choice = OptionsChoice::create(x + 25, y + 25, 45, 35, " Speed", "1|2|3|4");
+		let mut options_tile = Tile::new(x, y, 1140, 90, "");
+		let mut speed_choice = OptionsChoice::create(x + 25, y + 25, 45, 35, " Speed", "1|2|3|4").center_y(&options_tile);
 
-		let mut brightness_choice = OptionsChoice::create(x + 25, y + 80, 45, 35, " Brightness", "1|2");
+		let mut brightness_choice = OptionsChoice::create(x + 25 + 140, y + 25, 45, 35, " Brightness", "1|2").right_of(&speed_choice, 90);
 
-		let mut direction_choice = OptionsChoice::create(x + 25, y + 80 + 55, 90, 35, " Direction", "Left|Right");
+		let mut direction_choice = OptionsChoice::create(x + 25 + 300, y + 25, 90, 35, " Direction", "Left|Right").right_of(&brightness_choice, 150);
 
 		options_tile.end();
 

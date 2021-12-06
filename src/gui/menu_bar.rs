@@ -12,7 +12,7 @@ pub struct AppMenuBar {
 
 impl AppMenuBar {
 	pub fn new(mut app: App) -> Self {
-		let mut menu = menu::SysMenuBar::default().with_size(1140, 35);
+		let mut menu = menu::SysMenuBar::default().with_size(900, 35);
 		menu.set_color(Color::from_u32(Colors::DarkGray as u32));
 		menu.set_selection_color(Color::from_u32(Colors::DarkerGray as u32));
 		menu.set_frame(FrameType::FlatBox);
