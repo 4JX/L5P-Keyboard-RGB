@@ -1,4 +1,7 @@
-use crate::{enums::Message, keyboard_manager::StopSignals};
+use crate::{
+	enums::{Effects, Message},
+	keyboard_manager::StopSignals,
+};
 
 use super::enums::Colors;
 use fltk::{
@@ -92,6 +95,17 @@ impl OptionsTile {
 			speed_choice,
 			brightness_choice,
 			direction_choice,
+		}
+	}
+	pub fn update(&mut self, effect: Effects) {
+		//Conditionally activate the direction setting
+		match effect {
+			Effects::Wave | Effects::SmoothWave | Effects::Swipe => {
+				self.direction_choice.activate();
+			}
+			_ => {
+				self.direction_choice.deactivate();
+			}
 		}
 	}
 }

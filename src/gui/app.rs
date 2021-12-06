@@ -126,12 +126,15 @@ impl App {
 		app::set_frame_type(FrameType::FlatBox);
 		app::set_frame_type2(FrameType::DownBox, FrameType::RoundedBox);
 
+		app.update(Effects::Static);
+		app.load_profile(true);
+
 		thread::spawn(move || loop {
 			match manager.rx.try_iter().last() {
 				Some(message) => {
 					match message {
 						Message::UpdateEffect { effect } => {
-							app.color_tiles.update(effect);
+							app.update(effect);
 							app::awake();
 							let color_array = app.color_tiles.get_values();
 							let speed = app.options_tile.speed_choice.choice().unwrap().parse::<u8>().unwrap();
@@ -156,5 +159,9 @@ impl App {
 		});
 
 		win
+	}
+	fn update(&mut self, effect: Effects) {
+		self.color_tiles.update(effect);
+		self.options_tile.update(effect);
 	}
 }
