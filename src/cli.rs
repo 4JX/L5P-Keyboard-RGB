@@ -121,7 +121,7 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 					let direction = if let Some(value) = matches.value_of("direction") {
 						Direction::from_str(value).expect("Invalid direction")
 					} else {
-						println!("This effect requires specifying the colors to use.");
+						println!("This effect requires a direction.");
 						process::exit(0);
 					};
 					direction
