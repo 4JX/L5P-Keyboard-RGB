@@ -405,6 +405,10 @@ impl KeyboardManager {
 								let _rms_l = (((sum_l / nsamples) as f64).sqrt()) * 255.0 / 16384.0;
 								let _rms_r = (((sum_r / nsamples) as f64).sqrt()) * 255.0 / 16384.0;
 
+								println!("{}", _rms_l);
+								// TODO: Figure out why uncommenting this line makes it not work
+								// self.keyboard.solid_set_colors_to([_rms_l as u8, _rms_l as u8, _rms_l as u8]);
+
 								nsamples = 0;
 								sum_l = 0;
 								sum_r = 0;
