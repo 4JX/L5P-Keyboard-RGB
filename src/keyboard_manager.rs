@@ -1,26 +1,28 @@
-use crate::enums::{Effects, Message};
+use crate::enums::{Direction, Effects, Message};
 use crate::keyboard_utils::{BaseEffects, Keyboard};
-
 use device_query::{DeviceQuery, DeviceState, Keycode};
-use image::{buffer::ConvertBuffer, imageops, ImageBuffer};
+use fast_image_resize as fr;
+use flume::{Receiver, Sender};
 use rand::{thread_rng, Rng};
 use scrap::{Capturer, Display};
 use std::convert::TryInto;
+use std::num::NonZeroU32;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use sysinfo::{ComponentExt, System, SystemExt};
 
 pub struct KeyboardManager {
 	pub keyboard: Keyboard,
 	pub rx: Receiver<Message>,
+	pub tx: Sender<Message>,
 	pub stop_signals: StopSignals,
 	pub last_effect: Effects,
 }
 
 impl KeyboardManager {
-	pub fn set_effect(&mut self, effect: Effects, color_array: &[u8; 12], speed: u8, brightness: u8) {
+	pub fn set_effect(&mut self, effect: Effects, direction: Direction, color_array: &[u8; 12], speed: u8, brightness: u8) {
 		self.stop_signals.store_false();
 		self.last_effect = effect;
 		let mut thread_rng = thread_rng();
@@ -41,12 +43,11 @@ impl KeyboardManager {
 			Effects::Smooth => {
 				self.keyboard.set_effect(BaseEffects::Smooth);
 			}
-			Effects::LeftWave => {
-				self.keyboard.set_effect(BaseEffects::LeftWave);
-			}
-			Effects::RightWave => {
-				self.keyboard.set_effect(BaseEffects::RightWave);
-			}
+			Effects::Wave => match direction {
+				Direction::Left => self.keyboard.set_effect(BaseEffects::LeftWave),
+				Direction::Right => self.keyboard.set_effect(BaseEffects::RightWave),
+			},
+
 			Effects::Lightning => {
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -62,109 +63,116 @@ impl KeyboardManager {
 			}
 			Effects::AmbientLight => {
 				//Display setup
-				let displays = Display::all().unwrap().len();
-				for i in 0..displays {
-					type BgraImage<V> = ImageBuffer<image::Bgra<u8>, V>;
-					let display = Display::all().unwrap().remove(i);
+				let display = Display::all().unwrap().remove(0);
 
-					let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-					let (w, h) = (capturer.width(), capturer.height());
+				let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+				let (w, h) = (capturer.width(), capturer.height());
 
-					let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 30);
-					while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-							break;
-						}
-						if let Ok(frame) = capturer.frame(0) {
-							let now = Instant::now();
-							let bgra_img = BgraImage::from_raw(w as u32, h as u32, &*frame).expect("Could not get bgra image.");
-							let rgb_img: image::RgbImage = bgra_img.convert();
-							let resized = imageops::resize(&rgb_img, 4, 1, imageops::FilterType::Lanczos3);
-							let result: [u8; 12] = resized.into_vec().try_into().unwrap();
+				let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 60);
+				let wait_base: i32 = seconds_per_frame.as_millis() as i32;
+				let mut wait = wait_base;
+				let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Lanczos3));
 
-							self.keyboard.transition_colors_to(&result, 4, 1);
+				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+						break;
+					}
+
+					let now = Instant::now();
+					match capturer.frame(wait as u32) {
+						Ok(frame) => {
+							// Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
+							// Read source image from file
+							let width = NonZeroU32::new(w as u32).unwrap();
+							let height = NonZeroU32::new(h as u32).unwrap();
+							let mut src_image = fr::Image::from_vec_u8(width, height, frame.to_vec(), fr::PixelType::U8x4).unwrap();
+
+							// Create MulDiv instance
+							let alpha_mul_div: fr::MulDiv = fr::MulDiv::default();
+							// Multiple RGB channels of source image by alpha channel
+							alpha_mul_div.multiply_alpha_inplace(&mut src_image.view_mut()).unwrap();
+
+							// Create container for data of destination image
+							let dst_width = NonZeroU32::new(4).unwrap();
+							let dst_height = NonZeroU32::new(1).unwrap();
+							let mut dst_image = fr::Image::new(dst_width, dst_height, fr::PixelType::U8x4);
+
+							// Get mutable view of destination image data
+							let mut dst_view = dst_image.view_mut();
+
+							// Create Resizer instance and resize source image
+							// into buffer of destination image
+							resizer.resize(&src_image.view(), &mut dst_view).unwrap();
+
+							// Divide RGB channels of destination image by alpha
+							alpha_mul_div.divide_alpha_inplace(&mut dst_view).unwrap();
+
+							let bgr_arr = dst_image.buffer();
+
+							// BGRA -> RGB
+							let mut rgb: [u8; 12] = [0; 12];
+							for (src, dst) in bgr_arr.chunks_exact(4).zip(rgb.chunks_exact_mut(3)) {
+								dst[0] = src[2];
+								dst[1] = src[1];
+								dst[2] = src[0];
+							}
+
+							self.keyboard.set_colors_to(&rgb);
 							let elapsed_time = now.elapsed();
 							if elapsed_time < seconds_per_frame {
 								thread::sleep(seconds_per_frame - elapsed_time);
 							}
-						} else {
-							//Janky recover from error because it does not like admin prompts on windows
-							let displays = Display::all().unwrap().len();
-							for i in 0..displays {
-								let display = Display::all().unwrap().remove(i);
-
-								capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+						}
+						Err(error) => match error.kind() {
+							std::io::ErrorKind::WouldBlock => {
+								wait = wait_base - now.elapsed().as_millis() as i32;
+								if wait < 0 {
+									wait = 0;
+								}
 							}
-						}
-						thread::sleep(Duration::from_millis(20));
+							std::io::ErrorKind::InvalidData => {
+								self.stop_signals.store_true();
+								self.tx.send(Message::Refresh).unwrap();
+							}
+
+							_ => {}
+						},
 					}
-					drop(capturer);
 				}
 			}
-			Effects::SmoothLeftWave => {
-				let mut gradient = vec![255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
+			Effects::SmoothWave => {
+				let mut gradient = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
-					shift_vec(&mut gradient, 3);
-					let colors: [u8; 12] = gradient.clone().try_into().unwrap();
-					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
+					match direction {
+						Direction::Left => gradient.rotate_right(3),
+						Direction::Right => gradient.rotate_left(3),
+					}
+					self.keyboard.transition_colors_to(&gradient, 70 / self.keyboard.get_speed(), 10);
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 					thread::sleep(Duration::from_millis(20));
 				}
 			}
-			Effects::SmoothRightWave => {
-				let mut gradient = vec![255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
+			Effects::Swipe => {
+				let mut gradient = color_array.clone();
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
-					shift_vec(&mut gradient, 9);
-					let colors: [u8; 12] = gradient.clone().try_into().unwrap();
-					self.keyboard.transition_colors_to(&colors, 70 / self.keyboard.get_speed(), 10);
-					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						break;
-					}
-					thread::sleep(Duration::from_millis(20));
-				}
-			}
-			Effects::LeftSwipe => {
-				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						break;
-					}
 
-					let mut gradient = color_array.to_vec();
 					for _i in 0..4 {
-						shift_vec(&mut gradient, 3);
-						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
-						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
-						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-							break;
+						match direction {
+							Direction::Left => gradient.rotate_right(3),
+							Direction::Right => gradient.rotate_left(3),
 						}
-					}
-					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						break;
-					}
-					thread::sleep(Duration::from_millis(20));
-				}
-			}
-			Effects::RightSwipe => {
-				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-						break;
-					}
 
-					let mut gradient = color_array.to_vec();
-					for _i in 0..4 {
-						shift_vec(&mut gradient, 9);
-						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
-						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
+						self.keyboard.transition_colors_to(&gradient, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
@@ -294,7 +302,7 @@ impl KeyboardManager {
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					let keys: Vec<Keycode> = device_state.get_keys();
 					if keys.is_empty() {
-						if now.elapsed() > Duration::from_secs(20 / u64::from(speed)) {
+						if now.elapsed() > Duration::from_secs(20 / u64::from(self.keyboard.get_speed())) {
 							self.keyboard.transition_colors_to(&[0; 12], 230, 3);
 						} else {
 							thread::sleep(Duration::from_millis(20));
@@ -306,15 +314,42 @@ impl KeyboardManager {
 					}
 				}
 			}
+			Effects::Temperature => {
+				let safe_temp = 30.0;
+				let ramp_boost = 1.6;
+				let temp_cool: [f32; 12] = [0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0];
+				let temp_hot: [f32; 12] = [255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0];
+
+				let mut color_differences: [f32; 12] = [0.0; 12];
+				for index in 0..12 {
+					color_differences[index] = temp_hot[index] - temp_cool[index];
+				}
+
+				let mut sys = System::new_all();
+				sys.refresh_all();
+
+				for component in sys.components_mut() {
+					if component.label() == "Tctl" {
+						while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+							component.refresh();
+							let mut adjusted_temp = component.temperature() - safe_temp;
+							if adjusted_temp < 0.0 {
+								adjusted_temp = 0.0;
+							}
+							let temp_percent = (adjusted_temp / 100.0) * ramp_boost;
+
+							let mut target = [0.0; 12];
+							for index in 0..12 {
+								target[index] = color_differences[index].mul_add(temp_percent, temp_cool[index]);
+							}
+							self.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1);
+							thread::sleep(Duration::from_millis(20));
+						}
+					}
+				}
+			}
 		}
 		self.stop_signals.store_false();
-	}
-}
-
-fn shift_vec<T>(vec: &mut Vec<T>, steps: u8) {
-	for _i in 0..steps {
-		let temp = vec.pop().unwrap();
-		vec.insert(0, temp);
 	}
 }
 

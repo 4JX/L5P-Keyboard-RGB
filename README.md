@@ -13,12 +13,8 @@
   - ["How about X model"](#how-about-x-model)
 - [Building from source](#building-from-source)
   - [Prerequisites](#prerequisites)
-    - [Ubuntu](#ubuntu)
-    - [Arch Linux](#arch-linux)
   - [Using `cargo-make`](#using-cargo-make)
   - [Building manually](#building-manually)
-    - [Windows](#windows)
-    - [Linux](#linux)
 - [Crashes, freezes, etc](#crashes-freezes-etc)
 
 ## Download
@@ -42,10 +38,31 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 - **Disco:** A portable dance floor!
 - **Christmas:** Even keyboards can get festive.
 - **Fade:** Turns off the keyboard lights after a period of inactivity.
+- **Temperature:** Displays a gradient based on the current CPU temperature. (Linux only)
 
 ## Usage
 
-- **Note**: If you are using the program on Linux, you'll need to run the program as root.
+**Note**: By default, on Linux you will have to run the program with root privileges, however, you can remedy this by adding the following `udev` rule:
+
+- **2021 Models:**
+
+```sh
+# /etc/udev/rules.d/99-kblight.rules
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c965", MODE="0666"
+```
+
+- **2020 Models:**
+
+```sh
+# /etc/udev/rules.d/99-kblight.rules
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c955", MODE="0666"
+```
+
+And then reloading the rules:
+
+```sh
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
 
 ### With GUI
 
