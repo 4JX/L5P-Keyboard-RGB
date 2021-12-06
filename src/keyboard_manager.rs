@@ -159,19 +159,20 @@ impl KeyboardManager {
 				}
 			}
 			Effects::Swipe => {
+				let mut gradient = color_array.clone();
+
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 						break;
 					}
 
-					let mut gradient = color_array.to_vec();
 					for _i in 0..4 {
 						match direction {
 							Direction::Left => gradient.rotate_right(3),
 							Direction::Right => gradient.rotate_left(3),
 						}
-						let colors: [u8; 12] = gradient.clone().try_into().unwrap();
-						self.keyboard.transition_colors_to(&colors, 150 / self.keyboard.get_speed(), 10);
+
+						self.keyboard.transition_colors_to(&gradient, 150 / self.keyboard.get_speed(), 10);
 						if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 							break;
 						}
