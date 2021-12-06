@@ -159,7 +159,7 @@ impl KeyboardManager {
 				}
 			}
 			Effects::Swipe => {
-				let mut gradient = color_array.clone();
+				let mut gradient = *color_array;
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {

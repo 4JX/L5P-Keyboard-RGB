@@ -2,7 +2,7 @@ use crate::{enums::Message, keyboard_manager::StopSignals};
 
 use super::enums::Colors;
 use fltk::{
-	enums::{Align, Color, FrameType},
+	enums::{Color, FrameType},
 	group::Tile,
 	menu::Choice,
 	prelude::*,
@@ -35,7 +35,7 @@ pub struct OptionsTile {
 }
 
 impl OptionsTile {
-	pub fn create(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
+	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
 		let mut options_tile = Tile::new(x, y, 1140, 90, "");
 
 		let mut speed_choice = OptionsChoice::create(x + 25 + 80, y + 25, 45, 35, "Speed: ", "1|2|3|4").center_y(&options_tile);

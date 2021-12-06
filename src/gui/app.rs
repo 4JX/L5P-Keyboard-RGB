@@ -105,7 +105,7 @@ impl App {
 		let mut app = Self {
 			color_tiles: color_tiles::ColorTiles::new(0, 30, &manager.tx, &manager.stop_signals),
 			effect_browser: effect_browser::EffectBrowserTile::create(540, 30, &manager.tx, &manager.stop_signals).effect_browser,
-			options_tile: options::OptionsTile::create(0, 480, manager.tx.clone(), &manager.stop_signals),
+			options_tile: options::OptionsTile::create(0, 480, &manager.tx, &manager.stop_signals),
 			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),
 			center: screen_center(),
