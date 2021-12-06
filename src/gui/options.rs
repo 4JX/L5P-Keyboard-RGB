@@ -13,7 +13,6 @@ struct OptionsChoice;
 impl OptionsChoice {
 	fn create(x: i32, y: i32, width: i32, height: i32, title: &str, choices: &str) -> Choice {
 		let mut choice = Choice::new(x, y, width, height, "").with_label(title);
-		choice.set_align(Align::Right);
 		choice.add_choice(choices);
 
 		choice.set_frame(FrameType::RoundedBox);
@@ -38,11 +37,12 @@ pub struct OptionsTile {
 impl OptionsTile {
 	pub fn create(x: i32, y: i32, tx: flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
 		let mut options_tile = Tile::new(x, y, 1140, 90, "");
-		let mut speed_choice = OptionsChoice::create(x + 25, y + 25, 45, 35, " Speed", "1|2|3|4").center_y(&options_tile);
 
-		let mut brightness_choice = OptionsChoice::create(x + 25 + 140, y + 25, 45, 35, " Brightness", "1|2").right_of(&speed_choice, 90);
+		let mut speed_choice = OptionsChoice::create(x + 25 + 80, y + 25, 45, 35, "Speed: ", "1|2|3|4").center_y(&options_tile);
 
-		let mut direction_choice = OptionsChoice::create(x + 25 + 300, y + 25, 90, 35, " Direction", "Left|Right").right_of(&brightness_choice, 150);
+		let mut brightness_choice = OptionsChoice::create(x + 25 + 140, y + 25, 45, 35, "Brightness: ", "1|2").right_of(&speed_choice, 150);
+
+		let mut direction_choice = OptionsChoice::create(x + 25 + 300, y + 25, 90, 35, "Direction: ", "Left|Right").right_of(&brightness_choice, 130);
 
 		options_tile.end();
 
