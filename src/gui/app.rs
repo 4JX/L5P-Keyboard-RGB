@@ -113,6 +113,9 @@ impl App {
 
 		menu_bar::AppMenuBar::new(app.clone());
 
+		let icon_str = include_str!("../../res/trayIcon.svg");
+		let icon_svg = fltk::image::SvgImage::from_data(icon_str).unwrap();
+		win.set_icon(Some(icon_svg));
 		win.end();
 		win.make_resizable(false);
 		win.show();
