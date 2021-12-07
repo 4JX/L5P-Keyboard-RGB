@@ -23,7 +23,7 @@ enum EffectType {
 
 #[derive(Deserialize, Serialize)]
 pub struct CustomEffect {
-	steps: Vec<EffectStep>,
+	effect_steps: Vec<EffectStep>,
 	should_loop: bool,
 }
 
@@ -34,7 +34,7 @@ impl CustomEffect {
 		//If loading from the cli, the loop is intentional
 		#[allow(clippy::while_immutable_condition)]
 		'outer: while self.should_loop {
-			for step in self.steps.clone() {
+			for step in self.effect_steps.clone() {
 				manager.keyboard.set_speed(step.speed);
 				manager.keyboard.set_brightness(step.brightness);
 				match step.step_type {

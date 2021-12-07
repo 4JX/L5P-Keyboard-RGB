@@ -6,6 +6,7 @@
 
 - [Download](#download)
 - [Available effects](#available-effects)
+  - [Creating your own effects](#creating-your-own-effects)
 - [Usage](#usage)
   - [With GUI](#with-gui)
   - [Via the command line](#via-the-command-line)
@@ -23,7 +24,7 @@
 
 Builds will be periodically uploaded to the [releases tab](https://github.com/4JX/L5P-Keyboard-RGB/releases).
 
-You may also download precompiled versions from [here](https://github.com/4JX/L5P-Keyboard-RGB/actions/workflows/release-rust.yml) (requires github account) by clicking the latest entry with a ✅ and going under the "artifacts" section.
+You may also download pre-compiled versions from [here](https://github.com/4JX/L5P-Keyboard-RGB/actions/workflows/release-rust.yml) (requires github account) by clicking the latest entry with a ✅ and going under the "artifacts" section.
 
 ## Available effects
 
@@ -39,6 +40,36 @@ You may also download precompiled versions from [here](https://github.com/4JX/L5
 - **Christmas:** Even keyboards can get festive.
 - **Fade:** Turns off the keyboard lights after a period of inactivity.
 - **Temperature:** Displays a gradient based on the current CPU temperature. (Linux only)
+
+### Creating your own effects
+
+The best way to add a new effect is to directly edit the source code, as it allows the most flexibility. You can however also use the built-in feature to make basic effects.
+
+#### At a glance
+
+- You can make custom effects using a `json` file with the following format:
+
+```json
+{
+ "effect_steps": [
+  {"rgb_array": [0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0], "step_type": "Set", "speed": 1, "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100},
+  {"rgb_array": [0, 100, 0, 0, 0, 200, 0, 0, 200, 200, 0, 0], "step_type": "Transition", "speed": 1, "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100}
+ ],
+ "should_loop": true
+}
+```
+
+#### File sections
+
+- **effect_steps:** Contains the different *"steps"* the effect will go through.
+  - **rgb_array:** An array describing the colours to use in the `[r,g,b,r,g,b...]` format.
+  - **step_type:** The type of step to use. You may instantly swap the colours with `Set` or smoothly transition to them with `Transition`.
+  - **speed:** Currently unused.
+  - **brightness:** The brightness of the step, can be `1` (low) or `2` (high).
+  - **steps:** To smoothly transition between colours, the keyboard LEDs are set at small intervals until they reach the desired color. This controls the number of them.
+  - **delay_between_steps:** How much time to wait between each interval (In ms).
+  - **sleep:** The time to wait before going to the next `effect_step` (In ms).
+- **should_loop:** Whether the effect should start again once it reaches the last effect.
 
 ## Usage
 
