@@ -1,9 +1,10 @@
 use std::{convert::TryInto, process, str::FromStr};
 
 use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
-use color_eyre::{eyre::eyre, Report};
+use color_eyre::{eyre::eyre, Help, Report};
 
 use crate::{
+	custom_effect::CustomEffect,
 	enums::{Direction, Effects},
 	keyboard_manager::KeyboardManager,
 	profile::Profile,
@@ -39,7 +40,12 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 		)
 		.arg(Arg::with_name("save").help("Saves the typed profile").short("p").takes_value(true))
 		.subcommand(
-			SubCommand::with_name("Load")
+			SubCommand::with_name("LoadProfile")
+				.about("Load a profile from a file")
+				.arg(Arg::with_name("path").help("A path to the file").index(1).required(true)),
+		)
+		.subcommand(
+			SubCommand::with_name("LoadEffect")
 				.about("Load an effect from a file")
 				.arg(Arg::with_name("path").help("A path to the file").index(1).required(true)),
 		)
@@ -91,60 +97,79 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 		}
 
 		let input_matches = matches.subcommand_matches(input).unwrap();
-		if input != "Load" {
-			let effect: Effects = Effects::from_str(input).unwrap();
-			let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
-			let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
 
-			let rgb_array: [u8; 12] = match effect {
-				Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
-					let color_array = if let Some(value) = input_matches.value_of("colors") {
-						parse_bytes_arg(value)
-							.expect("Invalid input, please check you used the correct format for the colors")
-							.try_into()
-							.expect("Invalid input, please check you used the correct format for the colors")
-					} else {
-						println!("This effect requires specifying the colors to use.");
-						process::exit(0);
-					};
-					color_array
+		match input {
+			"LoadProfile" => {
+				if let Some(path_string) = input_matches.value_of("path") {
+					match Profile::from_file(path_string.to_string()) {
+						Ok(profile) => {
+							manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
+						}
+						Err(err) => {
+							return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid profile."));
+						}
+					}
 				}
-				#[cfg(target_os = "windows")]
-				Effects::Temperature => {
-					panic!("This effect is not supported on Windows");
-				}
-				_ => [0; 12],
-			};
-
-			let direction: Direction = match effect {
-				Effects::Wave | Effects::SmoothWave | Effects::Swipe => {
-					let direction = if let Some(value) = matches.value_of("direction") {
-						Direction::from_str(value).expect("Invalid direction")
-					} else {
-						println!("This effect requires a direction.");
-						process::exit(0);
-					};
-					direction
-				}
-				_ => Direction::Right,
-			};
-
-			if let Some(filename) = matches.value_of("save") {
-				let profile = Profile::new(rgb_array, effect, direction, speed, brightness, [false; 5]);
-				profile.save(filename).expect("Failed to save.");
 			}
+			"LoadEffect" => {
+				if let Some(path_string) = input_matches.value_of("path") {
+					match CustomEffect::from_file(path_string.to_string()) {
+						Ok(effect) => {
+							effect.play(manager);
+						}
+						Err(err) => {
+							return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid effect"));
+						}
+					}
+				}
+			}
+			_ => {
+				let effect: Effects = Effects::from_str(input).unwrap();
+				let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
+				let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
 
-			manager.set_effect(effect, direction, &rgb_array, speed, brightness);
-		} else if let Some(path_string) = input_matches.value_of("path") {
-			match Profile::from_file(path_string.to_string()) {
-				Ok(profile) => {
-					manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
+				let rgb_array: [u8; 12] = match effect {
+					Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
+						let color_array = if let Some(value) = input_matches.value_of("colors") {
+							parse_bytes_arg(value)
+								.expect("Invalid input, please check you used the correct format for the colors")
+								.try_into()
+								.expect("Invalid input, please check you used the correct format for the colors")
+						} else {
+							println!("This effect requires specifying the colors to use.");
+							process::exit(0);
+						};
+						color_array
+					}
+					#[cfg(target_os = "windows")]
+					Effects::Temperature => {
+						panic!("This effect is not supported on Windows");
+					}
+					_ => [0; 12],
+				};
+
+				let direction: Direction = match effect {
+					Effects::Wave | Effects::SmoothWave | Effects::Swipe => {
+						let direction = if let Some(value) = matches.value_of("direction") {
+							Direction::from_str(value).expect("Invalid direction")
+						} else {
+							println!("This effect requires a direction.");
+							process::exit(0);
+						};
+						direction
+					}
+					_ => Direction::Right,
+				};
+
+				if let Some(filename) = matches.value_of("save") {
+					let profile = Profile::new(rgb_array, effect, direction, speed, brightness, [false; 5]);
+					profile.save(filename).expect("Failed to save.");
 				}
-				Err(err) => {
-					return Err(eyre!("{} ", err.to_string()));
-				}
+
+				manager.set_effect(effect, direction, &rgb_array, speed, brightness);
 			}
 		}
+
 		Ok(true)
 	} else {
 		Ok(false)

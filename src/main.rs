@@ -1,4 +1,5 @@
 mod cli;
+mod custom_effect;
 mod enums;
 mod error;
 mod gui;

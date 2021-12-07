@@ -29,9 +29,17 @@ impl AppMenuBar {
 		});
 
 		menu.add("&Profile/Load\t", Shortcut::None, menu::MenuFlag::Normal, {
+			let mut app = app.clone();
 			move |_some| {
 				app.stop_signals.store_true();
 				app.load_profile(false);
+			}
+		});
+
+		menu.add("&Effect/Load\t", Shortcut::None, menu::MenuFlag::Normal, {
+			move |_some| {
+				app.stop_signals.store_true();
+				app.load_custom_profile();
 			}
 		});
 

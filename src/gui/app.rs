@@ -2,11 +2,14 @@ use super::color_tiles::ColorTiles;
 use super::options::OptionsTile;
 use super::utils::screen_center;
 use super::{color_tiles, effect_browser, options};
-use crate::enums::{Direction, Effects, Message};
 use crate::gui::dialog as appdialog;
 use crate::gui::menu_bar;
 use crate::keyboard_manager::{KeyboardManager, StopSignals};
 use crate::profile::Profile;
+use crate::{
+	custom_effect::CustomEffect,
+	enums::{Direction, Effects, Message},
+};
 use fltk::browser::HoldBrowser;
 use fltk::dialog;
 use fltk::enums::FrameType;
@@ -91,6 +94,34 @@ impl App {
 		self.tx.send(Message::Refresh).unwrap();
 	}
 
+	pub fn load_custom_profile(&mut self) {
+		let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseFile);
+		dlg.set_option(dialog::FileDialogOptions::NoOptions);
+		dlg.set_filter("*.json");
+		dlg.show();
+		let filename = dlg.filename().to_string_lossy().to_string();
+
+		if filename.is_empty() {
+			self.stop_signals.store_true();
+			self.tx.send(Message::Refresh).unwrap();
+		} else if path::Path::new(&filename).exists() {
+			if let Ok(effect) = CustomEffect::from_file(filename) {
+				self.stop_signals.store_true();
+				self.tx.send(Message::CustomEffect { effect }).unwrap();
+			} else {
+				appdialog::alert(
+					800,
+					200,
+					"There was an error loading the custom effect.\nPlease make sure its a valid custom effect file and that it is compatible with this version of the program.",
+				);
+				self.stop_signals.store_true();
+				self.tx.send(Message::Refresh).unwrap();
+			}
+		} else {
+			appdialog::alert(800, 200, "File does not exist!");
+		}
+	}
+
 	pub fn start_ui(mut manager: KeyboardManager) -> fltk::window::Window {
 		panic::set_hook(Box::new(|info| {
 			if let Some(s) = info.payload().downcast_ref::<&str>() {
@@ -148,6 +179,10 @@ impl App {
 						}
 						Message::UpdateAllValues { value } => {
 							manager.keyboard.set_colors_to(&value);
+						}
+						Message::CustomEffect { effect } => {
+							app.color_tiles.deactivate();
+							effect.play(&mut manager);
 						}
 						Message::Refresh => {
 							app.tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();

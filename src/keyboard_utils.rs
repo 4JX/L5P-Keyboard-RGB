@@ -166,7 +166,7 @@ impl Keyboard {
 		}
 	}
 
-	pub fn transition_colors_to(&mut self, target_colors: &[u8; 12], steps: u8, delay_between_steps: u64) {
+	pub fn transition_colors_to(&mut self, target_colors: &[u8; 12], steps: u8, delay_between_steps: u8) {
 		match self.current_state.effect_type {
 			BaseEffects::Static | BaseEffects::Breath => {
 				let mut new_values = self.current_state.rgb_values.map(f32::from);
@@ -185,7 +185,7 @@ impl Keyboard {
 						self.current_state.rgb_values = new_values.map(|val| val as u8);
 
 						self.refresh();
-						thread::sleep(Duration::from_millis(delay_between_steps));
+						thread::sleep(Duration::from_millis(u64::from(delay_between_steps)));
 					}
 					self.set_colors_to(&target_colors.map(|val| val as u8));
 				}
