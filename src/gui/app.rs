@@ -34,6 +34,69 @@ pub struct App {
 }
 
 impl App {
+	pub fn start_ui() {
+		let manager = KeyboardManager::new().unwrap();
+
+		let app = app::App::default();
+
+		//Windows logic
+		#[cfg(target_os = "windows")]
+		{
+			use fltk::prelude::*;
+			use tray_item::{IconSource, TrayItem};
+
+			type HWND = *mut std::os::raw::c_void;
+
+			static mut WINDOW: HWND = std::ptr::null_mut();
+
+			let mut win = Self::create_window(manager);
+
+			unsafe {
+				WINDOW = win.raw_handle();
+			}
+			win.set_callback(|_| {
+				extern "C" {
+					pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> bool;
+				}
+				unsafe {
+					ShowWindow(WINDOW, 0);
+				}
+			});
+			//Create tray icon
+			let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
+
+			tray.add_menu_item("Show", move || {
+				extern "C" {
+					pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> bool;
+				}
+				unsafe {
+					ShowWindow(WINDOW, 9);
+				}
+			})
+			.unwrap();
+
+			tray.add_menu_item("Quit", || {
+				println!("Quit");
+				std::process::exit(0);
+			})
+			.unwrap();
+
+			loop {
+				if win.shown() {
+					app.run().unwrap();
+				} else {
+					app::sleep(0.05);
+				}
+			}
+		}
+
+		#[cfg(target_os = "linux")]
+		{
+			Self::create_window(manager);
+			app.run().unwrap();
+		}
+	}
+
 	pub fn load_profile(&mut self, is_default: bool) {
 		let filename = if is_default {
 			"default.json".to_string()
@@ -122,7 +185,7 @@ impl App {
 		}
 	}
 
-	pub fn start_ui(mut manager: KeyboardManager) -> fltk::window::Window {
+	pub fn create_window(mut manager: KeyboardManager) -> fltk::window::Window {
 		panic::set_hook(Box::new(|info| {
 			if let Some(s) = info.payload().downcast_ref::<&str>() {
 				appdialog::panic(800, 400, s);
