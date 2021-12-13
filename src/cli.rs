@@ -1,7 +1,8 @@
 use std::{convert::TryInto, env, process, str::FromStr};
 
-use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
+use clap::{crate_authors, crate_name, crate_version, App, AppSettings, Arg, SubCommand};
 use color_eyre::{eyre::eyre, Help, Report};
+use single_instance::SingleInstance;
 
 use crate::{
 	custom_effect::CustomEffect,
@@ -92,6 +93,9 @@ pub fn try_cli() -> Result<(), Report> {
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
+		let instance = SingleInstance::new(crate_name!()).unwrap();
+		assert!(instance.is_single(), "Another instance of the program is already running, please close it before starting a new one.");
+
 		let mut manager = KeyboardManager::new().unwrap();
 
 		fn parse_bytes_arg(arg: &str) -> Result<Vec<u8>, <u8 as FromStr>::Err> {

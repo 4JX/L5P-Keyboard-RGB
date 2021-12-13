@@ -10,11 +10,13 @@ use crate::{
 	custom_effect::CustomEffect,
 	enums::{Direction, Effects, Message},
 };
+use clap::crate_name;
 use fltk::browser::HoldBrowser;
 use fltk::dialog;
 use fltk::enums::FrameType;
 use fltk::{app, enums::Font, prelude::*, window::Window};
 use flume::Sender;
+use single_instance::SingleInstance;
 use std::convert::TryInto;
 use std::str::FromStr;
 use std::time::Duration;
@@ -35,9 +37,25 @@ pub struct App {
 
 impl App {
 	pub fn start_ui() {
-		let manager = KeyboardManager::new().unwrap();
-
 		let app = app::App::default();
+
+		app::background(51, 51, 51);
+		app::background2(119, 119, 119);
+		app::foreground(0, 0, 0);
+		app::set_visible_focus(false);
+		app::set_font(Font::HelveticaBold);
+		app::set_frame_border_radius_max(5);
+		app::set_frame_type(FrameType::FlatBox);
+		app::set_frame_type2(FrameType::DownBox, FrameType::RoundedBox);
+
+		let instance = SingleInstance::new(crate_name!()).unwrap();
+		if !instance.is_single() {
+			println!("Not single");
+			appdialog::alert(800, 400, "Another instance of the program is already running, please close it before starting a new one.", true);
+			app.run().unwrap();
+		}
+
+		let manager = KeyboardManager::new().unwrap();
 
 		//Windows logic
 		#[cfg(target_os = "windows")]
@@ -125,12 +143,13 @@ impl App {
 					800,
 					200,
 					"There was an error loading the profile.\nPlease make sure its a valid profile file and that it is compatible with this version of the program.",
+					false,
 				);
 				self.stop_signals.store_true();
 				self.tx.send(Message::Refresh).unwrap();
 			}
 		} else if !is_default {
-			appdialog::alert(800, 200, "File does not exist!");
+			appdialog::alert(800, 200, "File does not exist!", false);
 		}
 	}
 
@@ -176,12 +195,13 @@ impl App {
 					800,
 					200,
 					"There was an error loading the custom effect.\nPlease make sure its a valid custom effect file and that it is compatible with this version of the program.",
+					false,
 				);
 				self.stop_signals.store_true();
 				self.tx.send(Message::Refresh).unwrap();
 			}
 		} else {
-			appdialog::alert(800, 200, "File does not exist!");
+			appdialog::alert(800, 200, "File does not exist!", false);
 		}
 	}
 
@@ -213,15 +233,6 @@ impl App {
 		win.end();
 		win.make_resizable(false);
 		win.show();
-
-		app::background(51, 51, 51);
-		app::background2(119, 119, 119);
-		app::foreground(0, 0, 0);
-		app::set_visible_focus(false);
-		app::set_font(Font::HelveticaBold);
-		app::set_frame_border_radius_max(5);
-		app::set_frame_type(FrameType::FlatBox);
-		app::set_frame_type2(FrameType::DownBox, FrameType::RoundedBox);
 
 		app.update(Effects::Static);
 		app.load_profile(true);
