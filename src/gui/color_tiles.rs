@@ -1,13 +1,12 @@
 use super::enums::{BaseColor, Colors};
 use crate::{
 	enums::{Effects, Message},
-	gui::color_tiles,
 	keyboard_manager::StopSignals,
 };
 use fltk::{
 	button::ToggleButton,
 	enums::{Color, Event, FrameType},
-	group::Tile,
+	group::{Pack, PackType, Tile},
 	input::IntInput,
 	prelude::*,
 };
@@ -125,12 +124,23 @@ impl ColorTile {
 		let inputs_offset = 60;
 
 		let exterior_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
-		let toggle_button = ToggleButton::new(x + 25, y + TILE_HEIGHT / 2 - button_size / 2, button_size, button_size, "");
-		let inputs_tile = Tile::new(x + TILE_HEIGHT, y, TILE_WIDTH - TILE_HEIGHT, TILE_HEIGHT, "");
+
+		let button_tile = Tile::new(0, 0, TILE_HEIGHT, TILE_HEIGHT, "");
+		let toggle_button = ToggleButton::new(0, 0, button_size, button_size, "").center_of_parent();
+		button_tile.end();
+
+		let inputs_tile = Tile::new(0, 0, TILE_WIDTH - TILE_HEIGHT, TILE_HEIGHT, "");
 		let green_input = ColorInput::create(0, 0, 70, 40, BaseColor::Green, tx.clone(), stop_signals.clone()).center_of_parent();
 		let red_input = ColorInput::create(0, 0, 70, 40, BaseColor::Red, tx.clone(), stop_signals.clone()).left_of(&green_input, inputs_offset);
 		let blue_input = ColorInput::create(0, 0, 70, 40, BaseColor::Blue, tx.clone(), stop_signals.clone()).right_of(&green_input, inputs_offset);
 		inputs_tile.end();
+
+		let mut row = Pack::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
+		row.set_type(PackType::Horizontal);
+		row.end();
+
+		row.add(&button_tile);
+		row.add(&inputs_tile);
 
 		let mut color_tile = Self {
 			exterior_tile,
@@ -183,13 +193,24 @@ pub struct ColorTiles {
 
 impl ColorTiles {
 	pub fn new(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
-		let left = ColorTile::new(x, y, &tx.clone(), &stop_signals.clone(), false);
-		let center_left = ColorTile::new(x, y + TILE_HEIGHT, &tx.clone(), &stop_signals.clone(), false);
-		let center_right = ColorTile::new(x, y + TILE_HEIGHT * 2, &tx.clone(), &stop_signals.clone(), false);
-		let right = ColorTile::new(x, y + TILE_HEIGHT * 3, &tx.clone(), &stop_signals.clone(), false);
+		let mut column = Pack::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
+		column.set_type(PackType::Vertical);
+		column.end();
+
+		let master = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), true);
+		let left = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), false);
+		let center_left = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), false);
+		let center_right = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), false);
+		let right = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), false);
+
+		column.add(&right.exterior_tile);
+		column.add(&center_right.exterior_tile);
+		column.add(&center_left.exterior_tile);
+		column.add(&left.exterior_tile);
+		column.add(&master.exterior_tile);
 
 		let mut color_tiles = Self {
-			master: (color_tiles::ColorTile::new(x, y + TILE_HEIGHT * 4, &tx.clone(), &stop_signals.clone(), true)),
+			master,
 			zones: [left, center_left, center_right, right],
 		};
 
