@@ -236,6 +236,42 @@ impl ColorTiles {
 			}
 		});
 
+		fn add_master_input_handle(color_tiles: &mut ColorTiles, color: BaseColor, tx: flume::Sender<Message>, stop_signals: StopSignals) {
+			let mut input = match color {
+				BaseColor::Red => color_tiles.master.red_input.clone(),
+				BaseColor::Green => color_tiles.master.green_input.clone(),
+				BaseColor::Blue => color_tiles.master.blue_input.clone(),
+			};
+
+			input.handle({
+				let mut color_tiles = color_tiles.clone();
+				move |input, event| match event {
+					Event::KeyUp => {
+						if let Ok(value) = input.value().parse::<f32>() {
+							if input.value().len() > 3 {
+								input.set_value(&value.to_string());
+							}
+							if value > 255.0 {
+								input.set_value("255");
+							}
+							color_tiles.set_zones_value(color, input.value().parse().unwrap());
+							stop_signals.store_true();
+							tx.send(Message::Refresh).unwrap();
+						} else {
+							input.set_value("0");
+							color_tiles.set_zones_value(color, 0);
+						}
+						true
+					}
+					_ => false,
+				}
+			});
+		}
+
+		add_master_input_handle(&mut color_tiles, BaseColor::Red, tx.clone(), stop_signals.clone());
+		add_master_input_handle(&mut color_tiles, BaseColor::Green, tx.clone(), stop_signals.clone());
+		add_master_input_handle(&mut color_tiles, BaseColor::Blue, tx.clone(), stop_signals.clone());
+
 		color_tiles
 	}
 
@@ -272,11 +308,11 @@ impl ColorTiles {
 		if self.master.toggle_button.is_toggled() {
 			[0; 12]
 		} else {
-			self.get_zone_values()
+			self.get_zones_values()
 		}
 	}
 
-	pub fn get_zone_values(&mut self) -> [u8; 12] {
+	pub fn get_zones_values(&mut self) -> [u8; 12] {
 		let mut values = [0; 12];
 		if !self.zones[0].toggle_button.is_toggled() {
 			values[0] = self.zones[0].red_input.value().parse::<u8>().unwrap_or(255);
@@ -299,6 +335,29 @@ impl ColorTiles {
 			values[11] = self.zones[3].blue_input.value().parse::<u8>().unwrap_or(255);
 		};
 		values
+	}
+
+	pub fn set_zones_value(&mut self, color: BaseColor, value: u8) {
+		match color {
+			BaseColor::Red => {
+				self.zones[0].red_input.set_value(value.to_string().as_str());
+				self.zones[1].red_input.set_value(value.to_string().as_str());
+				self.zones[2].red_input.set_value(value.to_string().as_str());
+				self.zones[3].red_input.set_value(value.to_string().as_str());
+			}
+			BaseColor::Green => {
+				self.zones[0].green_input.set_value(value.to_string().as_str());
+				self.zones[1].green_input.set_value(value.to_string().as_str());
+				self.zones[2].green_input.set_value(value.to_string().as_str());
+				self.zones[3].green_input.set_value(value.to_string().as_str());
+			}
+			BaseColor::Blue => {
+				self.zones[0].blue_input.set_value(value.to_string().as_str());
+				self.zones[1].blue_input.set_value(value.to_string().as_str());
+				self.zones[2].blue_input.set_value(value.to_string().as_str());
+				self.zones[3].blue_input.set_value(value.to_string().as_str());
+			}
+		}
 	}
 
 	pub fn update(&mut self, effect: Effects) {
