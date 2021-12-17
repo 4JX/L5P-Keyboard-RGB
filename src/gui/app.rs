@@ -251,9 +251,6 @@ impl App {
 
 							manager.set_effect(effect, direction, &color_array, speed, brightness);
 						}
-						Message::UpdateAllValues { value } => {
-							manager.keyboard.set_colors_to(&value);
-						}
 						Message::CustomEffect { effect } => {
 							app.color_tiles.deactivate();
 							effect.play(&mut manager);
