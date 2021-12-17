@@ -225,7 +225,7 @@ impl App {
 			center: screen_center(),
 		};
 
-		menu_bar::AppMenuBar::new(app.clone());
+		menu_bar::AppMenuBar::new(&app);
 
 		let icon_str = include_str!("../../res/trayIcon.svg");
 		let icon_svg = fltk::image::SvgImage::from_data(icon_str).unwrap();
