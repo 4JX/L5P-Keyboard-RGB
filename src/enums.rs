@@ -24,9 +24,7 @@ pub enum Direction {
 	Right,
 }
 
-#[allow(dead_code)]
 pub enum Message {
-	UpdateAllValues { value: [u8; 12] },
 	UpdateEffect { effect: Effects },
 	CustomEffect { effect: CustomEffect },
 	Refresh,

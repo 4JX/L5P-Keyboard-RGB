@@ -11,7 +11,7 @@ pub struct AppMenuBar {
 }
 
 impl AppMenuBar {
-	pub fn new(mut app: App) -> Self {
+	pub fn new(app: &App) -> Self {
 		let mut menu = menu::SysMenuBar::default().with_size(900, 35);
 		menu.set_color(Color::from_u32(Colors::DarkGray as u32));
 		menu.set_selection_color(Color::from_u32(Colors::DarkerGray as u32));
@@ -37,6 +37,7 @@ impl AppMenuBar {
 		});
 
 		menu.add("&Effect/Load\t", Shortcut::None, menu::MenuFlag::Normal, {
+			let mut app = app.clone();
 			move |_some| {
 				app.stop_signals.store_true();
 				app.load_custom_profile();

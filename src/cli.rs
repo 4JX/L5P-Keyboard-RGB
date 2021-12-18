@@ -1,7 +1,8 @@
-use std::{convert::TryInto, process, str::FromStr};
+use std::{convert::TryInto, env, process, str::FromStr};
 
-use clap::{crate_authors, crate_version, App, AppSettings, Arg, SubCommand};
+use clap::{crate_authors, crate_name, crate_version, App, AppSettings, Arg, SubCommand};
 use color_eyre::{eyre::eyre, Help, Report};
+use single_instance::SingleInstance;
 
 use crate::{
 	custom_effect::CustomEffect,
@@ -10,7 +11,7 @@ use crate::{
 	profile::Profile,
 };
 
-pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
+pub fn try_cli() -> Result<(), Report> {
 	let matches = App::new("Legion Keyboard Control")
 		.setting(AppSettings::ColoredHelp)
 		.version(crate_version!())
@@ -92,6 +93,11 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
+		let instance = SingleInstance::new(crate_name!()).unwrap();
+		assert!(instance.is_single(), "Another instance of the program is already running, please close it before starting a new one.");
+
+		let mut manager = KeyboardManager::new().unwrap();
+
 		fn parse_bytes_arg(arg: &str) -> Result<Vec<u8>, <u8 as FromStr>::Err> {
 			arg.split(',').map(str::parse::<u8>).collect()
 		}
@@ -115,7 +121,7 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 				if let Some(path_string) = input_matches.value_of("path") {
 					match CustomEffect::from_file(path_string.to_string()) {
 						Ok(effect) => {
-							effect.play(manager);
+							effect.play(&mut manager);
 						}
 						Err(err) => {
 							return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid effect"));
@@ -170,8 +176,11 @@ pub fn try_cli(manager: &mut KeyboardManager) -> Result<bool, Report> {
 			}
 		}
 
-		Ok(true)
+		Ok(())
 	} else {
-		Ok(false)
+		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
+		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
+		crate::gui::app::App::start_ui();
+		Ok(())
 	}
 }

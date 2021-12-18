@@ -1,6 +1,5 @@
 use hidapi::{HidApi, HidDevice};
 use std::{
-	error::Error,
 	sync::{
 		atomic::{AtomicBool, Ordering},
 		Arc,
@@ -8,6 +7,8 @@ use std::{
 	thread,
 	time::Duration,
 };
+
+use crate::error;
 
 #[cfg(target_os = "linux")]
 const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0, 0);
@@ -195,7 +196,7 @@ impl Keyboard {
 	}
 }
 
-pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard, Box<dyn Error>> {
+pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard, error::Error> {
 	let api: HidApi = HidApi::new()?;
 
 	let info = api
@@ -204,7 +205,7 @@ pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard, Box<dyn Er
 			let info_tuple = (d.vendor_id(), d.product_id(), d.usage_page(), d.usage());
 			info_tuple == DEVICE_INFO_2021 || info_tuple == DEVICE_INFO_2020
 		})
-		.ok_or("Error: Couldn't find device")?;
+		.ok_or(error::Error::DeviceNotFound)?;
 
 	let keyboard_hid: HidDevice = info.open_device(&api)?;
 	let current_state: LightingState = LightingState {

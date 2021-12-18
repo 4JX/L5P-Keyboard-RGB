@@ -3,6 +3,7 @@ use fltk::{
 	button::Button,
 	enums::{Color, FrameType},
 	prelude::*,
+	text::WrapMode,
 	window::Window,
 };
 use std::process;
@@ -30,6 +31,7 @@ pub fn message(width: i32, height: i32, message: &str) {
 	display.set_color(Color::from_u32(Colors::DarkGray as u32));
 	display.set_frame(FrameType::FlatBox);
 	display.set_text_color(Color::from_u32(Colors::White as u32));
+	display.wrap_mode(WrapMode::AtBounds, 0);
 
 	let mut button = Button::new(width_center - button_height / 2, height - margin - button_height + 10, button_width, button_height, "Close");
 	button.set_color(Color::from_u32(Colors::Gray as u32));
@@ -47,8 +49,7 @@ pub fn message(width: i32, height: i32, message: &str) {
 	});
 }
 
-#[allow(dead_code)]
-pub fn alert(width: i32, height: i32, message: &str) {
+pub fn alert(width: i32, height: i32, message: &str, should_exit: bool) {
 	let width_center = width / 2;
 	let height_center = height / 2;
 	let window_x = screen_center().0 - width_center;
@@ -70,6 +71,7 @@ pub fn alert(width: i32, height: i32, message: &str) {
 	display.set_color(Color::from_u32(Colors::DarkGray as u32));
 	display.set_frame(FrameType::FlatBox);
 	display.set_text_color(Color::from_u32(Colors::White as u32));
+	display.wrap_mode(WrapMode::AtBounds, 0);
 
 	let mut button = Button::new(width_center - button_height / 2, height - margin - button_height + 10, button_width, button_height, "Close");
 	button.set_color(Color::from_u32(Colors::Gray as u32));
@@ -82,7 +84,11 @@ pub fn alert(width: i32, height: i32, message: &str) {
 
 	button.set_callback({
 		move |_but| {
-			window.hide();
+			if should_exit {
+				process::exit(0);
+			} else {
+				window.hide();
+			}
 		}
 	});
 }

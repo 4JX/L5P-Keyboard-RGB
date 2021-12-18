@@ -1,5 +1,11 @@
-use crate::enums::{Direction, Effects, Message};
-use crate::keyboard_utils::{BaseEffects, Keyboard};
+use crate::{
+	enums::{Direction, Effects, Message},
+	keyboard_utils,
+};
+use crate::{
+	error,
+	keyboard_utils::{BaseEffects, Keyboard},
+};
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use fast_image_resize as fr;
 use flume::{Receiver, Sender};
@@ -22,6 +28,26 @@ pub struct KeyboardManager {
 }
 
 impl KeyboardManager {
+	pub fn new() -> Result<Self, error::Error> {
+		let keyboard_stop_signal = Arc::new(AtomicBool::new(false));
+		let keyboard = keyboard_utils::get_keyboard(keyboard_stop_signal.clone())?;
+
+		let (tx, rx) = flume::unbounded::<Message>();
+
+		let manager = Self {
+			keyboard,
+			rx,
+			tx,
+			stop_signals: StopSignals {
+				manager_stop_signal: Arc::new(AtomicBool::new(false)),
+				keyboard_stop_signal,
+			},
+			last_effect: Effects::Static,
+		};
+
+		Ok(manager)
+	}
+
 	pub fn set_effect(&mut self, effect: Effects, direction: Direction, color_array: &[u8; 12], speed: u8, brightness: u8) {
 		self.stop_signals.store_false();
 		self.last_effect = effect;
