@@ -121,10 +121,10 @@ legion-kb-rgb --help
 legion-kb-rgb Static 255,0,0,255,0,0,255,0,0,255,0,0
 ```
 
-- Using the SmoothLeftWave with speed `4` and brightness at high
+- Using the SmoothWave effect going to the left with speed `4` and brightness at high
 
 ```sh
-legion-kb-rgb -s 4 -b 2 SmoothLeftWave
+legion-kb-rgb -s 4 -b 2 -d Left SmoothWave
 ```
 
 ## Compatibility
@@ -175,10 +175,8 @@ git clone https://github.com/4JX/L5P-Keyboard-RGB.git
 - Build the project
 
 ```sh
-$ cd L5P-Keyboard-RGB/
-$ cargo make build
-# Or
-$ cargo make build-release
+cd L5P-Keyboard-RGB/
+cargo make build-release
 ```
 
 ### Building manually
