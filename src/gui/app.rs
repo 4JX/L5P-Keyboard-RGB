@@ -50,12 +50,17 @@ impl App {
 
 		let instance = SingleInstance::new(crate_name!()).unwrap();
 		if !instance.is_single() {
-			println!("Not single");
 			appdialog::alert(800, 400, "Another instance of the program is already running, please close it before starting a new one.", true);
 			app.run().unwrap();
 		}
 
-		let manager = KeyboardManager::new().unwrap();
+		let manager_result = KeyboardManager::new();
+		if manager_result.is_err() {
+			appdialog::alert(800, 400, "A valid keyboard model was not found. It may be due to a hardware error.", true);
+			app.run().unwrap();
+		}
+
+		let manager = manager_result.unwrap();
 
 		//Windows logic
 		#[cfg(target_os = "windows")]
