@@ -33,23 +33,30 @@ impl SideTile {
 		let mut presets_button = RadioButton::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "Presets").center_y(&buttons_tile);
 		buttons_tile.end();
 
-		let effect_browser_tile_y_change = button_height + padding / 2;
-		let effect_browser_tile_height = TILE_HEIGHT - effect_browser_tile_y_change;
-		let effect_browser_tile = Tile::new(x, y + effect_browser_tile_y_change, TILE_WIDTH, effect_browser_tile_height, "");
-		let mut effect_browser = HoldBrowser::new(0, 0, TILE_WIDTH - padding, effect_browser_tile_height - padding, "").center_of_parent();
-		effect_browser_tile.end();
+		let lower_tile_y_change = button_height + padding / 2;
+		let lower_tile_height = TILE_HEIGHT - lower_tile_y_change;
+		let lower_tile = Tile::new(x, y + lower_tile_y_change, TILE_WIDTH, lower_tile_height, "");
+		let mut effect_browser = HoldBrowser::new(0, 0, TILE_WIDTH - padding, lower_tile_height - padding, "").center_of_parent();
+		let mut presets_browser = HoldBrowser::new(0, 0, TILE_WIDTH - padding, lower_tile_height - padding, "").center_of_parent();
+		lower_tile.end();
+
+		presets_browser.hide();
 
 		effect_browser_button.set_callback({
 			let mut effect_browser = effect_browser.clone();
+			let mut presets_browser = presets_browser.clone();
 			move |_button| {
 				effect_browser.show();
+				presets_browser.hide();
 			}
 		});
 
 		presets_button.set_callback({
 			let mut effect_browser = effect_browser.clone();
+			let mut presets_browser = presets_browser.clone();
 			move |_button| {
 				effect_browser.hide();
+				presets_browser.show();
 			}
 		});
 
