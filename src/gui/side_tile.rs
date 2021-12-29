@@ -15,10 +15,15 @@ use strum::IntoEnumIterator;
 
 const TILE_WIDTH: i32 = 360;
 const TILE_HEIGHT: i32 = 450;
-pub struct EffectBrowser;
 
-impl EffectBrowser {
-	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> HoldBrowser {
+pub struct SideTile {
+	pub effect_browser: HoldBrowser,
+}
+
+impl SideTile {
+	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
+		let mut exterior_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
+
 		let padding = 50;
 		let button_width = TILE_WIDTH / 2 - padding / 2;
 		let button_height = 40;
@@ -112,22 +117,10 @@ impl EffectBrowser {
 			}
 		});
 
-		effect_browser
-	}
-}
+		exterior_tile.end();
 
-pub struct EffectBrowserTile {
-	pub effect_browser: HoldBrowser,
-}
-
-impl EffectBrowserTile {
-	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
-		let mut effect_browser_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
-		let effect_browser = EffectBrowser::create(x, y, tx, stop_signals);
-		effect_browser_tile.end();
-
-		effect_browser_tile.set_frame(FrameType::FlatBox);
-		effect_browser_tile.set_color(Color::from_u32(Colors::DarkerGray as u32));
+		exterior_tile.set_frame(FrameType::FlatBox);
+		exterior_tile.set_color(Color::from_u32(Colors::DarkerGray as u32));
 
 		Self { effect_browser }
 	}

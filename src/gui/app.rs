@@ -1,7 +1,7 @@
 use super::color_tiles::ColorTiles;
 use super::options::OptionsTile;
 use super::utils::screen_center;
-use super::{color_tiles, effect_browser, options};
+use super::{color_tiles, options, side_tile};
 use crate::gui::dialog as appdialog;
 use crate::gui::menu_bar;
 use crate::keyboard_manager::{KeyboardManager, StopSignals};
@@ -223,7 +223,7 @@ impl App {
 
 		let mut app = Self {
 			color_tiles: color_tiles::ColorTiles::new(0, 35, &manager.tx, &manager.stop_signals),
-			effect_browser: effect_browser::EffectBrowserTile::create(540, 35, &manager.tx, &manager.stop_signals).effect_browser,
+			effect_browser: side_tile::SideTile::create(540, 35, &manager.tx, &manager.stop_signals).effect_browser,
 			options_tile: options::OptionsTile::create(0, 480, &manager.tx, &manager.stop_signals),
 			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),
