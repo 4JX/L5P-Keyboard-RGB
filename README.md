@@ -1,3 +1,7 @@
+[![Lastest Version](https://img.shields.io/github/v/tag/4JX/L5P-Keyboard-RGB?style=for-the-badge)](https://github.com/4JX/L5P-Keyboard-RGB/releases)
+![Build Status](https://img.shields.io/github/workflow/status/4JX/L5P-Keyboard-RGB/Compile%20releases?style=for-the-badge)
+[![Support Server](https://img.shields.io/discord/819491422327406592?style=for-the-badge)](https://discord.gg/bNQ9UqUf3z)
+
 # Legion RGB Control
 
 ![Preview](https://github.com/4JX/L5P-Keyboard-RGB/blob/main/Preview.png)
