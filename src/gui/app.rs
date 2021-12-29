@@ -222,8 +222,8 @@ impl App {
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
 
 		let mut app = Self {
-			color_tiles: color_tiles::ColorTiles::new(0, 30, &manager.tx, &manager.stop_signals),
-			effect_browser: effect_browser::EffectBrowserTile::create(540, 30, &manager.tx, &manager.stop_signals).effect_browser,
+			color_tiles: color_tiles::ColorTiles::new(0, 35, &manager.tx, &manager.stop_signals),
+			effect_browser: effect_browser::EffectBrowserTile::create(540, 35, &manager.tx, &manager.stop_signals).effect_browser,
 			options_tile: options::OptionsTile::create(0, 480, &manager.tx, &manager.stop_signals),
 			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),

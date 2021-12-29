@@ -6,17 +6,48 @@ use crate::{
 use super::enums::Colors;
 use fltk::{
 	browser::HoldBrowser,
+	button::RadioButton,
 	enums::{Color, FrameType},
 	group::Tile,
 	prelude::*,
 };
 use strum::IntoEnumIterator;
 
+const TILE_WIDTH: i32 = 360;
+const TILE_HEIGHT: i32 = 450;
 pub struct EffectBrowser;
 
 impl EffectBrowser {
-	pub fn create(tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> HoldBrowser {
-		let mut effect_browser = HoldBrowser::new(0, 0, 310, 400, "").center_of_parent();
+	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> HoldBrowser {
+		let padding = 50;
+		let button_width = TILE_WIDTH / 2 - padding / 2;
+		let button_height = 40;
+
+		let buttons_tile = Tile::new(x, y + padding / 2, TILE_WIDTH, button_height, "");
+		let mut effect_browser_button = RadioButton::new(x + padding / 2, 0, button_width, button_height, "Effect Browser").center_y(&buttons_tile);
+		let mut presets_button = RadioButton::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "Presets").center_y(&buttons_tile);
+		buttons_tile.end();
+
+		let effect_browser_tile_y_change = button_height + padding / 2;
+		let effect_browser_tile_height = TILE_HEIGHT - effect_browser_tile_y_change;
+		let effect_browser_tile = Tile::new(x, y + effect_browser_tile_y_change, TILE_WIDTH, effect_browser_tile_height, "");
+		let mut effect_browser = HoldBrowser::new(0, 0, TILE_WIDTH - padding, effect_browser_tile_height - padding, "").center_of_parent();
+		effect_browser_tile.end();
+
+		effect_browser_button.set_callback({
+			let mut effect_browser = effect_browser.clone();
+			move |_button| {
+				effect_browser.show();
+			}
+		});
+
+		presets_button.set_callback({
+			let mut effect_browser = effect_browser.clone();
+			move |_button| {
+				effect_browser.hide();
+			}
+		});
+
 		for effect in Effects::iter() {
 			#[cfg(target_os = "windows")]
 			if effect == Effects::Temperature {
@@ -91,8 +122,8 @@ pub struct EffectBrowserTile {
 
 impl EffectBrowserTile {
 	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
-		let mut effect_browser_tile = Tile::new(x, y, 360, 450, "");
-		let effect_browser = EffectBrowser::create(tx, stop_signals);
+		let mut effect_browser_tile = Tile::new(x, y, TILE_WIDTH, TILE_HEIGHT, "");
+		let effect_browser = EffectBrowser::create(x, y, tx, stop_signals);
 		effect_browser_tile.end();
 
 		effect_browser_tile.set_frame(FrameType::FlatBox);
