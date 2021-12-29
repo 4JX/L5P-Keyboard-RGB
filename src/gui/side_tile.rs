@@ -6,7 +6,7 @@ use crate::{
 use super::enums::Colors;
 use fltk::{
 	browser::HoldBrowser,
-	button::RadioButton,
+	button::{Button, RadioButton},
 	enums::{Color, FrameType},
 	group::Tile,
 	prelude::*,
@@ -28,35 +28,47 @@ impl SideTile {
 		let button_width = TILE_WIDTH / 2 - padding / 2;
 		let button_height = 40;
 
-		let buttons_tile = Tile::new(x, y + padding / 2, TILE_WIDTH, button_height, "");
-		let mut effect_browser_button = RadioButton::new(x + padding / 2, 0, button_width, button_height, "Effect Browser").center_y(&buttons_tile);
-		let mut presets_button = RadioButton::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "Presets").center_y(&buttons_tile);
-		buttons_tile.end();
+		let browser_buttons_tile = Tile::new(x, y + padding / 2, TILE_WIDTH, button_height, "");
+		let mut effect_browser_button = RadioButton::new(x + padding / 2, 0, button_width, button_height, "Effect Browser").center_y(&browser_buttons_tile);
+		let mut preset_button = RadioButton::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "Presets").center_y(&browser_buttons_tile);
+		browser_buttons_tile.end();
 
 		let lower_tile_y_change = button_height + padding / 2;
 		let lower_tile_height = TILE_HEIGHT - lower_tile_y_change;
 		let lower_tile = Tile::new(x, y + lower_tile_y_change, TILE_WIDTH, lower_tile_height, "");
 		let mut effect_browser = HoldBrowser::new(0, 0, TILE_WIDTH - padding, lower_tile_height - padding, "").center_of_parent();
-		let mut presets_browser = HoldBrowser::new(0, 0, TILE_WIDTH - padding, lower_tile_height - padding, "").center_of_parent();
+		let mut preset_browser = HoldBrowser::new(020, 0, TILE_WIDTH - padding, lower_tile_height - padding - button_height, "")
+			.above_of(&lower_tile, -(lower_tile_height - padding / 2 - button_height))
+			.center_x(&lower_tile);
+
+		let mut preset_buttons_tile = Tile::new(0, y + padding + (lower_tile_height - padding), TILE_WIDTH, button_height, "").center_x(&lower_tile);
+		let _add_button = Button::new(x + padding / 2, 0, button_width, button_height, "+").center_y(&preset_buttons_tile);
+		let _remove_button = Button::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "-").center_y(&preset_buttons_tile);
+		preset_buttons_tile.end();
 		lower_tile.end();
 
-		presets_browser.hide();
+		preset_browser.hide();
+		preset_buttons_tile.hide();
 
 		effect_browser_button.set_callback({
 			let mut effect_browser = effect_browser.clone();
-			let mut presets_browser = presets_browser.clone();
+			let mut presets_browser = preset_browser.clone();
+			let mut preset_buttons_tile = preset_buttons_tile.clone();
 			move |_button| {
 				effect_browser.show();
 				presets_browser.hide();
+				preset_buttons_tile.hide();
 			}
 		});
 
-		presets_button.set_callback({
+		preset_button.set_callback({
 			let mut effect_browser = effect_browser.clone();
-			let mut presets_browser = presets_browser.clone();
+			let mut presets_browser = preset_browser.clone();
+			let mut preset_buttons_tile = preset_buttons_tile.clone();
 			move |_button| {
 				effect_browser.hide();
 				presets_browser.show();
+				preset_buttons_tile.show();
 			}
 		});
 
@@ -123,6 +135,12 @@ impl SideTile {
 				}
 			}
 		});
+
+		preset_browser.set_frame(FrameType::RFlatBox);
+		preset_browser.set_color(Color::from_u32(Colors::LighterGray as u32));
+		preset_browser.set_selection_color(Color::from_u32(Colors::White as u32));
+		preset_browser.set_text_size(20);
+		preset_browser.select(1);
 
 		exterior_tile.end();
 
