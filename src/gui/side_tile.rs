@@ -37,7 +37,7 @@ impl SideTile {
 		let lower_tile_height = TILE_HEIGHT - lower_tile_y_change;
 		let lower_tile = Tile::new(x, y + lower_tile_y_change, TILE_WIDTH, lower_tile_height, "");
 		let mut effect_browser = HoldBrowser::new(0, 0, TILE_WIDTH - padding, lower_tile_height - padding, "").center_of_parent();
-		let mut preset_browser = HoldBrowser::new(020, 0, TILE_WIDTH - padding, lower_tile_height - padding - button_height, "")
+		let mut preset_browser = HoldBrowser::new(20, 0, TILE_WIDTH - padding, lower_tile_height - padding - button_height, "")
 			.above_of(&lower_tile, -(lower_tile_height - padding / 2 - button_height))
 			.center_x(&lower_tile);
 
@@ -52,22 +52,22 @@ impl SideTile {
 
 		effect_browser_button.set_callback({
 			let mut effect_browser = effect_browser.clone();
-			let mut presets_browser = preset_browser.clone();
+			let mut preset_browser = preset_browser.clone();
 			let mut preset_buttons_tile = preset_buttons_tile.clone();
 			move |_button| {
 				effect_browser.show();
-				presets_browser.hide();
+				preset_browser.hide();
 				preset_buttons_tile.hide();
 			}
 		});
 
 		preset_button.set_callback({
 			let mut effect_browser = effect_browser.clone();
-			let mut presets_browser = preset_browser.clone();
+			let mut preset_browser = preset_browser.clone();
 			let mut preset_buttons_tile = preset_buttons_tile.clone();
 			move |_button| {
 				effect_browser.hide();
-				presets_browser.show();
+				preset_browser.show();
 				preset_buttons_tile.show();
 			}
 		});

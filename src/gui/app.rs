@@ -120,6 +120,16 @@ impl App {
 		}
 	}
 
+	pub fn update_gui_from_profile(&mut self, profile: &Profile) {
+		self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state, profile.effect);
+		self.effect_browser.select(profile.effect as i32 + 1);
+		self.options_tile.speed_choice.set_value(profile.speed.into());
+		self.options_tile.brightness_choice.set_value(profile.brightness.into());
+
+		self.stop_signals.store_true();
+		self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
+	}
+
 	pub fn load_profile(&mut self, is_default: bool) {
 		let filename = if is_default {
 			"default.json".to_string()
@@ -136,7 +146,7 @@ impl App {
 			self.tx.send(Message::Refresh).unwrap();
 		} else if path::Path::new(&filename).exists() {
 			if let Ok(profile) = Profile::from_file(filename) {
-				self.update_gui_from_profile(profile);
+				self.update_gui_from_profile(&profile);
 			} else {
 				appdialog::alert(
 					800,
@@ -150,16 +160,6 @@ impl App {
 		} else if !is_default {
 			appdialog::alert(800, 200, "File does not exist!", false);
 		}
-	}
-
-	pub fn update_gui_from_profile(&mut self, profile: Profile) {
-		self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state, profile.effect);
-		self.effect_browser.select(profile.effect as i32 + 1);
-		self.options_tile.speed_choice.set_value(profile.speed.into());
-		self.options_tile.brightness_choice.set_value(profile.brightness.into());
-
-		self.stop_signals.store_true();
-		self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
 	}
 
 	pub fn create_profile_from_gui(&mut self) -> Profile {
