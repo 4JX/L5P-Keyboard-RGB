@@ -162,7 +162,7 @@ impl App {
 		self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
 	}
 
-	pub fn save_profile(&mut self) {
+	pub fn create_profile_from_gui(&mut self) -> Profile {
 		let rgb_array = self.color_tiles.get_values();
 		let effect = Effects::from_str(self.effect_browser.selected_text().unwrap().as_str()).unwrap();
 		let direction = Direction::from_str(self.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
@@ -170,7 +170,11 @@ impl App {
 		let brightness = self.options_tile.brightness_choice.value();
 		let ui_toggle_button_state = self.color_tiles.get_button_state();
 
-		let profile = Profile::new(rgb_array, effect, direction, speed.try_into().unwrap(), brightness.try_into().unwrap(), ui_toggle_button_state);
+		Profile::new(rgb_array, effect, direction, speed.try_into().unwrap(), brightness.try_into().unwrap(), ui_toggle_button_state)
+	}
+
+	pub fn save_profile(&mut self) {
+		let profile = self.create_profile_from_gui();
 
 		let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseSaveFile);
 		dlg.set_option(dialog::FileDialogOptions::SaveAsConfirm);
