@@ -168,8 +168,9 @@ impl App {
 		let direction = Direction::from_str(self.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
 		let speed = self.options_tile.speed_choice.value();
 		let brightness = self.options_tile.brightness_choice.value();
+		let ui_toggle_button_state = self.color_tiles.get_button_state();
 
-		let profile = Profile::new(rgb_array, effect, direction, speed.try_into().unwrap(), brightness.try_into().unwrap(), [false; 5]);
+		let profile = Profile::new(rgb_array, effect, direction, speed.try_into().unwrap(), brightness.try_into().unwrap(), ui_toggle_button_state);
 
 		let mut dlg = dialog::FileDialog::new(dialog::FileDialogType::BrowseSaveFile);
 		dlg.set_option(dialog::FileDialogOptions::SaveAsConfirm);

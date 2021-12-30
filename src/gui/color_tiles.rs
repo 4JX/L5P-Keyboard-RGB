@@ -371,6 +371,16 @@ impl ColorTiles {
 		}
 	}
 
+	pub fn get_button_state(&self) -> [bool; 5] {
+		[
+			self.master.toggle_button.is_toggled(),
+			self.zones[0].toggle_button.is_toggled(),
+			self.zones[1].toggle_button.is_toggled(),
+			self.zones[2].toggle_button.is_toggled(),
+			self.zones[3].toggle_button.is_toggled(),
+		]
+	}
+
 	pub fn set_state(&mut self, rgb_array: &[u8; 12], buttons_toggle_state: [bool; 5], effect: Effects) {
 		for (i, (_val, zone)) in rgb_array.iter().step_by(3).zip(self.zones.iter_mut()).enumerate() {
 			let rgb_values: [u8; 3] = [rgb_array[i], rgb_array[i + 1], rgb_array[i + 2]];
