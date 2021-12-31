@@ -203,10 +203,10 @@ impl ColorTiles {
 		let center_right = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), false);
 		let right = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), false);
 
-		column.add(&right.exterior_tile);
-		column.add(&center_right.exterior_tile);
-		column.add(&center_left.exterior_tile);
 		column.add(&left.exterior_tile);
+		column.add(&center_left.exterior_tile);
+		column.add(&center_right.exterior_tile);
+		column.add(&right.exterior_tile);
 		column.add(&master.exterior_tile);
 
 		let mut color_tiles = Self {
@@ -381,11 +381,10 @@ impl ColorTiles {
 		]
 	}
 
-	pub fn set_state(&mut self, rgb_array: &[u8; 12], buttons_toggle_state: [bool; 5], effect: Effects) {
+	pub fn set_state(&mut self, rgb_array: &[u8; 12], buttons_toggle_state: [bool; 5]) {
 		for (i, (_val, zone)) in rgb_array.iter().step_by(3).zip(self.zones.iter_mut()).enumerate() {
-			let rgb_values: [u8; 3] = [rgb_array[i], rgb_array[i + 1], rgb_array[i + 2]];
+			let rgb_values: [u8; 3] = [rgb_array[i * 3], rgb_array[i * 3 + 1], rgb_array[i * 3 + 2]];
 			zone.set_state(rgb_values, buttons_toggle_state[i]);
 		}
-		self.update(effect);
 	}
 }

@@ -11,15 +11,17 @@ use crate::{
 	enums::{Direction, Effects, Message},
 };
 use clap::crate_name;
+use device_query::{DeviceQuery, DeviceState, Keycode};
 use fltk::browser::HoldBrowser;
 use fltk::dialog;
 use fltk::enums::FrameType;
 use fltk::{app, enums::Font, prelude::*, window::Window};
 use flume::Sender;
 use single_instance::SingleInstance;
-use std::convert::TryInto;
 use std::str::FromStr;
+use std::sync::Mutex;
 use std::time::Duration;
+use std::{convert::TryInto, sync::Arc};
 use std::{panic, path, thread};
 
 const WIDTH: i32 = 900;
@@ -33,6 +35,7 @@ pub struct App {
 	pub tx: Sender<Message>,
 	pub stop_signals: StopSignals,
 	pub center: (i32, i32),
+	profile_vec: SharedVec<Profile>,
 }
 
 impl App {
@@ -99,7 +102,6 @@ impl App {
 			.unwrap();
 
 			tray.add_menu_item("Quit", || {
-				println!("Quit");
 				std::process::exit(0);
 			})
 			.unwrap();
@@ -121,7 +123,7 @@ impl App {
 	}
 
 	pub fn update_gui_from_profile(&mut self, profile: &Profile) {
-		self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state, profile.effect);
+		self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state);
 		self.effect_browser.select(profile.effect as i32 + 1);
 		self.options_tile.speed_choice.set_value(profile.speed.into());
 		self.options_tile.brightness_choice.set_value(profile.brightness.into());
@@ -229,20 +231,100 @@ impl App {
 		}));
 
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
+		let mut side_tile = side_tile::SideTile::create(540, 35, &manager.tx, &manager.stop_signals);
 
 		let mut app = Self {
 			color_tiles: color_tiles::ColorTiles::new(0, 35, &manager.tx, &manager.stop_signals),
-			effect_browser: side_tile::SideTile::create(540, 35, &manager.tx, &manager.stop_signals).effect_browser,
+			effect_browser: side_tile.effect_browser,
 			options_tile: options::OptionsTile::create(0, 480, &manager.tx, &manager.stop_signals),
 			tx: manager.tx.clone(),
 			stop_signals: manager.stop_signals.clone(),
 			center: screen_center(),
+			profile_vec: SharedVec::new(),
 		};
 
 		menu_bar::AppMenuBar::new(&app);
 
+		fn update_preset_browser(preset_browser: &mut HoldBrowser, profile_vec: &SharedVec<Profile>) {
+			preset_browser.clear();
+
+			for i in 0..profile_vec.len() {
+				preset_browser.add(format!("Preset {}", i).as_str());
+			}
+		}
+
+		side_tile.add_preset_button.set_callback({
+			let mut app = app.clone();
+			let mut preset_browser = side_tile.preset_browser.clone();
+			move |_button| {
+				let profile = app.create_profile_from_gui();
+				app.profile_vec.push(profile);
+
+				update_preset_browser(&mut preset_browser, &app.profile_vec)
+			}
+		});
+
+		side_tile.remove_preset_button.set_callback({
+			let app = app.clone();
+			let mut preset_browser = side_tile.preset_browser.clone();
+			move |_button| {
+				if preset_browser.value() > 0 {
+					if app.profile_vec.len() > 0 {
+						app.profile_vec.remove(preset_browser.value() as usize - 1);
+
+						update_preset_browser(&mut preset_browser, &app.profile_vec)
+					}
+				}
+			}
+		});
+
+		side_tile.preset_browser.set_callback({
+			let mut app = app.clone();
+			let preset_browser = side_tile.preset_browser.clone();
+			move |_browser| {
+				let profile_vec = app.profile_vec.inner.lock().unwrap().clone();
+				if let Some(profile) = profile_vec.get(preset_browser.value() as usize - 1) {
+					app.update_gui_from_profile(profile);
+				};
+			}
+		});
+
+		thread::spawn({
+			let mut app = app.clone();
+			let mut preset_browser = side_tile.preset_browser.clone();
+			move || {
+				let device_state = DeviceState::new();
+
+				loop {
+					let profile_vec = app.profile_vec.inner.lock().unwrap().clone();
+
+					if profile_vec.len() > 0 {
+						let keys: Vec<Keycode> = device_state.get_keys();
+
+						if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::Space) {
+							if profile_vec.len() > 1 {
+								if profile_vec.len() == preset_browser.value() as usize {
+									preset_browser.select(1);
+								} else {
+									preset_browser.select(preset_browser.value() + 1);
+								}
+							}
+
+							if let Some(profile) = profile_vec.get(preset_browser.value() as usize - 1) {
+								app.update_gui_from_profile(profile);
+								thread::sleep(Duration::from_millis(200));
+							};
+						}
+					}
+
+					thread::sleep(Duration::from_millis(50));
+				}
+			}
+		});
+
 		let icon_str = include_str!("../../res/trayIcon.svg");
 		let icon_svg = fltk::image::SvgImage::from_data(icon_str).unwrap();
+
 		win.set_icon(Some(icon_svg));
 		win.end();
 		win.make_resizable(false);
@@ -286,5 +368,30 @@ impl App {
 	fn update(&mut self, effect: Effects) {
 		self.color_tiles.update(effect);
 		self.options_tile.update(effect);
+	}
+}
+
+#[derive(Clone)]
+pub struct SharedVec<T> {
+	inner: Arc<Mutex<Vec<T>>>,
+}
+
+impl<T> SharedVec<T> {
+	pub fn new() -> Self {
+		Self {
+			inner: Arc::new(Mutex::new(Vec::new())),
+		}
+	}
+
+	pub fn push(&self, value: T) {
+		self.inner.lock().unwrap().push(value);
+	}
+
+	pub fn remove(&self, index: usize) -> T {
+		self.inner.lock().unwrap().remove(index)
+	}
+
+	pub fn len(&self) -> usize {
+		self.inner.lock().unwrap().len()
 	}
 }

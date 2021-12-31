@@ -18,6 +18,9 @@ const TILE_HEIGHT: i32 = 450;
 
 pub struct SideTile {
 	pub effect_browser: HoldBrowser,
+	pub preset_browser: HoldBrowser,
+	pub add_preset_button: Button,
+	pub remove_preset_button: Button,
 }
 
 impl SideTile {
@@ -42,8 +45,8 @@ impl SideTile {
 			.center_x(&lower_tile);
 
 		let mut preset_buttons_tile = Tile::new(0, y + padding + (lower_tile_height - padding), TILE_WIDTH, button_height, "").center_x(&lower_tile);
-		let _add_button = Button::new(x + padding / 2, 0, button_width, button_height, "+").center_y(&preset_buttons_tile);
-		let _remove_button = Button::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "-").center_y(&preset_buttons_tile);
+		let add_preset_button = Button::new(x + padding / 2, 0, button_width, button_height, "+").center_y(&preset_buttons_tile);
+		let remove_preset_button = Button::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "-").center_y(&preset_buttons_tile);
 		preset_buttons_tile.end();
 		lower_tile.end();
 
@@ -147,6 +150,11 @@ impl SideTile {
 		exterior_tile.set_frame(FrameType::FlatBox);
 		exterior_tile.set_color(Color::from_u32(Colors::DarkerGray as u32));
 
-		Self { effect_browser }
+		Self {
+			effect_browser,
+			preset_browser,
+			add_preset_button,
+			remove_preset_button,
+		}
 	}
 }
