@@ -129,7 +129,7 @@ impl App {
 		self.options_tile.brightness_choice.set_value(profile.brightness.into());
 
 		self.stop_signals.store_true();
-		self.tx.send(Message::UpdateEffect { effect: profile.effect }).unwrap();
+		self.tx.send(Message::Refresh).unwrap();
 	}
 
 	pub fn load_profile(&mut self, is_default: bool) {
@@ -308,11 +308,13 @@ impl App {
 								} else {
 									preset_browser.select(preset_browser.value() + 1);
 								}
+							} else {
+								preset_browser.select(1);
 							}
 
 							if let Some(profile) = profile_vec.get(preset_browser.value() as usize - 1) {
 								app.update_gui_from_profile(profile);
-								thread::sleep(Duration::from_millis(200));
+								thread::sleep(Duration::from_millis(150));
 							};
 						}
 					}
@@ -337,22 +339,21 @@ impl App {
 			match manager.rx.try_iter().last() {
 				Some(message) => {
 					match message {
-						Message::UpdateEffect { effect } => {
-							app.update(effect);
-							app::awake();
+						Message::Refresh => {
+							let effect = Effects::from_str(app.effect_browser.selected_text().unwrap().as_str()).unwrap();
 							let color_array = app.color_tiles.get_values();
 							let speed = app.options_tile.speed_choice.choice().unwrap().parse::<u8>().unwrap();
 							let brightness = app.options_tile.brightness_choice.choice().unwrap().parse::<u8>().unwrap();
 							let direction = Direction::from_str(app.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
+
+							app.update(effect);
+							app::awake();
 
 							manager.set_effect(effect, direction, &color_array, speed, brightness);
 						}
 						Message::CustomEffect { effect } => {
 							app.color_tiles.deactivate();
 							effect.play(&mut manager);
-						}
-						Message::Refresh => {
-							app.tx.send(Message::UpdateEffect { effect: manager.last_effect }).unwrap();
 						}
 					}
 					app::awake();

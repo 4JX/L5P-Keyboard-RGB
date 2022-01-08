@@ -25,7 +25,6 @@ pub enum Direction {
 }
 
 pub enum Message {
-	UpdateEffect { effect: Effects },
 	CustomEffect { effect: CustomEffect },
 	Refresh,
 }

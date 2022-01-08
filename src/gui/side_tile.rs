@@ -92,50 +92,9 @@ impl SideTile {
 		effect_browser.set_callback({
 			let stop_signals = stop_signals.clone();
 			let tx = tx.clone();
-			move |browser| {
+			move |_browser| {
 				stop_signals.store_true();
-				match browser.value() {
-					0 => {
-						browser.select(0);
-					}
-					1 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Static }).unwrap();
-					}
-					2 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Breath }).unwrap();
-					}
-					3 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Smooth }).unwrap();
-					}
-					4 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Wave }).unwrap();
-					}
-					5 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Lightning }).unwrap();
-					}
-					6 => {
-						tx.send(Message::UpdateEffect { effect: Effects::AmbientLight }).unwrap();
-					}
-					7 => {
-						tx.send(Message::UpdateEffect { effect: Effects::SmoothWave }).unwrap();
-					}
-					8 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Swipe }).unwrap();
-					}
-					9 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Disco }).unwrap();
-					}
-					10 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Christmas }).unwrap();
-					}
-					11 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Fade }).unwrap();
-					}
-					12 => {
-						tx.send(Message::UpdateEffect { effect: Effects::Temperature }).unwrap();
-					}
-					_ => unreachable!("Effect index is out of range"),
-				}
+				tx.send(Message::Refresh).unwrap();
 			}
 		});
 
