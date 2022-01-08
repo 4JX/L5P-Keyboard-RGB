@@ -259,8 +259,7 @@ impl App {
 			move |_button| {
 				let profile = app.create_profile_from_gui();
 				app.profile_vec.push(profile);
-
-				update_preset_browser(&mut preset_browser, &app.profile_vec)
+				update_preset_browser(&mut preset_browser, &app.profile_vec);
 			}
 		});
 
@@ -268,12 +267,9 @@ impl App {
 			let app = app.clone();
 			let mut preset_browser = side_tile.preset_browser.clone();
 			move |_button| {
-				if preset_browser.value() > 0 {
-					if app.profile_vec.len() > 0 {
-						app.profile_vec.remove(preset_browser.value() as usize - 1);
-
-						update_preset_browser(&mut preset_browser, &app.profile_vec)
-					}
+				if preset_browser.value() > 0 && app.profile_vec.len() > 0 {
+					app.profile_vec.remove(preset_browser.value() as usize - 1);
+					update_preset_browser(&mut preset_browser, &app.profile_vec);
 				}
 			}
 		});
@@ -298,7 +294,7 @@ impl App {
 				loop {
 					let profile_vec = app.profile_vec.inner.lock().unwrap().clone();
 
-					if profile_vec.len() > 0 {
+					if !profile_vec.is_empty() {
 						let keys: Vec<Keycode> = device_state.get_keys();
 
 						if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::Space) {
