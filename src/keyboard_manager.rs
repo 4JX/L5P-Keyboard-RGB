@@ -11,7 +11,6 @@ use fast_image_resize as fr;
 use flume::{Receiver, Sender};
 use rand::{thread_rng, Rng};
 use scrap::{Capturer, Display};
-use std::convert::TryInto;
 use std::num::NonZeroU32;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -221,7 +220,7 @@ impl KeyboardManager {
 				}
 			}
 			Effects::Christmas => {
-				let xmas_color_array = [255, 10, 10, 255, 255, 20, 30, 255, 30, 70, 70, 255];
+				let xmas_color_array = [[255, 10, 10], [255, 255, 20], [30, 255, 30], [70, 70, 255]];
 				let subeffect_count = 4;
 				let mut last_subeffect = -1;
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -235,22 +234,21 @@ impl KeyboardManager {
 						0 => {
 							for _i in 0..3 {
 								for j in 0..4 {
-									let array_index = j * 3;
-									let used_colors: [u8; 3] = xmas_color_array[array_index..array_index + 3].try_into().unwrap();
+									let used_colors: [u8; 3] = xmas_color_array[j];
 									self.keyboard.solid_set_colors_to(used_colors);
 									thread::sleep(Duration::from_millis(500));
 								}
 							}
 						}
 						1 => {
-							let cut_start_1 = (thread_rng.gen_range(0..4)) * 3;
-							let used_colors_1: [u8; 3] = xmas_color_array[cut_start_1..cut_start_1 + 3].try_into().unwrap();
+							let color_1_index = thread_rng.gen_range(0..4);
+							let used_colors_1: [u8; 3] = xmas_color_array[color_1_index];
 
-							let mut cut_start_2 = (thread_rng.gen_range(0..4)) * 3;
-							while cut_start_1 == cut_start_2 {
-								cut_start_2 = (thread_rng.gen_range(0..4)) * 3;
+							let mut color_2_index = thread_rng.gen_range(0..4);
+							while color_1_index == color_2_index {
+								color_2_index = thread_rng.gen_range(0..4);
 							}
-							let used_colors_2: [u8; 3] = xmas_color_array[cut_start_2..cut_start_2 + 3].try_into().unwrap();
+							let used_colors_2: [u8; 3] = xmas_color_array[color_2_index];
 
 							for _i in 0..4 {
 								self.keyboard.solid_set_colors_to(used_colors_1);
@@ -265,11 +263,11 @@ impl KeyboardManager {
 							let mut used_colors_array: [u8; 12] = [0; 12];
 							let left_or_right = thread_rng.gen_range(0..2);
 							if left_or_right == 0 {
-								for i in (0..12).step_by(3) {
+								for i in 0..4 {
 									for j in (0..12).step_by(3) {
-										used_colors_array[j] = xmas_color_array[i];
-										used_colors_array[j + 1] = xmas_color_array[i + 1];
-										used_colors_array[j + 2] = xmas_color_array[i + 2];
+										used_colors_array[j] = xmas_color_array[i][0];
+										used_colors_array[j + 1] = xmas_color_array[i][1];
+										used_colors_array[j + 2] = xmas_color_array[i][2];
 										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
 									}
 									for j in (0..12).step_by(3) {
@@ -280,11 +278,11 @@ impl KeyboardManager {
 									}
 								}
 							} else {
-								for i in (0..12).step_by(3) {
+								for i in 0..4 {
 									for j in (0..12).step_by(3) {
-										used_colors_array[11 - j] = xmas_color_array[11 - i];
-										used_colors_array[11 - (j + 1)] = xmas_color_array[11 - (i + 1)];
-										used_colors_array[11 - (j + 2)] = xmas_color_array[11 - (i + 2)];
+										used_colors_array[11 - j] = xmas_color_array[3 - i][0];
+										used_colors_array[11 - (j + 1)] = xmas_color_array[3 - i][1];
+										used_colors_array[11 - (j + 2)] = xmas_color_array[3 - i][2];
 										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
 									}
 									for j in (0..12).step_by(3) {
