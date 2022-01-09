@@ -336,16 +336,12 @@ impl App {
 				Some(message) => {
 					match message {
 						Message::Refresh => {
-							let effect = Effects::from_str(app.effect_browser.selected_text().unwrap().as_str()).unwrap();
-							let color_array = app.color_tiles.get_values();
-							let speed = app.options_tile.speed_choice.choice().unwrap().parse::<u8>().unwrap();
-							let brightness = app.options_tile.brightness_choice.choice().unwrap().parse::<u8>().unwrap();
-							let direction = Direction::from_str(app.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
+							let profile = app.create_profile_from_gui();
 
-							app.update(effect);
+							app.update(profile.effect);
 							app::awake();
 
-							manager.set_effect(effect, direction, &color_array, speed, brightness);
+							manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
 						}
 						Message::CustomEffect { effect } => {
 							app.color_tiles.deactivate();

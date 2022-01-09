@@ -47,7 +47,7 @@ impl KeyboardManager {
 		Ok(manager)
 	}
 
-	pub fn set_effect(&mut self, effect: Effects, direction: Direction, color_array: &[u8; 12], speed: u8, brightness: u8) {
+	pub fn set_effect(&mut self, effect: Effects, direction: Direction, rgb_array: &[u8; 12], speed: u8, brightness: u8) {
 		self.stop_signals.store_false();
 		self.last_effect = effect;
 		let mut thread_rng = thread_rng();
@@ -58,11 +58,11 @@ impl KeyboardManager {
 
 		match effect {
 			Effects::Static => {
-				self.keyboard.set_colors_to(color_array);
+				self.keyboard.set_colors_to(rgb_array);
 				self.keyboard.set_effect(BaseEffects::Static);
 			}
 			Effects::Breath => {
-				self.keyboard.set_colors_to(color_array);
+				self.keyboard.set_colors_to(rgb_array);
 				self.keyboard.set_effect(BaseEffects::Breath);
 			}
 			Effects::Smooth => {
@@ -184,7 +184,7 @@ impl KeyboardManager {
 				}
 			}
 			Effects::Swipe => {
-				let mut gradient = *color_array;
+				let mut gradient = *rgb_array;
 
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -332,7 +332,7 @@ impl KeyboardManager {
 							thread::sleep(Duration::from_millis(20));
 						}
 					} else {
-						self.keyboard.set_colors_to(color_array);
+						self.keyboard.set_colors_to(rgb_array);
 						self.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
 						now = Instant::now();
 					}
