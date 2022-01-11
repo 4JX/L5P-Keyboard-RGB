@@ -125,8 +125,8 @@ impl App {
 	pub fn update_gui_from_profile(&mut self, profile: &Profile) {
 		self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state);
 		self.effect_browser.select(profile.effect as i32 + 1);
-		self.options_tile.speed_choice.set_value(profile.speed.into());
-		self.options_tile.brightness_choice.set_value(profile.brightness.into());
+		self.options_tile.speed_choice.set_value(profile.speed as i32 - 1);
+		self.options_tile.brightness_choice.set_value(profile.brightness as i32 - 1);
 
 		self.stop_signals.store_true();
 		self.tx.send(Message::Refresh).unwrap();
@@ -168,8 +168,8 @@ impl App {
 		let rgb_array = self.color_tiles.get_values();
 		let effect = Effects::from_str(self.effect_browser.selected_text().unwrap().as_str()).unwrap();
 		let direction = Direction::from_str(self.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
-		let speed = self.options_tile.speed_choice.value();
-		let brightness = self.options_tile.brightness_choice.value();
+		let speed = self.options_tile.speed_choice.choice().unwrap().parse::<u8>().unwrap();
+		let brightness = self.options_tile.brightness_choice.choice().unwrap().parse::<u8>().unwrap();
 		let ui_toggle_button_state = self.color_tiles.get_button_state();
 
 		Profile::new(rgb_array, effect, direction, speed.try_into().unwrap(), brightness.try_into().unwrap(), ui_toggle_button_state)
