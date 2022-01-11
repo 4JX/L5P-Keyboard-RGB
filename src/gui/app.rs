@@ -297,7 +297,7 @@ impl App {
 					if !profile_vec.is_empty() {
 						let keys: Vec<Keycode> = device_state.get_keys();
 
-						if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::Space) {
+						if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::RAlt) {
 							if profile_vec.len() > 1 {
 								if profile_vec.len() == preset_browser.value() as usize {
 									preset_browser.select(1);
