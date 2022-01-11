@@ -5,7 +5,7 @@ use crate::{
 };
 use fltk::{
 	button::ToggleButton,
-	enums::{Color, Event, FrameType},
+	enums::{CallbackTrigger, Color, Event, FrameType},
 	group::{Pack, PackType, Tile},
 	input::IntInput,
 	prelude::*,
@@ -44,27 +44,22 @@ impl ColorInput {
 		color_input.set_value("0");
 		color_input.set_maximum_size(4);
 
-		color_input.handle({
-			move |input, event| match event {
-				Event::KeyUp => {
-					match input.value().parse::<f32>() {
-						Ok(value) => {
-							if input.value().len() > 3 {
-								input.set_value(&value.to_string());
-							}
-							if value > 255.0 {
-								input.set_value("255");
-							}
-							stop_signals.store_true();
-							tx.send(Message::Refresh).unwrap();
-						}
-						Err(_) => {
-							input.set_value("0");
-						}
+		color_input.set_trigger(CallbackTrigger::Changed);
+		color_input.set_callback({
+			move |input| match input.value().parse::<f32>() {
+				Ok(value) => {
+					if input.value().len() > 3 {
+						input.set_value(&value.to_string());
 					}
-					true
+					if value > 255.0 {
+						input.set_value("255");
+					}
+					stop_signals.store_true();
+					tx.send(Message::Refresh).unwrap();
 				}
-				_ => true,
+				Err(_) => {
+					input.set_value("0");
+				}
 			}
 		});
 
@@ -203,10 +198,10 @@ impl ColorTiles {
 		let center_right = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), false);
 		let right = ColorTile::new(0, 0, &tx.clone(), &stop_signals.clone(), false);
 
-		column.add(&right.exterior_tile);
-		column.add(&center_right.exterior_tile);
-		column.add(&center_left.exterior_tile);
 		column.add(&left.exterior_tile);
+		column.add(&center_left.exterior_tile);
+		column.add(&center_right.exterior_tile);
+		column.add(&right.exterior_tile);
 		column.add(&master.exterior_tile);
 
 		let mut color_tiles = Self {
@@ -243,27 +238,24 @@ impl ColorTiles {
 				BaseColor::Blue => color_tiles.master.blue_input.clone(),
 			};
 
-			input.handle({
+			input.set_trigger(CallbackTrigger::Changed);
+			input.set_callback({
 				let mut color_tiles = color_tiles.clone();
-				move |input, event| match event {
-					Event::KeyUp => {
-						if let Ok(value) = input.value().parse::<f32>() {
-							if input.value().len() > 3 {
-								input.set_value(&value.to_string());
-							}
-							if value > 255.0 {
-								input.set_value("255");
-							}
-							color_tiles.set_zones_value(color, input.value().parse().unwrap());
-							stop_signals.store_true();
-							tx.send(Message::Refresh).unwrap();
-						} else {
-							input.set_value("0");
-							color_tiles.set_zones_value(color, 0);
+				move |input| {
+					if let Ok(value) = input.value().parse::<f32>() {
+						if input.value().len() > 3 {
+							input.set_value(&value.to_string());
 						}
-						true
+						if value > 255.0 {
+							input.set_value("255");
+						}
+						color_tiles.set_zones_value(color, input.value().parse().unwrap());
+						stop_signals.store_true();
+						tx.send(Message::Refresh).unwrap();
+					} else {
+						input.set_value("0");
+						color_tiles.set_zones_value(color, 0);
 					}
-					_ => false,
 				}
 			});
 		}
@@ -371,11 +363,20 @@ impl ColorTiles {
 		}
 	}
 
-	pub fn set_state(&mut self, rgb_array: &[u8; 12], buttons_toggle_state: [bool; 5], effect: Effects) {
+	pub fn get_button_state(&self) -> [bool; 5] {
+		[
+			self.master.toggle_button.is_toggled(),
+			self.zones[0].toggle_button.is_toggled(),
+			self.zones[1].toggle_button.is_toggled(),
+			self.zones[2].toggle_button.is_toggled(),
+			self.zones[3].toggle_button.is_toggled(),
+		]
+	}
+
+	pub fn set_state(&mut self, rgb_array: &[u8; 12], buttons_toggle_state: [bool; 5]) {
 		for (i, (_val, zone)) in rgb_array.iter().step_by(3).zip(self.zones.iter_mut()).enumerate() {
-			let rgb_values: [u8; 3] = [rgb_array[i], rgb_array[i + 1], rgb_array[i + 2]];
+			let rgb_values: [u8; 3] = [rgb_array[i * 3], rgb_array[i * 3 + 1], rgb_array[i * 3 + 2]];
 			zone.set_state(rgb_values, buttons_toggle_state[i]);
 		}
-		self.update(effect);
 	}
 }

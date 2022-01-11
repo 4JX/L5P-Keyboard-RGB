@@ -1,6 +1,6 @@
 [package]
 name = "legion-kb-rgb"
-version = "0.13.1"
+version = "0.14.0"
 authors = ["4JX"]
 edition = "2018"
 homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
@@ -8,24 +8,24 @@ homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fltk = "1.2.20"
+fltk = "1.2.26"
 rand = "0.8.4"
 # https://github.com/rustdesk/rustdesk/tree/master/libs/scrap
 scrap = { path = "libs/scrap" }
-fast_image_resize = "0.5.2"
+fast_image_resize = "0.5.3"
 tray-item = { version = "0.5.0-alpha", git = "https://github.com/njust/tray-item-rs" }
-clap = { version = "2.34.0", features = ["color"] }
+clap = { version = "3.0.6", features = ["color", "cargo"] }
 strum = "0.23.0"
 strum_macros = "0.23.1"
-serde = { version = "1.0.131", features = ["derive"] }
-serde_json = "1.0.72"
+serde = { version = "1.0.133", features = ["derive"] }
+serde_json = "1.0.74"
 color-eyre = "0.5.11"
 device_query = "0.2.8"
-sysinfo = "0.21.2"
+sysinfo = "0.22.5"
 flume = "0.10.9"
 dirs = "4.0.0"
 thiserror = "1.0.30"
-single-instance = "0.3.2"
+single-instance = "0.3.3"
 
 [dependencies.hidapi]
 version = "1.3.0"
@@ -37,7 +37,7 @@ winres = "0.1.12"
 
 [package.metadata.vcpkg]
 git = "https://github.com/microsoft/vcpkg"
-rev = "50fd3d9"
+rev = "9f04533"
 
 [package.metadata.vcpkg.target]
 x86_64-unknown-linux-gnu = { dependencies = ["libvpx", "libyuv"] }

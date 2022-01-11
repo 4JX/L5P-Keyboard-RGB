@@ -1,6 +1,6 @@
 use std::{convert::TryInto, env, process, str::FromStr};
 
-use clap::{crate_authors, crate_name, crate_version, App, AppSettings, Arg, SubCommand};
+use clap::{crate_authors, crate_name, crate_version, App, Arg};
 use color_eyre::{eyre::eyre, Help, Report};
 use single_instance::SingleInstance;
 
@@ -13,83 +13,70 @@ use crate::{
 
 pub fn try_cli() -> Result<(), Report> {
 	let matches = App::new("Legion Keyboard Control")
-		.setting(AppSettings::ColoredHelp)
 		.version(crate_version!())
 		.author(crate_authors!())
 		.arg(
-			Arg::with_name("brightness")
+			Arg::new("brightness")
 				.help("The brightness of the effect")
 				.takes_value(true)
-				.short("b")
+				.short('b')
 				.possible_values(&["1", "2"])
 				.default_value("1"),
 		)
 		.arg(
-			Arg::with_name("speed")
+			Arg::new("speed")
 				.help("The speed of the effect")
 				.takes_value(true)
-				.short("s")
+				.short('s')
 				.possible_values(&["1", "2", "3", "4"])
 				.default_value("1"),
 		)
 		.arg(
-			Arg::with_name("direction")
+			Arg::new("direction")
 				.help("The direction of the effect (If applicable)")
 				.takes_value(true)
-				.short("d")
+				.short('d')
 				.possible_values(&["Left", "Right"]),
 		)
-		.arg(Arg::with_name("save").help("Saves the typed profile").short("p").takes_value(true))
+		.arg(Arg::new("save").help("Saves the typed profile").short('p').takes_value(true))
 		.subcommand(
-			SubCommand::with_name("LoadProfile")
+			App::new("LoadProfile")
 				.about("Load a profile from a file")
-				.arg(Arg::with_name("path").help("A path to the file").index(1).required(true)),
+				.arg(Arg::new("path").help("A path to the file").index(1).required(true)),
 		)
 		.subcommand(
-			SubCommand::with_name("LoadEffect")
+			App::new("LoadEffect")
 				.about("Load an effect from a file")
-				.arg(Arg::with_name("path").help("A path to the file").index(1).required(true)),
+				.arg(Arg::new("path").help("A path to the file").index(1).required(true)),
 		)
 		.subcommand(
-			SubCommand::with_name("Static").about("Static effect").arg(
-				Arg::with_name("colors")
-					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
-					.index(1)
-					.required(true),
-			),
+			App::new("Static")
+				.about("Static effect")
+				.arg(Arg::new("colors").help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0").index(1).required(true)),
 		)
 		.subcommand(
-			SubCommand::with_name("Breath").about("Breath effect").arg(
-				Arg::with_name("colors")
-					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
-					.index(1)
-					.required(true),
-			),
+			App::new("Breath")
+				.about("Breath effect")
+				.arg(Arg::new("colors").help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0").index(1).required(true)),
 		)
-		.subcommand(SubCommand::with_name("Smooth").about("Smooth effect"))
-		.subcommand(SubCommand::with_name("Wave").about("Wave effect"))
-		.subcommand(SubCommand::with_name("Lightning").about("Lightning effect"))
-		.subcommand(SubCommand::with_name("AmbientLight").about("AmbientLight effect"))
-		.subcommand(SubCommand::with_name("SmoothWave").about("SmoothWave effect"))
+		.subcommand(App::new("Smooth").about("Smooth effect"))
+		.subcommand(App::new("Wave").about("Wave effect"))
+		.subcommand(App::new("Lightning").about("Lightning effect"))
+		.subcommand(App::new("AmbientLight").about("AmbientLight effect"))
+		.subcommand(App::new("SmoothWave").about("SmoothWave effect"))
 		.subcommand(
-			SubCommand::with_name("Swipe").about("Swipe effect").arg(
-				Arg::with_name("colors")
-					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
-					.index(1)
-					.required(true),
-			),
+			App::new("Swipe")
+				.about("Swipe effect")
+				.arg(Arg::new("colors").help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0").index(1).required(true)),
 		)
-		.subcommand(SubCommand::with_name("Disco").about("Disco effect"))
-		.subcommand(SubCommand::with_name("Christmas").about("Christmas effect"))
+		.subcommand(App::new("Disco").about("Disco effect"))
+		.subcommand(App::new("Christmas").about("Christmas effect"))
 		.subcommand(
-			SubCommand::with_name("Fade").about("Fade effect").arg(
-				Arg::with_name("colors")
-					.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
-					.index(1)
-					.required(true),
-			),
+			App::new("Fade")
+				.about("Fade effect")
+				.arg(Arg::new("colors").help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0").index(1).required(true)),
 		)
-		.subcommand(SubCommand::with_name("Temperature").about("Temperature effect"))
+		.subcommand(App::new("Temperature").about("Temperature effect"))
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {

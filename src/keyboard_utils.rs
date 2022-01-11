@@ -19,8 +19,8 @@ const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0xff89, 0x00cc);
 #[cfg(target_os = "windows")]
 const DEVICE_INFO_2020: (u16, u16, u16, u16) = (0x048d, 0xc955, 0xff89, 0x00cc);
 
-const SPEED_RANGE: std::ops::RangeInclusive<u8> = 1..=4;
-const BRIGHTNESS_RANGE: std::ops::RangeInclusive<u8> = 1..=2;
+const SPEED_RANGE: std::ops::Range<u8> = 1..5;
+const BRIGHTNESS_RANGE: std::ops::Range<u8> = 1..3;
 
 pub enum BaseEffects {
 	Static,

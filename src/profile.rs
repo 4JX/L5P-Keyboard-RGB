@@ -9,7 +9,7 @@ use std::{
 	path::{Path, PathBuf},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct Profile {
 	pub rgb_array: [u8; 12],
 	pub effect: Effects,
