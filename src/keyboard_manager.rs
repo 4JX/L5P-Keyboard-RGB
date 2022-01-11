@@ -233,9 +233,8 @@ impl KeyboardManager {
 					match subeffect {
 						0 => {
 							for _i in 0..3 {
-								for j in 0..4 {
-									let used_colors: [u8; 3] = xmas_color_array[j];
-									self.keyboard.solid_set_colors_to(used_colors);
+								for colors in xmas_color_array {
+									self.keyboard.solid_set_colors_to(colors);
 									thread::sleep(Duration::from_millis(500));
 								}
 							}
@@ -263,11 +262,11 @@ impl KeyboardManager {
 							let mut used_colors_array: [u8; 12] = [0; 12];
 							let left_or_right = thread_rng.gen_range(0..2);
 							if left_or_right == 0 {
-								for i in 0..4 {
+								for color in xmas_color_array {
 									for j in (0..12).step_by(3) {
-										used_colors_array[j] = xmas_color_array[i][0];
-										used_colors_array[j + 1] = xmas_color_array[i][1];
-										used_colors_array[j + 2] = xmas_color_array[i][2];
+										used_colors_array[j] = color[0];
+										used_colors_array[j + 1] = color[1];
+										used_colors_array[j + 2] = color[2];
 										self.keyboard.transition_colors_to(&used_colors_array, steps, 1);
 									}
 									for j in (0..12).step_by(3) {

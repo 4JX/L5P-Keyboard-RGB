@@ -19,9 +19,9 @@ use fltk::{app, enums::Font, prelude::*, window::Window};
 use flume::Sender;
 use single_instance::SingleInstance;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
-use std::{convert::TryInto, sync::Arc};
 use std::{panic, path, thread};
 
 const WIDTH: i32 = 900;
@@ -125,8 +125,8 @@ impl App {
 	pub fn update_gui_from_profile(&mut self, profile: &Profile) {
 		self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state);
 		self.effect_browser.select(profile.effect as i32 + 1);
-		self.options_tile.speed_choice.set_value(profile.speed as i32 - 1);
-		self.options_tile.brightness_choice.set_value(profile.brightness as i32 - 1);
+		self.options_tile.speed_choice.set_value(i32::from(profile.speed) - 1);
+		self.options_tile.brightness_choice.set_value(i32::from(profile.brightness) - 1);
 
 		self.stop_signals.store_true();
 		self.tx.send(Message::Refresh).unwrap();
@@ -172,7 +172,7 @@ impl App {
 		let brightness = self.options_tile.brightness_choice.choice().unwrap().parse::<u8>().unwrap();
 		let ui_toggle_button_state = self.color_tiles.get_button_state();
 
-		Profile::new(rgb_array, effect, direction, speed.try_into().unwrap(), brightness.try_into().unwrap(), ui_toggle_button_state)
+		Profile::new(rgb_array, effect, direction, speed, brightness, ui_toggle_button_state)
 	}
 
 	pub fn save_profile(&mut self) {
