@@ -33,8 +33,15 @@ impl SideTile {
 
 		let browser_buttons_tile = Tile::new(x, y + padding / 2, TILE_WIDTH, button_height, "");
 		let mut effect_browser_button = RadioButton::new(x + padding / 2, 0, button_width, button_height, "Effect Browser").center_y(&browser_buttons_tile);
-		let mut preset_button = RadioButton::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "Presets").center_y(&browser_buttons_tile);
+		let mut preset_browser_button = RadioButton::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "Presets").center_y(&browser_buttons_tile);
 		browser_buttons_tile.end();
+
+		effect_browser_button.set_label_color(Color::from_u32(Colors::LightGray as u32));
+		effect_browser_button.set_frame(FrameType::FlatBox);
+		effect_browser_button.toggle(true);
+
+		preset_browser_button.set_label_color(Color::from_u32(Colors::LightGray as u32));
+		preset_browser_button.set_frame(FrameType::FlatBox);
 
 		let lower_tile_y_change = button_height + padding / 2;
 		let lower_tile_height = TILE_HEIGHT - lower_tile_y_change;
@@ -45,9 +52,18 @@ impl SideTile {
 			.center_x(&lower_tile);
 
 		let mut preset_buttons_tile = Tile::new(0, y + padding + (lower_tile_height - padding), TILE_WIDTH, button_height, "").center_x(&lower_tile);
-		let add_preset_button = Button::new(x + padding / 2, 0, button_width, button_height, "+").center_y(&preset_buttons_tile);
-		let remove_preset_button = Button::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "-").center_y(&preset_buttons_tile);
+		let mut add_preset_button = Button::new(x + padding / 2, 0, button_width, button_height, "+").center_y(&preset_buttons_tile);
+		let mut remove_preset_button = Button::new(x + TILE_WIDTH / 2, 0, button_width, button_height, "-").center_y(&preset_buttons_tile);
 		preset_buttons_tile.end();
+
+		add_preset_button.set_label_size(24);
+		add_preset_button.set_label_color(Color::from_u32(Colors::DarkerGray as u32));
+		add_preset_button.set_frame(FrameType::FlatBox);
+
+		remove_preset_button.set_label_size(24);
+		remove_preset_button.set_label_color(Color::from_u32(Colors::DarkerGray as u32));
+		remove_preset_button.set_frame(FrameType::FlatBox);
+
 		lower_tile.end();
 
 		preset_browser.hide();
@@ -64,7 +80,7 @@ impl SideTile {
 			}
 		});
 
-		preset_button.set_callback({
+		preset_browser_button.set_callback({
 			let mut effect_browser = effect_browser.clone();
 			let mut preset_browser = preset_browser.clone();
 			let mut preset_buttons_tile = preset_buttons_tile.clone();
