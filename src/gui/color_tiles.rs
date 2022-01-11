@@ -5,7 +5,7 @@ use crate::{
 };
 use fltk::{
 	button::ToggleButton,
-	enums::{Color, Event, FrameType},
+	enums::{CallbackTrigger, Color, Event, FrameType},
 	group::{Pack, PackType, Tile},
 	input::IntInput,
 	prelude::*,
@@ -44,27 +44,22 @@ impl ColorInput {
 		color_input.set_value("0");
 		color_input.set_maximum_size(4);
 
-		color_input.handle({
-			move |input, event| match event {
-				Event::KeyUp => {
-					match input.value().parse::<f32>() {
-						Ok(value) => {
-							if input.value().len() > 3 {
-								input.set_value(&value.to_string());
-							}
-							if value > 255.0 {
-								input.set_value("255");
-							}
-							stop_signals.store_true();
-							tx.send(Message::Refresh).unwrap();
-						}
-						Err(_) => {
-							input.set_value("0");
-						}
+		color_input.set_trigger(CallbackTrigger::Changed);
+		color_input.set_callback({
+			move |input| match input.value().parse::<f32>() {
+				Ok(value) => {
+					if input.value().len() > 3 {
+						input.set_value(&value.to_string());
 					}
-					true
+					if value > 255.0 {
+						input.set_value("255");
+					}
+					stop_signals.store_true();
+					tx.send(Message::Refresh).unwrap();
 				}
-				_ => true,
+				Err(_) => {
+					input.set_value("0");
+				}
 			}
 		});
 
@@ -243,27 +238,24 @@ impl ColorTiles {
 				BaseColor::Blue => color_tiles.master.blue_input.clone(),
 			};
 
-			input.handle({
+			input.set_trigger(CallbackTrigger::Changed);
+			input.set_callback({
 				let mut color_tiles = color_tiles.clone();
-				move |input, event| match event {
-					Event::KeyUp => {
-						if let Ok(value) = input.value().parse::<f32>() {
-							if input.value().len() > 3 {
-								input.set_value(&value.to_string());
-							}
-							if value > 255.0 {
-								input.set_value("255");
-							}
-							color_tiles.set_zones_value(color, input.value().parse().unwrap());
-							stop_signals.store_true();
-							tx.send(Message::Refresh).unwrap();
-						} else {
-							input.set_value("0");
-							color_tiles.set_zones_value(color, 0);
+				move |input| {
+					if let Ok(value) = input.value().parse::<f32>() {
+						if input.value().len() > 3 {
+							input.set_value(&value.to_string());
 						}
-						true
+						if value > 255.0 {
+							input.set_value("255");
+						}
+						color_tiles.set_zones_value(color, input.value().parse().unwrap());
+						stop_signals.store_true();
+						tx.send(Message::Refresh).unwrap();
+					} else {
+						input.set_value("0");
+						color_tiles.set_zones_value(color, 0);
 					}
-					_ => false,
 				}
 			});
 		}
