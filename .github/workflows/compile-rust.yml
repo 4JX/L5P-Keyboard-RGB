@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  publish:
+  compile:
     name: Compile for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -39,11 +39,14 @@ jobs:
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
            sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
+           vcpkg integrate install
            vcpkg update && vcpkg install libvpx libyuv
           elif [ "$RUNNER_OS" == "macOS" ]; then
            brew install nasm
+           vcpkg integrate install
            vcpkg update && vcpkg install libvpx libyuv
           elif [ "$RUNNER_OS" == "Windows" ]; then
+           vcpkg integrate install
            vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
           fi
         shell: bash
