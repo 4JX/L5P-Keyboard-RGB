@@ -365,6 +365,7 @@ impl<T> SharedVec<T> {
 	}
 }
 
+#[cfg(target_os = "linux")]
 pub fn load_icon_data(image_data: &[u8]) -> IconSource {
 	let image = image::load_from_memory(image_data).unwrap();
 	let image_buffer = image.to_rgba8();
