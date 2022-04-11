@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  VCPKG_ROOT: $VCPKG_INSTALLATION_ROOT
 
 jobs:
   compile:
@@ -35,8 +36,8 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=$(echo $VCPKG_INSTALLATION_ROOT)" >> $GITHUB_ENV
+      - name: Test
+        run: echo $VCPKG_ROOT
       - name: Download dependencies
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
