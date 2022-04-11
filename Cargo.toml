@@ -12,16 +12,16 @@ fltk = "1.2.26"
 rand = "0.8.4"
 # https://github.com/rustdesk/rustdesk/tree/master/libs/scrap
 scrap = { path = "libs/scrap" }
-fast_image_resize = "0.5.3"
+fast_image_resize = "0.8.0"
 tray-item = { version = "0.5.0-alpha", git = "https://github.com/njust/tray-item-rs" }
 clap = { version = "3.0.6", features = ["color", "cargo"] }
-strum = "0.23.0"
-strum_macros = "0.23.1"
+strum = "0.24.0"
+strum_macros = "0.24.0"
 serde = { version = "1.0.133", features = ["derive"] }
 serde_json = "1.0.74"
-color-eyre = "0.5.11"
-device_query = "0.2.8"
-sysinfo = "0.22.5"
+color-eyre = "0.6.1"
+device_query = "1.0.0"
+sysinfo = "0.23.6"
 flume = "0.10.9"
 dirs = "4.0.0"
 thiserror = "1.0.30"
@@ -37,7 +37,7 @@ winres = "0.1.12"
 
 [package.metadata.vcpkg]
 git = "https://github.com/microsoft/vcpkg"
-rev = "9f04533"
+rev = "f6af75a"
 
 [package.metadata.vcpkg.target]
 x86_64-unknown-linux-gnu = { dependencies = ["libvpx", "libyuv"] }
