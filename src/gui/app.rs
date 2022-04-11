@@ -39,7 +39,7 @@ pub struct App {
 }
 
 impl App {
-	pub fn start_ui() {
+	pub fn start_ui(show_window: bool) {
 		let app = app::App::default();
 
 		app::background(51, 51, 51);
@@ -71,48 +71,27 @@ impl App {
 			use fltk::prelude::*;
 			use tray_item::{IconSource, TrayItem};
 
-			type HWND = *mut std::os::raw::c_void;
-
-			static mut WINDOW: HWND = std::ptr::null_mut();
-
 			let mut win = Self::create_window(manager);
 
-			unsafe {
-				WINDOW = win.raw_handle();
-			}
-			win.set_callback(|_| {
-				extern "C" {
-					pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> bool;
-				}
-				unsafe {
-					ShowWindow(WINDOW, 0);
-				}
-			});
+			win.set_callback(|win| win.platform_hide());
+
 			//Create tray icon
 			let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
 
-			tray.add_menu_item("Show", move || {
-				extern "C" {
-					pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> bool;
-				}
-				unsafe {
-					ShowWindow(WINDOW, 9);
-				}
-			})
-			.unwrap();
+			let tray_win = win.clone();
+			tray.add_menu_item("Show", move || tray_win.platform_show()).unwrap();
 
 			tray.add_menu_item("Quit", || {
 				std::process::exit(0);
 			})
 			.unwrap();
 
-			loop {
-				if win.shown() {
-					app.run().unwrap();
-				} else {
-					app::sleep(0.05);
-				}
-			}
+			if !show_window {
+				win.platform_hide()
+			};
+
+			win.platform_hide();
+			app.run().unwrap();
 		}
 
 		#[cfg(target_os = "linux")]

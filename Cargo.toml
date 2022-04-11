@@ -8,7 +8,7 @@ homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fltk = "1.2.26"
+fltk = { version = "1.2.26", features = ["use-ninja"] }
 rand = "0.8.4"
 # https://github.com/rustdesk/rustdesk/tree/master/libs/scrap
 scrap = { path = "libs/scrap" }
