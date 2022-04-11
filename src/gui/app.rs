@@ -23,6 +23,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 use std::{panic, path, thread};
+use tray_item::IconSource;
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 570;
@@ -65,40 +66,35 @@ impl App {
 
 		let manager = manager_result.unwrap();
 
-		//Windows logic
-		#[cfg(target_os = "windows")]
-		{
-			use fltk::prelude::*;
-			use tray_item::{IconSource, TrayItem};
+		use fltk::prelude::*;
+		use tray_item::TrayItem;
 
-			let mut win = Self::create_window(manager);
+		let mut win = Self::create_window(manager);
 
-			win.set_callback(|win| win.platform_hide());
+		win.set_callback(|win| win.platform_hide());
 
-			//Create tray icon
-			let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
+		if !show_window {
+			win.platform_hide()
+		};
 
-			let tray_win = win.clone();
-			tray.add_menu_item("Show", move || tray_win.platform_show()).unwrap();
-
-			tray.add_menu_item("Quit", || {
-				std::process::exit(0);
-			})
-			.unwrap();
-
-			if !show_window {
-				win.platform_hide()
-			};
-
-			win.platform_hide();
-			app.run().unwrap();
-		}
+		//Create tray icon
+		#[cfg(target_os = "linux")]
+		let tray_icon = load_icon_data(include_bytes!("../../res/trayIcon.ico"));
 
 		#[cfg(target_os = "linux")]
-		{
-			Self::create_window(manager);
-			app.run().unwrap();
-		}
+		let mut tray = TrayItem::new("Keyboard RGB", tray_icon).unwrap();
+
+		#[cfg(target_os = "windows")]
+		let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
+
+		tray.add_menu_item("Show", move || win.platform_show()).unwrap();
+
+		tray.add_menu_item("Quit", || {
+			std::process::exit(0);
+		})
+		.unwrap();
+
+		app.run().unwrap();
 	}
 
 	pub fn update_gui_from_profile(&mut self, profile: &Profile) {
@@ -337,6 +333,7 @@ impl App {
 
 		win
 	}
+
 	fn update(&mut self, effect: Effects) {
 		self.color_tiles.update(effect);
 		self.options_tile.update(effect);
@@ -365,5 +362,17 @@ impl<T> SharedVec<T> {
 
 	pub fn len(&self) -> usize {
 		self.inner.lock().unwrap().len()
+	}
+}
+
+pub fn load_icon_data(image_data: &[u8]) -> IconSource {
+	let image = image::load_from_memory(image_data).unwrap();
+	let image_buffer = image.to_rgba8();
+	let pixels = image_buffer.as_raw().clone();
+
+	IconSource::Data {
+		data: pixels,
+		width: image.width() as i32,
+		height: image.height() as i32,
 	}
 }
