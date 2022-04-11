@@ -35,18 +35,19 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Set env
+        run: echo "VCPKG_ROOT=$(echo $VCPKG_INSTALLATION_ROOT)" >> $GITHUB_ENV
+      - name: Test env
+        run: echo $VCPKG_ROOT
       - name: Download dependencies
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
            sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
-           vcpkg integrate install
            vcpkg update && vcpkg install libvpx libyuv
           elif [ "$RUNNER_OS" == "macOS" ]; then
            brew install nasm
-           vcpkg integrate install
            vcpkg update && vcpkg install libvpx libyuv
           elif [ "$RUNNER_OS" == "Windows" ]; then
-           vcpkg integrate install
            vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
           fi
         shell: bash
