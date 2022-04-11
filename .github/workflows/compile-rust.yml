@@ -38,8 +38,6 @@ jobs:
       - name: Set VCPKG_ROOT
         run: echo "VCPKG_ROOT=$(echo $VCPKG_INSTALLATION_ROOT)" >> $GITHUB_ENV
         shell: bash
-      - name: Test
-        run: echo $VCPKG_ROOT
       - name: Download dependencies
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
