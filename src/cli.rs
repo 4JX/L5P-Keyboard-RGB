@@ -12,6 +12,13 @@ use crate::{
 };
 
 pub fn try_cli() -> Result<(), Report> {
+	let colors_arg = Arg::new("colors")
+		.help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0")
+		.index(1)
+		.required(true)
+		.clone();
+	let path_arg = Arg::new("path").help("A path to the file").index(1).required(true);
+
 	let matches = App::new("Legion Keyboard Control")
 		.version(crate_version!())
 		.author(crate_authors!())
@@ -39,127 +46,109 @@ pub fn try_cli() -> Result<(), Report> {
 				.possible_values(&["Left", "Right"]),
 		)
 		.arg(Arg::new("save").help("Saves the typed profile").short('p').takes_value(true))
-		.subcommand(
-			App::new("LoadProfile")
-				.about("Load a profile from a file")
-				.arg(Arg::new("path").help("A path to the file").index(1).required(true)),
-		)
-		.subcommand(
-			App::new("LoadEffect")
-				.about("Load an effect from a file")
-				.arg(Arg::new("path").help("A path to the file").index(1).required(true)),
-		)
-		.subcommand(
-			App::new("Static")
-				.about("Static effect")
-				.arg(Arg::new("colors").help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0").index(1).required(true)),
-		)
-		.subcommand(
-			App::new("Breath")
-				.about("Breath effect")
-				.arg(Arg::new("colors").help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0").index(1).required(true)),
-		)
+		.subcommand(App::new("LoadProfile").about("Load a profile from a file").arg(path_arg.clone()))
+		.subcommand(App::new("LoadEffect").about("Load an effect from a file").arg(path_arg))
+		.subcommand(App::new("Static").about("Static effect").arg(colors_arg.clone()))
+		.subcommand(App::new("Breath").about("Breath effect").arg(colors_arg.clone()))
 		.subcommand(App::new("Smooth").about("Smooth effect"))
 		.subcommand(App::new("Wave").about("Wave effect"))
 		.subcommand(App::new("Lightning").about("Lightning effect"))
 		.subcommand(App::new("AmbientLight").about("AmbientLight effect"))
 		.subcommand(App::new("SmoothWave").about("SmoothWave effect"))
-		.subcommand(
-			App::new("Swipe")
-				.about("Swipe effect")
-				.arg(Arg::new("colors").help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0").index(1).required(true)),
-		)
+		.subcommand(App::new("Swipe").about("Swipe effect").arg(colors_arg.clone()))
 		.subcommand(App::new("Disco").about("Disco effect"))
 		.subcommand(App::new("Christmas").about("Christmas effect"))
-		.subcommand(
-			App::new("Fade")
-				.about("Fade effect")
-				.arg(Arg::new("colors").help("List of 4 RGB triplets. Example: 255,0,0,255,255,0,0,0,255,255,128,0").index(1).required(true)),
-		)
+		.subcommand(App::new("Fade").about("Fade effect").arg(colors_arg))
 		.subcommand(App::new("Temperature").about("Temperature effect"))
+		.subcommand(App::new("HiddenWindow").about("Loads the GUI but keeps the window hidden"))
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
-		let instance = SingleInstance::new(crate_name!()).unwrap();
-		assert!(instance.is_single(), "Another instance of the program is already running, please close it before starting a new one.");
+		if input == "HiddenWindow" {
+			// Run the GUI, but don't show the window
+			crate::gui::app::App::start_ui(false);
+		} else {
+			let instance = SingleInstance::new(crate_name!()).unwrap();
+			assert!(instance.is_single(), "Another instance of the program is already running, please close it before starting a new one.");
 
-		let mut manager = KeyboardManager::new().unwrap();
+			let mut manager = KeyboardManager::new().unwrap();
 
-		fn parse_bytes_arg(arg: &str) -> Result<Vec<u8>, <u8 as FromStr>::Err> {
-			arg.split(',').map(str::parse::<u8>).collect()
-		}
-
-		let input_matches = matches.subcommand_matches(input).unwrap();
-
-		match input {
-			"LoadProfile" => {
-				if let Some(path_string) = input_matches.value_of("path") {
-					match Profile::from_file(path_string.to_string()) {
-						Ok(profile) => {
-							manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
-						}
-						Err(err) => {
-							return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid profile."));
-						}
-					}
-				}
+			fn parse_bytes_arg(arg: &str) -> Result<Vec<u8>, <u8 as FromStr>::Err> {
+				arg.split(',').map(str::parse::<u8>).collect()
 			}
-			"LoadEffect" => {
-				if let Some(path_string) = input_matches.value_of("path") {
-					match CustomEffect::from_file(path_string.to_string()) {
-						Ok(effect) => {
-							effect.play(&mut manager);
-						}
-						Err(err) => {
-							return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid effect"));
+
+			let input_matches = matches.subcommand_matches(input).unwrap();
+
+			match input {
+				"LoadProfile" => {
+					if let Some(path_string) = input_matches.value_of("path") {
+						match Profile::from_file(path_string.to_string()) {
+							Ok(profile) => {
+								manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
+							}
+							Err(err) => {
+								return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid profile."));
+							}
 						}
 					}
 				}
-			}
-			_ => {
-				let effect: Effects = Effects::from_str(input).unwrap();
-				let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
-				let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
-
-				let rgb_array: [u8; 12] = match effect {
-					Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
-						let color_array = if let Some(value) = input_matches.value_of("colors") {
-							parse_bytes_arg(value)
-								.expect("Invalid input, please check you used the correct format for the colors")
-								.try_into()
-								.expect("Invalid input, please check you used the correct format for the colors")
-						} else {
-							println!("This effect requires specifying the colors to use.");
-							process::exit(0);
-						};
-						color_array
+				"LoadEffect" => {
+					if let Some(path_string) = input_matches.value_of("path") {
+						match CustomEffect::from_file(path_string.to_string()) {
+							Ok(effect) => {
+								effect.play(&mut manager);
+							}
+							Err(err) => {
+								return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid effect"));
+							}
+						}
 					}
-					#[cfg(target_os = "windows")]
-					Effects::Temperature => {
-						panic!("This effect is not supported on Windows");
-					}
-					_ => [0; 12],
-				};
-
-				let direction: Direction = match effect {
-					Effects::Wave | Effects::SmoothWave | Effects::Swipe => {
-						let direction = if let Some(value) = matches.value_of("direction") {
-							Direction::from_str(value).expect("Invalid direction")
-						} else {
-							println!("This effect requires a direction.");
-							process::exit(0);
-						};
-						direction
-					}
-					_ => Direction::Right,
-				};
-
-				if let Some(filename) = matches.value_of("save") {
-					let profile = Profile::new(rgb_array, effect, direction, speed, brightness, [false; 5]);
-					profile.save(filename).expect("Failed to save.");
 				}
+				_ => {
+					let effect: Effects = Effects::from_str(input).unwrap();
+					let speed = matches.value_of("speed").unwrap_or_default().parse::<u8>().unwrap_or(1);
+					let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
 
-				manager.set_effect(effect, direction, &rgb_array, speed, brightness);
+					let rgb_array: [u8; 12] = match effect {
+						Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
+							let color_array = if let Some(value) = input_matches.value_of("colors") {
+								parse_bytes_arg(value)
+									.expect("Invalid input, please check you used the correct format for the colors")
+									.try_into()
+									.expect("Invalid input, please check you used the correct format for the colors")
+							} else {
+								println!("This effect requires specifying the colors to use.");
+								process::exit(0);
+							};
+							color_array
+						}
+						#[cfg(target_os = "windows")]
+						Effects::Temperature => {
+							panic!("This effect is not supported on Windows");
+						}
+						_ => [0; 12],
+					};
+
+					let direction: Direction = match effect {
+						Effects::Wave | Effects::SmoothWave | Effects::Swipe => {
+							let direction = if let Some(value) = matches.value_of("direction") {
+								Direction::from_str(value).expect("Invalid direction")
+							} else {
+								println!("This effect requires a direction.");
+								process::exit(0);
+							};
+							direction
+						}
+						_ => Direction::Right,
+					};
+
+					if let Some(filename) = matches.value_of("save") {
+						let profile = Profile::new(rgb_array, effect, direction, speed, brightness, [false; 5]);
+						profile.save(filename).expect("Failed to save.");
+					}
+
+					manager.set_effect(effect, direction, &rgb_array, speed, brightness);
+				}
 			}
 		}
 
@@ -167,7 +156,7 @@ pub fn try_cli() -> Result<(), Report> {
 	} else {
 		let exec_name = env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 		println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
-		crate::gui::app::App::start_ui();
+		crate::gui::app::App::start_ui(true);
 		Ok(())
 	}
 }

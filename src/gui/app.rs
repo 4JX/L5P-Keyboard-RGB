@@ -1,7 +1,7 @@
-use super::color_tiles::ColorTiles;
 use super::options::OptionsTile;
 use super::utils::screen_center;
 use super::{color_tiles, options, side_tile};
+use super::{color_tiles::ColorTiles, enums::GuiMessage};
 use crate::gui::dialog as appdialog;
 use crate::gui::menu_bar;
 use crate::keyboard_manager::{KeyboardManager, StopSignals};
@@ -23,6 +23,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 use std::{panic, path, thread};
+use tray_item::{IconSource, TrayItem};
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 570;
@@ -39,7 +40,7 @@ pub struct App {
 }
 
 impl App {
-	pub fn start_ui() {
+	pub fn start_ui(show_window: bool) {
 		let app = app::App::default();
 
 		app::background(51, 51, 51);
@@ -65,60 +66,43 @@ impl App {
 
 		let manager = manager_result.unwrap();
 
-		//Windows logic
-		#[cfg(target_os = "windows")]
-		{
-			use fltk::prelude::*;
-			use tray_item::{IconSource, TrayItem};
+		let (window_sender, window_receiver) = flume::unbounded::<GuiMessage>();
 
-			type HWND = *mut std::os::raw::c_void;
+		let mut win = Self::create_window(manager);
+		win.set_callback(|win| win.hide());
 
-			static mut WINDOW: HWND = std::ptr::null_mut();
+		if show_window {
+			win.show()
+		};
 
-			let mut win = Self::create_window(manager);
+		app::add_idle3(move |_| {
+			if let Ok(msg) = window_receiver.try_recv() {
+				match msg {
+					GuiMessage::ShowWindow => win.show(),
+					GuiMessage::HideWindow => win.hide(),
+				};
+			};
+		});
 
-			unsafe {
-				WINDOW = win.raw_handle();
-			}
-			win.set_callback(|_| {
-				extern "C" {
-					pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> bool;
-				}
-				unsafe {
-					ShowWindow(WINDOW, 0);
-				}
-			});
-			//Create tray icon
-			let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
-
-			tray.add_menu_item("Show", move || {
-				extern "C" {
-					pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> bool;
-				}
-				unsafe {
-					ShowWindow(WINDOW, 9);
-				}
-			})
-			.unwrap();
-
-			tray.add_menu_item("Quit", || {
-				std::process::exit(0);
-			})
-			.unwrap();
-
-			loop {
-				if win.shown() {
-					app.run().unwrap();
-				} else {
-					app::sleep(0.05);
-				}
-			}
-		}
+		//Create the tray icon
+		#[cfg(target_os = "linux")]
+		let tray_icon = load_icon_data(include_bytes!("../../res/trayIcon.ico"));
 
 		#[cfg(target_os = "linux")]
-		{
-			Self::create_window(manager);
-			app.run().unwrap();
+		let mut tray = TrayItem::new("Keyboard RGB", tray_icon).unwrap();
+
+		#[cfg(target_os = "windows")]
+		let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
+
+		tray.add_menu_item("Show", move || window_sender.send(GuiMessage::ShowWindow).unwrap()).unwrap();
+
+		tray.add_menu_item("Quit", || {
+			std::process::exit(0);
+		})
+		.unwrap();
+
+		loop {
+			app::wait_for(1.0).unwrap();
 		}
 	}
 
@@ -326,7 +310,6 @@ impl App {
 		win.set_icon(Some(icon_svg));
 		win.end();
 		win.make_resizable(false);
-		win.show();
 
 		app.update(Effects::Static);
 		app.load_profile(true);
@@ -358,6 +341,7 @@ impl App {
 
 		win
 	}
+
 	fn update(&mut self, effect: Effects) {
 		self.color_tiles.update(effect);
 		self.options_tile.update(effect);
@@ -386,5 +370,18 @@ impl<T> SharedVec<T> {
 
 	pub fn len(&self) -> usize {
 		self.inner.lock().unwrap().len()
+	}
+}
+
+#[cfg(target_os = "linux")]
+pub fn load_icon_data(image_data: &[u8]) -> IconSource {
+	let image = image::load_from_memory(image_data).unwrap();
+	let image_buffer = image.to_rgba8();
+	let pixels = image_buffer.as_raw().clone();
+
+	IconSource::Data {
+		data: pixels,
+		width: image.width() as i32,
+		height: image.height() as i32,
 	}
 }

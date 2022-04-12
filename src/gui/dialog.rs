@@ -150,29 +150,22 @@ pub fn about(width: i32, height: i32) {
 	let button_width = 100;
 	let button_height = 40;
 	let display_width = width - margin * 2;
-	let display_height = height - margin * 2 - button_height;
+	let display_height = height - margin * 2 - button_height + 20;
 
 	let mut window = Window::new(window_x, window_y, width, height, "About");
 	window.set_color(Color::from_u32(Colors::DarkGray as u32));
 
-	let message = "A program made by 4JX.\n\nFor updates, issues and feature requests, head over to:\nhttps://github.com/4JX/L5P-Keyboard-RGB/";
+	let message = "A program made by 4JX.\n\nSomething's not working?: https://github.com/4JX/L5P-Keyboard-RGB\n\nDonate: https://liberapay.com/4JX/donate";
 	let mut buffer = fltk::text::TextBuffer::default();
 	buffer.set_text(message);
 
-	let display_shrink = 12;
-	let mut display = fltk::text::TextDisplay::new(
-		margin + display_height + display_shrink,
-		margin + display_shrink,
-		display_width - display_height - display_shrink * 2,
-		display_height - display_shrink * 2,
-		"",
-	);
+	let mut display = fltk::text::TextDisplay::new(margin + display_height + 20, margin, display_width - display_height, display_height, "");
 	display.set_buffer(buffer);
 	display.set_color(Color::from_u32(Colors::DarkGray as u32));
 	display.set_frame(FrameType::FlatBox);
 	display.set_text_color(Color::from_u32(Colors::White as u32));
 
-	let mut button = Button::new(width_center - button_height / 2, height - margin - button_height + 10, button_width, button_height, "Close");
+	let mut button = Button::new(width_center - button_height / 2, height - margin - button_height + 15, button_width, button_height, "Close");
 	button.set_color(Color::from_u32(Colors::Gray as u32));
 	button.set_label_color(Color::White);
 	button.set_frame(FrameType::BorderBox);
@@ -182,14 +175,7 @@ pub fn about(width: i32, height: i32) {
 	icon_svg.scale(100, 100, true, false);
 
 	let image_shrink = 10;
-	let image_offset_correction = 8;
-	let mut image_frame = fltk::frame::Frame::new(
-		margin + image_shrink,
-		margin + image_shrink + image_offset_correction,
-		display_height - image_shrink * 2,
-		display_height - image_shrink * 2,
-		"",
-	);
+	let mut image_frame = fltk::frame::Frame::new(margin + image_shrink, margin + image_shrink, display_height - image_shrink * 2, display_height - image_shrink * 2, "");
 	image_frame.set_image_scaled(Some(icon_svg));
 
 	window.end();

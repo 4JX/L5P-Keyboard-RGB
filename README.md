@@ -1,12 +1,17 @@
+<div align="center">
+
 [![Latest Version](https://img.shields.io/github/v/tag/4JX/L5P-Keyboard-RGB?style=for-the-badge&label=Download+Latest)](https://github.com/4JX/L5P-Keyboard-RGB/releases)
 ![Build Status](https://img.shields.io/github/workflow/status/4JX/L5P-Keyboard-RGB/Compile%20releases?style=for-the-badge)
-[![Support Server](https://img.shields.io/discord/819491422327406592?style=for-the-badge)](https://discord.gg/bNQ9UqUf3z)
+[![Support Server](https://img.shields.io/discord/819491422327406592?style=for-the-badge)](https://discord.gg/rQEQzsyPe8)
+[![Donate](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/4JX/donate)
 
+</div>
+  
 # Legion RGB Control
 
-![Preview](https://github.com/4JX/L5P-Keyboard-RGB/blob/main/Preview.png)
+![Preview](Preview.png)
 
-## Index
+## Index <!-- omit in toc -->
 
 - [Download](#download)
 - [Available effects](#available-effects)
@@ -65,7 +70,7 @@ The best way to add a new effect is to directly edit the source code, as it allo
 
 #### File sections
 
-- **effect_steps:** Contains the different *"steps"* the effect will go through.
+- **effect_steps:** Contains the different _"steps"_ the effect will go through.
   - **rgb_array:** An array describing the colours to use in the `[r,g,b,r,g,b...]` format.
   - **step_type:** The type of step to use. You may instantly swap the colours with `Set` or smoothly transition to them with `Transition`.
   - **speed:** Currently unused.
@@ -146,6 +151,8 @@ This program has been tested to work on the 4 zone keyboard of the Legion 5 2020
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Git](https://git-scm.com/downloads)
+- [Ninja](https://github.com/ninja-build/ninja)
+  - If building `fltk-rs` with the `use-ninja` feature. (On by default)
 - On Linux, you'll need additional dependencies:
 
 #### Ubuntu

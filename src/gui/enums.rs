@@ -17,3 +17,9 @@ pub enum Colors {
 	LighterGray = 0xd6d6d6,
 	White = 0xf0f0f0,
 }
+
+#[allow(dead_code)]
+pub enum GuiMessage {
+	ShowWindow,
+	HideWindow,
+}
