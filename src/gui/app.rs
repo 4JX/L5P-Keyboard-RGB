@@ -71,8 +71,8 @@ impl App {
 		let mut win = Self::create_window(manager);
 		win.set_callback(|win| win.hide());
 
-		if !show_window {
-			win.hide()
+		if show_window {
+			win.show()
 		};
 
 		app::add_idle3(move |_| {
@@ -310,7 +310,6 @@ impl App {
 		win.set_icon(Some(icon_svg));
 		win.end();
 		win.make_resizable(false);
-		win.show();
 
 		app.update(Effects::Static);
 		app.load_profile(true);
