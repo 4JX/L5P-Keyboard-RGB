@@ -1,7 +1,7 @@
-use super::color_tiles::ColorTiles;
 use super::options::OptionsTile;
 use super::utils::screen_center;
 use super::{color_tiles, options, side_tile};
+use super::{color_tiles::ColorTiles, enums::GuiMessage};
 use crate::gui::dialog as appdialog;
 use crate::gui::menu_bar;
 use crate::keyboard_manager::{KeyboardManager, StopSignals};
@@ -23,7 +23,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
 use std::{panic, path, thread};
-use tray_item::IconSource;
+use tray_item::{IconSource, TrayItem};
 
 const WIDTH: i32 = 900;
 const HEIGHT: i32 = 570;
@@ -66,18 +66,25 @@ impl App {
 
 		let manager = manager_result.unwrap();
 
-		use fltk::prelude::*;
-		use tray_item::TrayItem;
+		let (window_sender, window_receiver) = flume::unbounded::<GuiMessage>();
 
 		let mut win = Self::create_window(manager);
-
-		win.set_callback(|win| win.platform_hide());
+		win.set_callback(|win| win.hide());
 
 		if !show_window {
-			win.platform_hide()
+			win.hide()
 		};
 
-		//Create tray icon
+		app::add_idle3(move |_| {
+			if let Ok(msg) = window_receiver.try_recv() {
+				match msg {
+					GuiMessage::ShowWindow => win.show(),
+					GuiMessage::HideWindow => win.hide(),
+				};
+			};
+		});
+
+		//Create the tray icon
 		#[cfg(target_os = "linux")]
 		let tray_icon = load_icon_data(include_bytes!("../../res/trayIcon.ico"));
 
@@ -87,14 +94,16 @@ impl App {
 		#[cfg(target_os = "windows")]
 		let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
 
-		tray.add_menu_item("Show", move || win.platform_show()).unwrap();
+		tray.add_menu_item("Show", move || window_sender.send(GuiMessage::ShowWindow).unwrap()).unwrap();
 
 		tray.add_menu_item("Quit", || {
 			std::process::exit(0);
 		})
 		.unwrap();
 
-		app.run().unwrap();
+		loop {
+			app::wait_for(1.0).unwrap();
+		}
 	}
 
 	pub fn update_gui_from_profile(&mut self, profile: &Profile) {
