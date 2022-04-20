@@ -354,7 +354,7 @@ impl ColorTiles {
 
 	pub fn update(&mut self, effect: Effects) {
 		match effect {
-			Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
+			Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade | Effects::Ripple => {
 				self.activate();
 			}
 			Effects::Smooth | Effects::Wave | Effects::Lightning | Effects::AmbientLight | Effects::SmoothWave | Effects::Disco | Effects::Christmas | Effects::Temperature => {

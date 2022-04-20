@@ -16,6 +16,7 @@ pub enum Effects {
 	Christmas,
 	Fade,
 	Temperature,
+	Ripple,
 }
 
 #[derive(Clone, Copy, EnumString, Serialize, Deserialize)]
