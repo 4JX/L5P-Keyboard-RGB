@@ -73,14 +73,7 @@ impl App {
 			win.show()
 		};
 
-		app::add_idle3(move |_| {
-			if let Ok(msg) = window_receiver.try_recv() {
-				match msg {
-					GuiMessage::ShowWindow => win.show(),
-					GuiMessage::HideWindow => win.hide(),
-				};
-			};
-		});
+		
 
 		//Create the tray icon
 		#[cfg(target_os = "linux")]
@@ -100,7 +93,13 @@ impl App {
 		.unwrap();
 
 		loop {
-			app::wait_for(1.0).unwrap();
+			app::wait_for(0.2).unwrap();
+			if let Ok(msg) = window_receiver.try_recv() {
+				match msg {
+					GuiMessage::ShowWindow => win.show(),
+					GuiMessage::HideWindow => win.hide(),
+				};
+			};
 		}
 	}
 
