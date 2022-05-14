@@ -518,6 +518,10 @@ impl KeyboardManager {
 								zone_state[i] = RippleMove::Center
 							}
 						}
+
+					// thread::sleep(Duration::from_millis(3000));
+					// let i = thread_rng.gen_range(0..4);
+					// zone_state[i] = RippleMove::Center
 					} else {
 						let zone_range = 0..4;
 						for (i, ripple_move) in zone_state.clone().iter().enumerate() {

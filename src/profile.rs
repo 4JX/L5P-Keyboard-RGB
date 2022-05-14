@@ -1,15 +1,69 @@
 use crate::{
 	enums::{Direction, Effects},
 	error,
-};
-use serde::{Deserialize, Serialize};
-use std::{
-	fs::{self, File},
-	io::{BufWriter, Write},
-	path::{Path, PathBuf},
+	storage_trait::StorageTrait,
 };
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+use parking_lot::Mutex;
+use serde::{Deserialize, Serialize};
+use std::{path::PathBuf, sync::Arc};
+
+#[derive(Clone, Default)]
+pub struct Profiles {
+	pub inner: Arc<Mutex<Vec<Profile>>>,
+}
+
+impl Profiles {
+	pub fn new(profiles_data: ProfilesData) -> Self {
+		let inner = Arc::new(Mutex::new(profiles_data.inner));
+		Self { inner }
+	}
+
+	pub fn len(&self) -> usize {
+		self.inner.lock().len()
+	}
+
+	pub fn push(&mut self, item: Profile) {
+		self.inner.lock().push(item);
+	}
+
+	pub fn remove(&mut self, pos: usize) -> Profile {
+		self.inner.lock().remove(pos)
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.inner.lock().is_empty()
+	}
+
+	pub fn from_disk() -> Self {
+		let data = ProfilesData::load_profiles().unwrap_or_default();
+		Self::new(data)
+	}
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct ProfilesData {
+	pub inner: Vec<Profile>,
+}
+
+impl ProfilesData {
+	pub fn new(profiles: &Profiles) -> Self {
+		let inner = profiles.inner.lock().clone();
+		Self { inner }
+	}
+
+	pub fn load_profiles() -> Result<Self, error::Error> {
+		let current_dir = std::env::current_dir().unwrap();
+		Self::load(current_dir, None)
+	}
+
+	pub fn save_profiles(&self) -> Result<(), error::Error> {
+		let current_dir = std::env::current_dir().unwrap();
+		self.save(current_dir, None)
+	}
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Default)]
 pub struct Profile {
 	pub rgb_array: [u8; 12],
 	pub effect: Effects,
@@ -20,47 +74,24 @@ pub struct Profile {
 }
 
 impl Profile {
-	pub const fn new(rgb_array: [u8; 12], effect: Effects, direction: Direction, speed: u8, brightness: u8, ui_toggle_button_state: [bool; 5]) -> Self {
-		Self {
-			rgb_array,
-			effect,
-			direction,
-			speed,
-			brightness,
-			ui_toggle_button_state,
+	pub fn load_profile(path: PathBuf) -> Result<Self, error::Error> {
+		if path.is_file() {
+			Self::load(path.parent().unwrap().to_path_buf(), path.file_name().map(|str| str.to_string_lossy().to_string()))
+		} else {
+			Self::load(path, None)
 		}
 	}
-	pub fn save(&self, profile_name: &str) -> Result<(), error::Error> {
-		let profile_path = Self::get_full_path(profile_name.to_string());
-		let file = File::create(&profile_path)?;
-		let struct_json = serde_json::to_string(self)?;
-		let mut w = BufWriter::new(file);
-		w.write_all(struct_json.as_bytes()).unwrap();
-		w.flush().unwrap();
 
-		Ok(())
+	pub fn save_profile(&self, filename: &str) -> Result<(), error::Error> {
+		let current_dir = std::env::current_dir().unwrap();
+		self.save(current_dir, Some(filename.to_string()))
 	}
+}
 
-	pub fn from_file(mut path_string: String) -> Result<Self, error::Error> {
-		if path_string.rsplit('.').next().map(|ext| ext.eq_ignore_ascii_case("json")) != Some(true) {
-			path_string = format!("{}{}", path_string, ".json");
-		}
-		let path = Path::new(&path_string);
-		let full_path = fs::canonicalize(path)?;
-		let struct_json = fs::read_to_string(&full_path)?;
-		let profile: Self = serde_json::from_str(struct_json.as_str())?;
-		Ok(profile)
-	}
+impl<'a> StorageTrait<'a> for ProfilesData {
+	const FILE_NAME: &'static str = "profiles.json";
+}
 
-	fn get_current_dir() -> PathBuf {
-		std::env::current_dir().unwrap()
-	}
-
-	fn get_full_path(mut profile_name: String) -> PathBuf {
-		let config_dir = Self::get_current_dir();
-		if profile_name.rsplit('.').next().map(|ext| ext.eq_ignore_ascii_case("json")) != Some(true) {
-			profile_name = format!("{}{}", profile_name, ".json");
-		}
-		Path::new(&config_dir).join(profile_name)
-	}
+impl<'a> StorageTrait<'a> for Profile {
+	const FILE_NAME: &'static str = "profile.json";
 }
