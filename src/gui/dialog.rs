@@ -93,6 +93,7 @@ pub fn alert(width: i32, height: i32, message: &str, should_exit: bool) {
 	});
 }
 
+#[allow(dead_code)]
 pub fn panic(width: i32, height: i32, message: &str) {
 	let width_center = width / 2;
 	let height_center = height / 2;
