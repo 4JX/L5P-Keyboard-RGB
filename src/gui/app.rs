@@ -19,7 +19,7 @@ use fltk::{app, enums::Font, prelude::*, window::Window};
 use flume::Sender;
 use single_instance::SingleInstance;
 use std::time::Duration;
-use std::{panic, path, thread};
+use std::{path, thread};
 use std::{path::PathBuf, str::FromStr};
 use tray_item::{IconSource, TrayItem};
 
@@ -208,13 +208,13 @@ impl App {
 	}
 
 	pub fn create_window(mut manager: KeyboardManager) -> fltk::window::Window {
-		panic::set_hook(Box::new(|info| {
-			if let Some(s) = info.payload().downcast_ref::<&str>() {
-				appdialog::panic(800, 400, s);
-			} else {
-				appdialog::panic(800, 400, &info.to_string());
-			}
-		}));
+		// panic::set_hook(Box::new(|info| {
+		// 	if let Some(s) = info.payload().downcast_ref::<&str>() {
+		// 		appdialog::panic(800, 400, s);
+		// 	} else {
+		// 		appdialog::panic(800, 400, &info.to_string());
+		// 	}
+		// }));
 
 		let mut win = Window::new(screen_center().0 - WIDTH / 2, screen_center().1 - HEIGHT / 2, WIDTH, HEIGHT, "Legion Keyboard RGB Control");
 		let mut side_tile = side_tile::SideTile::create(540, 35, &manager.tx, &manager.stop_signals);

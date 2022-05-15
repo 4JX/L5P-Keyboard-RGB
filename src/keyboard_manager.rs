@@ -494,6 +494,7 @@ impl KeyboardManager {
 							eff_active.store(false, Ordering::SeqCst);
 							no_keys_pressed = false
 						} else {
+							stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
 							no_keys_pressed = true
 						}
 					}
@@ -572,8 +573,8 @@ impl KeyboardManager {
 						}
 					}
 
-					self.keyboard.set_colors_to(&final_arr);
-					thread::sleep(Duration::from_millis(10));
+					self.keyboard.transition_colors_to(&final_arr, 20, 0);
+					thread::sleep(Duration::from_millis(50));
 				}
 			}
 		}
