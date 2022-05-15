@@ -73,8 +73,6 @@ impl App {
 			win.show()
 		};
 
-		
-
 		//Create the tray icon
 		#[cfg(target_os = "linux")]
 		let tray_icon = load_icon_data(include_bytes!("../../res/trayIcon.ico"));
