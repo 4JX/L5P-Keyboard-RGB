@@ -16,12 +16,25 @@ pub enum Effects {
 	Christmas,
 	Fade,
 	Temperature,
+	Ripple,
+}
+
+impl Default for Effects {
+	fn default() -> Self {
+		Self::Static
+	}
 }
 
 #[derive(Clone, Copy, EnumString, Serialize, Deserialize)]
 pub enum Direction {
 	Left,
 	Right,
+}
+
+impl Default for Direction {
+	fn default() -> Self {
+		Self::Left
+	}
 }
 
 pub enum Message {

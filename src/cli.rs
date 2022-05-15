@@ -1,4 +1,4 @@
-use std::{convert::TryInto, env, process, str::FromStr};
+use std::{convert::TryInto, env, path::PathBuf, process, str::FromStr};
 
 use clap::{crate_authors, crate_name, crate_version, App, Arg};
 use color_eyre::{eyre::eyre, Help, Report};
@@ -82,7 +82,9 @@ pub fn try_cli() -> Result<(), Report> {
 			match input {
 				"LoadProfile" => {
 					if let Some(path_string) = input_matches.value_of("path") {
-						match Profile::from_file(path_string.to_string()) {
+						let path = PathBuf::from_str(path_string)?;
+
+						match Profile::load_profile(path) {
 							Ok(profile) => {
 								manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
 							}
@@ -143,8 +145,16 @@ pub fn try_cli() -> Result<(), Report> {
 					};
 
 					if let Some(filename) = matches.value_of("save") {
-						let profile = Profile::new(rgb_array, effect, direction, speed, brightness, [false; 5]);
-						profile.save(filename).expect("Failed to save.");
+						let profile = Profile {
+							rgb_array,
+							effect,
+							direction,
+							speed,
+							brightness,
+							ui_toggle_button_state: [false; 5],
+						};
+
+						profile.save_profile(filename).expect("Failed to save.");
 					}
 
 					manager.set_effect(effect, direction, &rgb_array, speed, brightness);

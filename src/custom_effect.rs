@@ -11,7 +11,7 @@ struct EffectStep {
 	speed: u8,
 	brightness: u8,
 	steps: u8,
-	delay_between_steps: u8,
+	delay_between_steps: u64,
 	sleep: u64,
 }
 

@@ -6,6 +6,7 @@ mod gui;
 mod keyboard_manager;
 mod keyboard_utils;
 mod profile;
+mod storage_trait;
 
 use color_eyre::{Report, Result};
 

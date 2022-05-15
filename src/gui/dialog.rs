@@ -93,6 +93,7 @@ pub fn alert(width: i32, height: i32, message: &str, should_exit: bool) {
 	});
 }
 
+#[allow(dead_code)]
 pub fn panic(width: i32, height: i32, message: &str) {
 	let width_center = width / 2;
 	let height_center = height / 2;
@@ -155,9 +156,13 @@ pub fn about(width: i32, height: i32) {
 	let mut window = Window::new(window_x, window_y, width, height, "About");
 	window.set_color(Color::from_u32(Colors::DarkGray as u32));
 
+	lazy_static::lazy_static! {
+		static ref VERSION: String = env!("CARGO_PKG_VERSION").to_string();
+	};
+
 	let message = "A program made by 4JX.\n\nSomething's not working?: https://github.com/4JX/L5P-Keyboard-RGB\n\nDonate: https://liberapay.com/4JX/donate";
 	let mut buffer = fltk::text::TextBuffer::default();
-	buffer.set_text(message);
+	buffer.set_text(&format!("{}\n\nCurrent version: {}", message, *VERSION));
 
 	let mut display = fltk::text::TextDisplay::new(margin + display_height + 20, margin, display_width - display_height, display_height, "");
 	display.set_buffer(buffer);
