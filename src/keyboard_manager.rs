@@ -509,6 +509,7 @@ impl KeyboardManager {
 
 				let device_state = DeviceState::new();
 				let mut zone_state: [RippleMove; 4] = [RippleMove::Off, RippleMove::Off, RippleMove::Off, RippleMove::Off];
+				let mut last_step_time = Instant::now();
 				while !self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					let keys: Vec<Keycode> = device_state.get_keys();
 
@@ -523,35 +524,41 @@ impl KeyboardManager {
 					// let i = thread_rng.gen_range(0..4);
 					// zone_state[i] = RippleMove::Center
 					} else {
-						let zone_range = 0..4;
-						for (i, ripple_move) in zone_state.clone().iter().enumerate() {
-							let left = i - 1;
-							let right = i + 1;
-							match ripple_move {
-								RippleMove::Center => {
-									if zone_range.contains(&left) {
-										zone_state[left] = RippleMove::Left
+						let now = Instant::now();
+						if now - last_step_time > Duration::from_millis((100.0 / (f32::from(speed) / 2.0)) as u64) {
+							last_step_time = now;
+							let zone_range = 0..4;
+							for (i, ripple_move) in zone_state.clone().iter().enumerate() {
+								// Left needs to be signed due to overflows
+								let left = i as i32 - 1;
+								let right = i + 1;
+								match ripple_move {
+									RippleMove::Center => {
+										if left >= 0 && zone_range.contains(&(left as usize)) {
+											zone_state[left as usize] = RippleMove::Left
+										}
+
+										if zone_range.contains(&right) {
+											zone_state[right] = RippleMove::Right
+										}
+										zone_state[i] = RippleMove::Off;
 									}
-									if zone_range.contains(&right) {
-										zone_state[right] = RippleMove::Right
+									RippleMove::Left => {
+										if zone_range.contains(&(left as usize)) {
+											zone_state[left as usize] = RippleMove::Left
+										}
+										zone_state[i] = RippleMove::Off;
 									}
-									zone_state[i] = RippleMove::Off;
+									RippleMove::Right => {
+										if zone_range.contains(&right) {
+											zone_state[right] = RippleMove::Right
+										}
+										zone_state[i] = RippleMove::Off;
+									}
+									_ => {}
 								}
-								RippleMove::Left => {
-									if zone_range.contains(&left) {
-										zone_state[left] = RippleMove::Left
-									}
-									zone_state[i] = RippleMove::Off;
-								}
-								RippleMove::Right => {
-									if zone_range.contains(&right) {
-										zone_state[right] = RippleMove::Right
-									}
-									zone_state[i] = RippleMove::Off;
-								}
-								_ => {}
 							}
-						}
+						};
 					}
 
 					effect_active.store(false, Ordering::SeqCst);
@@ -566,7 +573,7 @@ impl KeyboardManager {
 					}
 
 					self.keyboard.set_colors_to(&final_arr);
-					thread::sleep(Duration::from_millis((100f32 / (f32::from(speed) / 2f32)) as u64));
+					thread::sleep(Duration::from_millis(10));
 				}
 			}
 		}
