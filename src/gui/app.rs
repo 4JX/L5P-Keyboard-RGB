@@ -83,21 +83,30 @@ impl App {
 		#[cfg(target_os = "windows")]
 		let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
 
-		tray.add_menu_item("Show", move || window_sender.send(GuiMessage::ShowWindow).unwrap()).unwrap();
+		let mut tray_item_err = false;
 
-		tray.add_menu_item("Quit", || {
-			std::process::exit(0);
-		})
-		.unwrap();
+		tray_item_err |= tray.add_menu_item("Show", move || window_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
 
-		loop {
-			app::wait_for(0.2).unwrap();
-			if let Ok(msg) = window_receiver.try_recv() {
-				match msg {
-					GuiMessage::ShowWindow => win.show(),
-					GuiMessage::HideWindow => win.hide(),
+		tray_item_err |= tray
+			.add_menu_item("Quit", || {
+				std::process::exit(0);
+			})
+			.is_err();
+
+		if tray_item_err {
+			loop {
+				app::wait_for(0.2).unwrap();
+			}
+		} else {
+			loop {
+				app::wait_for(0.2).unwrap();
+				if let Ok(msg) = window_receiver.try_recv() {
+					match msg {
+						GuiMessage::ShowWindow => win.show(),
+						GuiMessage::HideWindow => win.hide(),
+					};
 				};
-			};
+			}
 		}
 	}
 
