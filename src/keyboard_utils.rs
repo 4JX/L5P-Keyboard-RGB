@@ -14,10 +14,14 @@ use crate::error;
 const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0, 0);
 #[cfg(target_os = "linux")]
 const DEVICE_INFO_2020: (u16, u16, u16, u16) = (0x048d, 0xc955, 0, 0);
+#[cfg(target_os = "linux")]
+const DEVICE_INFO_IDEAPAD_2021: (u16, u16, u16, u16) = (0x048d, 0xc963, 0, 0);
 #[cfg(target_os = "windows")]
 const DEVICE_INFO_2021: (u16, u16, u16, u16) = (0x048d, 0xc965, 0xff89, 0x00cc);
 #[cfg(target_os = "windows")]
 const DEVICE_INFO_2020: (u16, u16, u16, u16) = (0x048d, 0xc955, 0xff89, 0x00cc);
+#[cfg(target_os = "windows")]
+const DEVICE_INFO_IDEAPAD_2021: (u16, u16, u16, u16) = (0x048d, 0xc963, 0xff89, 0x00cc);
 
 const SPEED_RANGE: std::ops::Range<u8> = 1..5;
 const BRIGHTNESS_RANGE: std::ops::Range<u8> = 1..3;
@@ -203,7 +207,7 @@ pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard, error::Err
 		.device_list()
 		.find(|d| {
 			let info_tuple = (d.vendor_id(), d.product_id(), d.usage_page(), d.usage());
-			info_tuple == DEVICE_INFO_2021 || info_tuple == DEVICE_INFO_2020
+			info_tuple == DEVICE_INFO_2021 || info_tuple == DEVICE_INFO_2020 || info_tuple == DEVICE_INFO_IDEAPAD_2021
 		})
 		.ok_or(error::Error::DeviceNotFound)?;
 
