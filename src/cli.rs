@@ -1,6 +1,6 @@
 use std::{convert::TryInto, env, path::PathBuf, process, str::FromStr};
 
-use clap::{crate_authors, crate_name, crate_version, App, Arg};
+use clap::{crate_authors, crate_name, crate_version, Arg, Command};
 use color_eyre::{eyre::eyre, Help, Report};
 use single_instance::SingleInstance;
 
@@ -19,7 +19,7 @@ pub fn try_cli() -> Result<(), Report> {
 		.clone();
 	let path_arg = Arg::new("path").help("A path to the file").index(1).required(true);
 
-	let matches = App::new("Legion Keyboard Control")
+	let matches = Command::new("Legion Keyboard Control")
 		.version(crate_version!())
 		.author(crate_authors!())
 		.arg(
@@ -46,21 +46,21 @@ pub fn try_cli() -> Result<(), Report> {
 				.possible_values(&["Left", "Right"]),
 		)
 		.arg(Arg::new("save").help("Saves the typed profile").short('p').takes_value(true))
-		.subcommand(App::new("LoadProfile").about("Load a profile from a file").arg(path_arg.clone()))
-		.subcommand(App::new("LoadEffect").about("Load an effect from a file").arg(path_arg))
-		.subcommand(App::new("Static").about("Static effect").arg(colors_arg.clone()))
-		.subcommand(App::new("Breath").about("Breath effect").arg(colors_arg.clone()))
-		.subcommand(App::new("Smooth").about("Smooth effect"))
-		.subcommand(App::new("Wave").about("Wave effect"))
-		.subcommand(App::new("Lightning").about("Lightning effect"))
-		.subcommand(App::new("AmbientLight").about("AmbientLight effect"))
-		.subcommand(App::new("SmoothWave").about("SmoothWave effect"))
-		.subcommand(App::new("Swipe").about("Swipe effect").arg(colors_arg.clone()))
-		.subcommand(App::new("Disco").about("Disco effect"))
-		.subcommand(App::new("Christmas").about("Christmas effect"))
-		.subcommand(App::new("Fade").about("Fade effect").arg(colors_arg))
-		.subcommand(App::new("Temperature").about("Temperature effect"))
-		.subcommand(App::new("HiddenWindow").about("Loads the GUI but keeps the window hidden"))
+		.subcommand(Command::new("LoadProfile").about("Load a profile from a file").arg(path_arg.clone()))
+		.subcommand(Command::new("LoadEffect").about("Load an effect from a file").arg(path_arg))
+		.subcommand(Command::new("Static").about("Static effect").arg(colors_arg.clone()))
+		.subcommand(Command::new("Breath").about("Breath effect").arg(colors_arg.clone()))
+		.subcommand(Command::new("Smooth").about("Smooth effect"))
+		.subcommand(Command::new("Wave").about("Wave effect"))
+		.subcommand(Command::new("Lightning").about("Lightning effect"))
+		.subcommand(Command::new("AmbientLight").about("AmbientLight effect"))
+		.subcommand(Command::new("SmoothWave").about("SmoothWave effect"))
+		.subcommand(Command::new("Swipe").about("Swipe effect").arg(colors_arg.clone()))
+		.subcommand(Command::new("Disco").about("Disco effect"))
+		.subcommand(Command::new("Christmas").about("Christmas effect"))
+		.subcommand(Command::new("Fade").about("Fade effect").arg(colors_arg))
+		.subcommand(Command::new("Temperature").about("Temperature effect"))
+		.subcommand(Command::new("HiddenWindow").about("Loads the GUI but keeps the window hidden"))
 		.get_matches();
 
 	if let Some(input) = matches.subcommand_name() {
