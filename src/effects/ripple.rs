@@ -9,12 +9,14 @@ use std::{
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
 
+use crate::profile::Profile;
+
 use super::EffectPlayer;
 
 pub(super) struct Ripple;
 
 impl EffectPlayer for Ripple {
-	fn play(manager: &mut super::EffectManager, _direction: crate::enums::Direction, rgb_array: &[u8; 12], speed: u8, _brightness: u8, _thread_rng: &mut rand::rngs::ThreadRng) {
+	fn play(manager: &mut super::EffectManager, p: Profile, _thread_rng: &mut rand::rngs::ThreadRng) {
 		// Welcome to the definition of i-don't-know-what-im-doing
 		let keys_zone_1: [Keycode; 24] = [
 			Keycode::Escape,
@@ -169,7 +171,7 @@ impl EffectPlayer for Ripple {
 			// zone_state[i] = RippleMove::Center
 			} else {
 				let now = Instant::now();
-				if now - last_step_time > Duration::from_millis((100.0 / (f32::from(speed) / 2.0)) as u64) {
+				if now - last_step_time > Duration::from_millis((100.0 / (f32::from(p.speed) / 2.0)) as u64) {
 					last_step_time = now;
 					let zone_range = 0..4;
 					for (i, ripple_move) in zone_state.clone().iter().enumerate() {
@@ -209,9 +211,9 @@ impl EffectPlayer for Ripple {
 			let mut final_arr: [u8; 12] = [0; 12];
 			for (i, ripple_move) in zone_state.iter().enumerate() {
 				if ripple_move != &RippleMove::Off {
-					final_arr[i * 3] = rgb_array[i * 3];
-					final_arr[i * 3 + 1] = rgb_array[i * 3 + 1];
-					final_arr[i * 3 + 2] = rgb_array[i * 3 + 2];
+					final_arr[i * 3] = p.rgb_array[i * 3];
+					final_arr[i * 3 + 1] = p.rgb_array[i * 3 + 1];
+					final_arr[i * 3 + 2] = p.rgb_array[i * 3 + 2];
 					effect_active.store(true, Ordering::SeqCst);
 				}
 			}

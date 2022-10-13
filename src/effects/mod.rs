@@ -1,6 +1,7 @@
 use crate::{
 	enums::{Direction, Effects, Message},
 	keyboard_utils,
+	profile::Profile,
 };
 use crate::{
 	error,
@@ -53,41 +54,41 @@ impl EffectManager {
 		Ok(manager)
 	}
 
-	pub fn set_effect(&mut self, effect: Effects, direction: Direction, rgb_array: &[u8; 12], speed: u8, brightness: u8) {
+	pub fn set_effect(&mut self, profile: Profile) {
 		self.stop_signals.store_false();
-		self.last_effect = effect;
+		self.last_effect = profile.effect;
 		let mut thread_rng = thread_rng();
 
 		self.keyboard.set_effect(BaseEffects::Static);
-		self.keyboard.set_speed(speed);
-		self.keyboard.set_brightness(brightness);
+		self.keyboard.set_speed(profile.speed);
+		self.keyboard.set_brightness(profile.brightness);
 
-		match effect {
+		match profile.effect {
 			Effects::Static => {
-				self.keyboard.set_colors_to(rgb_array);
+				self.keyboard.set_colors_to(&profile.rgb_array);
 				self.keyboard.set_effect(BaseEffects::Static);
 			}
 			Effects::Breath => {
-				self.keyboard.set_colors_to(rgb_array);
+				self.keyboard.set_colors_to(&profile.rgb_array);
 				self.keyboard.set_effect(BaseEffects::Breath);
 			}
 			Effects::Smooth => {
 				self.keyboard.set_effect(BaseEffects::Smooth);
 			}
-			Effects::Wave => match direction {
+			Effects::Wave => match profile.direction {
 				Direction::Left => self.keyboard.set_effect(BaseEffects::LeftWave),
 				Direction::Right => self.keyboard.set_effect(BaseEffects::RightWave),
 			},
 
-			Effects::Lightning => Lightning::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
-			Effects::AmbientLight => AmbientLight::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
-			Effects::SmoothWave => SmoothWave::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
-			Effects::Swipe => Swipe::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
-			Effects::Disco => Disco::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
-			Effects::Christmas => Christmas::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
-			Effects::Fade => Fade::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
-			Effects::Temperature => Temperature::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
-			Effects::Ripple => Ripple::play(self, direction, rgb_array, speed, brightness, &mut thread_rng),
+			Effects::Lightning => Lightning::play(self, profile, &mut thread_rng),
+			Effects::AmbientLight => AmbientLight::play(self, profile, &mut thread_rng),
+			Effects::SmoothWave => SmoothWave::play(self, profile, &mut thread_rng),
+			Effects::Swipe => Swipe::play(self, profile, &mut thread_rng),
+			Effects::Disco => Disco::play(self, profile, &mut thread_rng),
+			Effects::Christmas => Christmas::play(self, profile, &mut thread_rng),
+			Effects::Fade => Fade::play(self, profile, &mut thread_rng),
+			Effects::Temperature => Temperature::play(self, profile, &mut thread_rng),
+			Effects::Ripple => Ripple::play(self, profile, &mut thread_rng),
 		}
 		self.stop_signals.store_false();
 	}
@@ -111,5 +112,5 @@ impl StopSignals {
 }
 
 trait EffectPlayer {
-	fn play(manager: &mut EffectManager, direction: Direction, rgb_array: &[u8; 12], speed: u8, brightness: u8, thread_rng: &mut ThreadRng);
+	fn play(manager: &mut EffectManager, p: Profile, thread_rng: &mut ThreadRng);
 }

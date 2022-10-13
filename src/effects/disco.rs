@@ -2,12 +2,14 @@ use std::{sync::atomic::Ordering, thread, time::Duration};
 
 use rand::Rng;
 
+use crate::profile::Profile;
+
 use super::EffectPlayer;
 
 pub(super) struct Disco;
 
 impl EffectPlayer for Disco {
-	fn play(manager: &mut super::EffectManager, _direction: crate::enums::Direction, _rgb_array: &[u8; 12], _speed: u8, _brightness: u8, thread_rng: &mut rand::rngs::ThreadRng) {
+	fn play(manager: &mut super::EffectManager, _p: Profile, thread_rng: &mut rand::rngs::ThreadRng) {
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 			let colors = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255]];
 			let colors_index = thread_rng.gen_range(0..6);

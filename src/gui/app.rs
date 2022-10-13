@@ -331,7 +331,7 @@ impl App {
 							app.update(profile.effect);
 							app::awake();
 
-							manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
+							manager.set_effect(profile);
 						}
 						Message::CustomEffect { effect } => {
 							app.color_tiles.deactivate();

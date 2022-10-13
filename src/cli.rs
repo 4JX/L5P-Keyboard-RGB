@@ -86,7 +86,7 @@ pub fn try_cli() -> Result<(), Report> {
 
 						match Profile::load_profile(path) {
 							Ok(profile) => {
-								manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
+								manager.set_effect(profile);
 							}
 							Err(err) => {
 								return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid profile."));
@@ -144,20 +144,20 @@ pub fn try_cli() -> Result<(), Report> {
 						_ => Direction::Right,
 					};
 
-					if let Some(filename) = matches.value_of("save") {
-						let profile = Profile {
-							rgb_array,
-							effect,
-							direction,
-							speed,
-							brightness,
-							ui_toggle_button_state: [false; 5],
-						};
+					let profile = Profile {
+						rgb_array,
+						effect,
+						direction,
+						speed,
+						brightness,
+						ui_toggle_button_state: [false; 5],
+					};
 
+					if let Some(filename) = matches.value_of("save") {
 						profile.save_profile(filename).expect("Failed to save.");
 					}
 
-					manager.set_effect(effect, direction, &rgb_array, speed, brightness);
+					manager.set_effect(profile);
 				}
 			}
 		}

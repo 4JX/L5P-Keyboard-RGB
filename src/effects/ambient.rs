@@ -9,14 +9,14 @@ use fast_image_resize as fr;
 use rand::rngs::ThreadRng;
 use scrap::{Capturer, Display};
 
-use crate::enums::{Direction, Message};
+use crate::{enums::Message, profile::Profile};
 
 use super::{EffectManager, EffectPlayer};
 
 pub(super) struct AmbientLight;
 
 impl EffectPlayer for AmbientLight {
-	fn play(manager: &mut EffectManager, _direction: Direction, _rgb_array: &[u8; 12], _speed: u8, _brightness: u8, _thread_rng: &mut ThreadRng) {
+	fn play(manager: &mut EffectManager, _p: Profile, _thread_rng: &mut ThreadRng) {
 		//Display setup
 		let display = Display::all().unwrap().remove(0);
 

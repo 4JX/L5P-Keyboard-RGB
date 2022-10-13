@@ -2,12 +2,14 @@ use std::{sync::atomic::Ordering, thread, time::Duration};
 
 use rand::Rng;
 
+use crate::profile::Profile;
+
 use super::EffectPlayer;
 
 pub(super) struct Christmas;
 
 impl EffectPlayer for Christmas {
-	fn play(manager: &mut super::EffectManager, _direction: crate::enums::Direction, _rgb_array: &[u8; 12], _speed: u8, _brightness: u8, thread_rng: &mut rand::rngs::ThreadRng) {
+	fn play(manager: &mut super::EffectManager, _p: Profile, thread_rng: &mut rand::rngs::ThreadRng) {
 		let xmas_color_array = [[255, 10, 10], [255, 255, 20], [30, 255, 30], [70, 70, 255]];
 		let subeffect_count = 4;
 		let mut last_subeffect = -1;

@@ -6,12 +6,14 @@ use std::{
 
 use device_query::{DeviceQuery, DeviceState, Keycode};
 
+use crate::profile::Profile;
+
 use super::EffectPlayer;
 
 pub(super) struct Fade;
 
 impl EffectPlayer for Fade {
-	fn play(manager: &mut super::EffectManager, _direction: crate::enums::Direction, rgb_array: &[u8; 12], _speed: u8, _brightness: u8, _thread_rng: &mut rand::rngs::ThreadRng) {
+	fn play(manager: &mut super::EffectManager, p: Profile, _thread_rng: &mut rand::rngs::ThreadRng) {
 		let stop_signals = manager.stop_signals.clone();
 		thread::spawn(move || {
 			let device_state = DeviceState::new();
@@ -34,7 +36,7 @@ impl EffectPlayer for Fade {
 					thread::sleep(Duration::from_millis(20));
 				}
 			} else {
-				manager.keyboard.set_colors_to(rgb_array);
+				manager.keyboard.set_colors_to(&p.rgb_array);
 				manager.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
 				now = Instant::now();
 			}
