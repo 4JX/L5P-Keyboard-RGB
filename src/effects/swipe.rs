@@ -13,17 +13,13 @@ impl EffectPlayer for Swipe {
 				break;
 			}
 
-			for _i in 0..4 {
-				match p.direction {
-					Direction::Left => p.rgb_array.rotate_right(3),
-					Direction::Right => p.rgb_array.rotate_left(3),
-				}
-
-				manager.keyboard.transition_colors_to(&p.rgb_array, 150 / manager.keyboard.get_speed(), 10);
-				if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-					break;
-				}
+			match p.direction {
+				Direction::Left => p.rgb_array.rotate_right(3),
+				Direction::Right => p.rgb_array.rotate_left(3),
 			}
+
+			manager.keyboard.transition_colors_to(&p.rgb_array, 150 / manager.keyboard.get_speed(), 10);
+
 			if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 				break;
 			}

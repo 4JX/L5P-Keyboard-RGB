@@ -13,7 +13,7 @@ use rand::{rngs::ThreadRng, thread_rng};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use self::{ambient::AmbientLight, christmas::Christmas, disco::Disco, fade::Fade, lightning::Lightning, ripple::Ripple, smooth_wave::SmoothWave, swipe::Swipe, temperature::Temperature};
+use self::{ambient::AmbientLight, christmas::Christmas, disco::Disco, fade::Fade, lightning::Lightning, ripple::Ripple, swipe::Swipe, temperature::Temperature};
 
 mod ambient;
 mod christmas;
@@ -21,7 +21,6 @@ mod disco;
 mod fade;
 mod lightning;
 mod ripple;
-mod smooth_wave;
 mod swipe;
 mod temperature;
 
@@ -54,7 +53,7 @@ impl EffectManager {
 		Ok(manager)
 	}
 
-	pub fn set_effect(&mut self, profile: Profile) {
+	pub fn set_effect(&mut self, mut profile: Profile) {
 		self.stop_signals.store_false();
 		self.last_effect = profile.effect;
 		let mut thread_rng = thread_rng();
@@ -82,7 +81,10 @@ impl EffectManager {
 
 			Effects::Lightning => Lightning::play(self, profile, &mut thread_rng),
 			Effects::AmbientLight => AmbientLight::play(self, profile, &mut thread_rng),
-			Effects::SmoothWave => SmoothWave::play(self, profile, &mut thread_rng),
+			Effects::SmoothWave => {
+				profile.rgb_array = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
+				Swipe::play(self, profile, &mut thread_rng)
+			}
 			Effects::Swipe => Swipe::play(self, profile, &mut thread_rng),
 			Effects::Disco => Disco::play(self, profile, &mut thread_rng),
 			Effects::Christmas => Christmas::play(self, profile, &mut thread_rng),
