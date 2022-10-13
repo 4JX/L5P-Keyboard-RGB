@@ -6,8 +6,8 @@ use single_instance::SingleInstance;
 
 use crate::{
 	custom_effect::CustomEffect,
+	effects::EffectManager,
 	enums::{Direction, Effects},
-	keyboard_manager::KeyboardManager,
 	profile::Profile,
 };
 
@@ -71,7 +71,7 @@ pub fn try_cli() -> Result<(), Report> {
 			let instance = SingleInstance::new(crate_name!()).unwrap();
 			assert!(instance.is_single(), "Another instance of the program is already running, please close it before starting a new one.");
 
-			let mut manager = KeyboardManager::new().unwrap();
+			let mut manager = EffectManager::new().unwrap();
 
 			fn parse_bytes_arg(arg: &str) -> Result<Vec<u8>, <u8 as FromStr>::Err> {
 				arg.split(',').map(str::parse::<u8>).collect()

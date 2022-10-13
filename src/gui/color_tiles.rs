@@ -1,7 +1,7 @@
 use super::enums::{BaseColor, Colors};
 use crate::{
+	effects::StopSignals,
 	enums::{Effects, Message},
-	keyboard_manager::StopSignals,
 };
 use fltk::{
 	button::ToggleButton,

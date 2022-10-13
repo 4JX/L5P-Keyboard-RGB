@@ -2,7 +2,7 @@ use std::{fs, path::Path, sync::atomic::Ordering, thread, time::Duration};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{error, keyboard_manager::KeyboardManager};
+use crate::{effects::EffectManager, error};
 
 #[derive(Clone, Deserialize, Serialize)]
 struct EffectStep {
@@ -28,7 +28,7 @@ pub struct CustomEffect {
 }
 
 impl CustomEffect {
-	pub fn play(&self, manager: &mut KeyboardManager) {
+	pub fn play(&self, manager: &mut EffectManager) {
 		manager.stop_signals.store_false();
 
 		//If loading from the cli, the loop is intentional

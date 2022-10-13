@@ -2,7 +2,7 @@ use super::options::OptionsTile;
 use super::utils::screen_center;
 use super::{color_tiles, options, side_tile};
 use super::{color_tiles::ColorTiles, enums::GuiMessage};
-use crate::keyboard_manager::{KeyboardManager, StopSignals};
+use crate::effects::{EffectManager, StopSignals};
 use crate::profile::Profile;
 use crate::{
 	custom_effect::CustomEffect,
@@ -56,7 +56,7 @@ impl App {
 			app.run().unwrap();
 		}
 
-		let manager_result = KeyboardManager::new();
+		let manager_result = EffectManager::new();
 		if manager_result.is_err() {
 			appdialog::alert(800, 400, "A valid keyboard model was not found. It may be due to a hardware error.", true);
 			app.run().unwrap();
@@ -216,7 +216,7 @@ impl App {
 		}
 	}
 
-	pub fn create_window(mut manager: KeyboardManager) -> fltk::window::Window {
+	pub fn create_window(mut manager: EffectManager) -> fltk::window::Window {
 		// panic::set_hook(Box::new(|info| {
 		// 	if let Some(s) = info.payload().downcast_ref::<&str>() {
 		// 		appdialog::panic(800, 400, s);

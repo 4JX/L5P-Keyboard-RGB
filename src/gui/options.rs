@@ -1,6 +1,6 @@
 use crate::{
+	effects::StopSignals,
 	enums::{Effects, Message},
-	keyboard_manager::StopSignals,
 };
 
 use super::enums::Colors;
