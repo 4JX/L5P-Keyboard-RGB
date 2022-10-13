@@ -2,7 +2,7 @@ use crate::custom_effect::CustomEffect;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, PartialEq)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, PartialEq, Eq)]
 pub enum Effects {
 	Static,
 	Breath,

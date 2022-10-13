@@ -58,8 +58,9 @@ pub fn try_cli() -> Result<(), Report> {
 		.subcommand(Command::new("Swipe").about("Swipe effect").arg(colors_arg.clone()))
 		.subcommand(Command::new("Disco").about("Disco effect"))
 		.subcommand(Command::new("Christmas").about("Christmas effect"))
-		.subcommand(Command::new("Fade").about("Fade effect").arg(colors_arg))
+		.subcommand(Command::new("Fade").about("Fade effect").arg(colors_arg.clone()))
 		.subcommand(Command::new("Temperature").about("Temperature effect"))
+		.subcommand(Command::new("Ripple").about("Ripple effect").arg(colors_arg))
 		.subcommand(Command::new("HiddenWindow").about("Loads the GUI but keeps the window hidden"))
 		.get_matches();
 
@@ -112,7 +113,7 @@ pub fn try_cli() -> Result<(), Report> {
 					let brightness = matches.value_of("brightness").unwrap_or_default().parse::<u8>().unwrap_or(1);
 
 					let rgb_array: [u8; 12] = match effect {
-						Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade => {
+						Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade | Effects::Ripple => {
 							let color_array = if let Some(value) = input_matches.value_of("colors") {
 								parse_bytes_arg(value)
 									.expect("Invalid input, please check you used the correct format for the colors")
