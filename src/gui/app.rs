@@ -2,11 +2,14 @@ use super::options::OptionsTile;
 use super::utils::screen_center;
 use super::{color_tiles, options, side_tile};
 use super::{color_tiles::ColorTiles, enums::GuiMessage};
-use crate::effects::{EffectManager, StopSignals};
 use crate::profile::Profile;
 use crate::{
 	custom_effect::CustomEffect,
 	enums::{Direction, Effects, Message},
+};
+use crate::{
+	effects::{EffectManager, StopSignals},
+	error::Error,
 };
 use crate::{gui::dialog as appdialog, profile::ProfilesData};
 use crate::{gui::menu_bar, profile::Profiles};
@@ -38,7 +41,7 @@ pub struct App {
 }
 
 impl App {
-	pub fn start_ui(show_window: bool) {
+	pub fn start_ui(manager_result: Result<EffectManager, Error>, hidden: bool) {
 		let app = app::App::default();
 
 		app::background(51, 51, 51);
@@ -56,7 +59,6 @@ impl App {
 			app.run().unwrap();
 		}
 
-		let manager_result = EffectManager::new();
 		if manager_result.is_err() {
 			appdialog::alert(800, 400, "A valid keyboard model was not found. It may be due to a hardware error.", true);
 			app.run().unwrap();
@@ -69,7 +71,7 @@ impl App {
 		let mut win = Self::create_window(manager);
 		win.set_callback(|win| win.hide());
 
-		if show_window {
+		if !hidden {
 			win.show()
 		};
 

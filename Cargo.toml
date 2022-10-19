@@ -15,7 +15,7 @@ rand = "0.8.5"
 scrap = { path = "libs/scrap" }
 fast_image_resize = "1.0.0"
 tray-item = { version = "0.5.0-alpha", git = "https://github.com/njust/tray-item-rs" }
-clap = { version = "3.2.17", features = ["color", "cargo"] }
+clap = { version = "4.0.14", features = ["color", "cargo", "derive"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
 serde = { version = "1.0.144", features = ["derive"] }

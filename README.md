@@ -82,19 +82,28 @@ The best way to add a new effect is to directly edit the source code, as it allo
 
 ## Usage
 
-**Note**: By default, on Linux you will have to run the program with root privileges, however, you can remedy this by adding the following `udev` rule:
+**Note**: By default, on Linux you will have to run the program with root privileges, however, you can remedy this by adding the following `udev` rule (in a path similar to `/etc/udev/rules.d/99-kblight.rules`):
+
+- **2022 Models:**
+
+```sh
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c975", MODE="0666"
+```
 
 - **2021 Models:**
 
 ```sh
-# /etc/udev/rules.d/99-kblight.rules
+# Regular legions
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c965", MODE="0666"
+
+
+# Ideapad models
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c965", MODE="0666"
 ```
 
 - **2020 Models:**
 
 ```sh
-# /etc/udev/rules.d/99-kblight.rules
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c955", MODE="0666"
 ```
 
@@ -127,18 +136,21 @@ legion-kb-rgb --help
 - Setting the keyboard to red
 
 ```sh
-legion-kb-rgb Static 255,0,0,255,0,0,255,0,0,255,0,0
+legion-kb-rgb set -e Static -c 255,0,0,255,0,0,255,0,0,255,0,0
 ```
 
 - Using the SmoothWave effect going to the left with speed `4` and brightness at high
 
 ```sh
-legion-kb-rgb -s 4 -b 2 -d Left SmoothWave
+legion-kb-rgb set -e SmoothWave -s 4 -b 2 -d Left
 ```
 
 ## Compatibility
 
-This program has been tested to work on the 4 zone keyboard of the Legion 5 2020, Legion 5 2021 and Legion 5 Pro models on both Windows and Linux.
+This program has been tested to work on:
+
+- Legion 5 (Pro) 2020, 2021 and 2022.
+- Ideapad Gaming 3 2021
 
 ### "How about X model"
 
