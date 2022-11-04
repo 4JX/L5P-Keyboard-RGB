@@ -142,12 +142,13 @@ pub fn try_cli() -> Result<(), Report> {
 
 					let direction = direction.unwrap_or_default();
 
-					let rgb_array: [u8; 12] = match effect {
-						Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade | Effects::Ripple => colors.unwrap_or_else(|| {
+					let rgb_array: [u8; 12] = if effect.takes_color_array() {
+						colors.unwrap_or_else(|| {
 							println!("This effect requires specifying the colors to use.");
 							process::exit(0);
-						}),
-						_ => [0; 12],
+						})
+					} else {
+						[0; 12]
 					};
 
 					let profile = Profile {

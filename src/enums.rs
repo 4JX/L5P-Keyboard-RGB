@@ -25,6 +25,12 @@ impl Default for Effects {
 	}
 }
 
+impl Effects {
+	pub fn takes_color_array(&self) -> bool {
+		matches!(self, Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade | Effects::Ripple)
+	}
+}
+
 #[derive(Clone, Copy, EnumString, Serialize, Deserialize)]
 pub enum Direction {
 	Left,
