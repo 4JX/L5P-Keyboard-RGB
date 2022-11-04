@@ -244,39 +244,39 @@ impl App {
 			profiles: Profiles::from_disk(),
 		};
 
-		update_preset_browser(&mut side_tile.preset_browser, &app.profiles);
+		update_profile_browser(&mut side_tile.profile_browser, &app.profiles);
 
 		menu_bar::AppMenuBar::new(&app);
 
-		side_tile.add_preset_button.set_callback({
+		side_tile.add_profile_button.set_callback({
 			let mut app = app.clone();
-			let mut preset_browser = side_tile.preset_browser.clone();
+			let mut profile_browser = side_tile.profile_browser.clone();
 			move |_button| {
 				let profile = app.create_profile_from_gui();
 				app.profiles.push(profile);
-				update_preset_browser(&mut preset_browser, &app.profiles);
+				update_profile_browser(&mut profile_browser, &app.profiles);
 				ProfilesData::new(&app.profiles).save_profiles().unwrap();
 			}
 		});
 
-		side_tile.remove_preset_button.set_callback({
+		side_tile.remove_profile_button.set_callback({
 			let mut app = app.clone();
-			let mut preset_browser = side_tile.preset_browser.clone();
+			let mut profile_browser = side_tile.profile_browser.clone();
 			move |_button| {
-				if preset_browser.value() > 0 && !app.profiles.is_empty() {
-					app.profiles.remove(preset_browser.value() as usize - 1);
-					update_preset_browser(&mut preset_browser, &app.profiles);
+				if profile_browser.value() > 0 && !app.profiles.is_empty() {
+					app.profiles.remove(profile_browser.value() as usize - 1);
+					update_profile_browser(&mut profile_browser, &app.profiles);
 					ProfilesData::new(&app.profiles).save_profiles().unwrap();
 				}
 			}
 		});
 
-		side_tile.preset_browser.set_callback({
+		side_tile.profile_browser.set_callback({
 			let mut app = app.clone();
-			let preset_browser = side_tile.preset_browser.clone();
+			let profile_browser = side_tile.profile_browser.clone();
 			move |_browser| {
 				let profiles = app.profiles.inner.lock().clone();
-				if let Some(profile) = profiles.get(preset_browser.value() as usize - 1) {
+				if let Some(profile) = profiles.get(profile_browser.value() as usize - 1) {
 					app.update_gui_from_profile(profile);
 				};
 			}
@@ -284,7 +284,7 @@ impl App {
 
 		thread::spawn({
 			let mut app = app.clone();
-			let mut preset_browser = side_tile.preset_browser.clone();
+			let mut profile_browser = side_tile.profile_browser.clone();
 			move || {
 				let device_state = DeviceState::new();
 
@@ -294,18 +294,18 @@ impl App {
 
 						if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::RAlt) {
 							if app.profiles.len() > 1 {
-								if app.profiles.len() == preset_browser.value() as usize {
-									preset_browser.select(1);
+								if app.profiles.len() == profile_browser.value() as usize {
+									profile_browser.select(1);
 								} else {
-									preset_browser.select(preset_browser.value() + 1);
+									profile_browser.select(profile_browser.value() + 1);
 								}
 							} else {
-								preset_browser.select(1);
+								profile_browser.select(1);
 							}
 
 							let profiles = app.profiles.inner.lock().clone();
 
-							if let Some(profile) = profiles.get(preset_browser.value() as usize - 1) {
+							if let Some(profile) = profiles.get(profile_browser.value() as usize - 1) {
 								app.update_gui_from_profile(&profile.clone());
 								thread::sleep(Duration::from_millis(150));
 							};
@@ -374,10 +374,10 @@ pub fn load_icon_data(image_data: &[u8]) -> IconSource {
 	}
 }
 
-fn update_preset_browser(preset_browser: &mut HoldBrowser, profiles: &Profiles) {
-	preset_browser.clear();
+fn update_profile_browser(profile_browser: &mut HoldBrowser, profiles: &Profiles) {
+	profile_browser.clear();
 
 	for i in 0..profiles.len() {
-		preset_browser.add(format!("Preset {}", i).as_str());
+		profile_browser.add(format!("Profile {}", i).as_str());
 	}
 }
