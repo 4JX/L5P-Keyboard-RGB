@@ -5,8 +5,9 @@ use crate::{
 
 use super::enums::Colors;
 use fltk::{
-	enums::{Color, FrameType},
+	enums::{CallbackTrigger, Color, FrameType},
 	group::Tile,
+	input::IntInput,
 	menu::Choice,
 	prelude::*,
 };
@@ -30,9 +31,27 @@ impl OptionsChoice {
 	}
 }
 
+struct SpeedChoice;
+
+impl SpeedChoice {
+	fn create(x: i32, y: i32, width: i32, height: i32, title: &str) -> IntInput {
+		let mut choice = IntInput::new(x, y, width, height, "").with_label(title);
+
+		choice.set_frame(FrameType::RoundedBox);
+		choice.set_color(Color::from_u32(Colors::DarkerGray as u32));
+		choice.set_label_color(Color::from_u32(Colors::White as u32));
+		choice.set_selection_color(Color::White);
+		choice.set_text_color(Color::from_u32(Colors::White as u32));
+		choice.set_text_size(20);
+		choice.set_label_size(18);
+		choice.set_value(1.to_string().as_str());
+		choice
+	}
+}
+
 #[derive(Clone)]
 pub struct OptionsTile {
-	pub speed_choice: Choice,
+	pub speed_choice: IntInput,
 	pub brightness_choice: Choice,
 	pub direction_choice: Choice,
 }
@@ -41,7 +60,7 @@ impl OptionsTile {
 	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
 		let mut options_tile = Tile::new(x, y, 1140, 90, "");
 
-		let mut speed_choice = OptionsChoice::create(x + 25 + 80, y + 25, 45, 35, "Speed: ", "1|2|3|4").center_y(&options_tile);
+		let mut speed_choice = SpeedChoice::create(x + 25 + 80, y + 25, 45, 35, "Speed: ").center_y(&options_tile);
 
 		let mut brightness_choice = OptionsChoice::create(x + 25 + 140, y + 25, 45, 35, "Brightness: ", "1|2").right_of(&speed_choice, 150);
 
@@ -52,14 +71,23 @@ impl OptionsTile {
 		options_tile.set_frame(FrameType::FlatBox);
 		options_tile.set_color(Color::from_u32(Colors::DarkGray as u32));
 
+		speed_choice.set_trigger(CallbackTrigger::Changed);
+		speed_choice.set_maximum_size(2);
 		speed_choice.set_callback({
 			let tx = tx.clone();
 			let stop_signals = stop_signals.clone();
-			move |choice| {
+			move |speed_input| {
 				stop_signals.store_true();
-				if let Some(value) = choice.choice() {
-					let speed = value.parse::<u8>().unwrap();
-					if (1..=4).contains(&speed) {
+				if let Ok(speed) = speed_input.value().parse::<u8>() {
+					if speed > 5 {
+						speed_input.set_value("5");
+					} else if speed < 1 {
+						speed_input.set_value("1");
+					} else {
+						speed_input.set_value(&speed.to_string());
+					}
+
+					if (1..=5).contains(&speed) {
 						tx.send(Message::Refresh).unwrap();
 					}
 				}

@@ -9,7 +9,7 @@ use super::EffectPlayer;
 pub(super) struct Disco;
 
 impl EffectPlayer for Disco {
-	fn play(manager: &mut super::EffectManager, _p: Profile, thread_rng: &mut rand::rngs::ThreadRng) {
+	fn play(manager: &mut super::EffectManager, p: Profile, thread_rng: &mut rand::rngs::ThreadRng) {
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 			let colors = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255]];
 			let colors_index = thread_rng.gen_range(0..6);
@@ -17,7 +17,7 @@ impl EffectPlayer for Disco {
 
 			let zone_index = thread_rng.gen_range(0..4);
 			manager.keyboard.set_zone_by_index(zone_index, new_values);
-			thread::sleep(Duration::from_millis(2000 / (u64::from(manager.keyboard.get_speed()) * 4)));
+			thread::sleep(Duration::from_millis(2000 / (u64::from(p.speed) * 4)));
 		}
 	}
 }

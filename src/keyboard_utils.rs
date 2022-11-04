@@ -115,10 +115,6 @@ impl Keyboard {
 		self.refresh();
 	}
 
-	pub const fn get_speed(&self) -> u8 {
-		self.current_state.speed
-	}
-
 	pub fn set_brightness(&mut self, brightness: u8) {
 		let brightness = brightness.clamp(BRIGHTNESS_RANGE.min().unwrap(), BRIGHTNESS_RANGE.max().unwrap());
 		self.current_state.brightness = brightness;
