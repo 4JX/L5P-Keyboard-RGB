@@ -22,6 +22,7 @@ impl EffectPlayer for Fade {
 				if !keys.is_empty() {
 					stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
 				}
+				thread::sleep(Duration::from_millis(5));
 			}
 		});
 
