@@ -115,7 +115,7 @@ impl App {
 	pub fn update_gui_from_profile(&mut self, profile: &Profile) {
 		self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state);
 		self.effect_browser.select(profile.effect as i32 + 1);
-		self.options_tile.speed_choice.set_value((i32::from(profile.speed) - 1).to_string().as_str());
+		self.options_tile.speed_choice.set_value(profile.speed.to_string().as_str());
 		self.options_tile.brightness_choice.set_value(i32::from(profile.brightness) - 1);
 
 		self.stop_signals.store_true();
@@ -179,10 +179,14 @@ impl App {
 		dlg.set_option(dialog::FileDialogOptions::SaveAsConfirm);
 		dlg.show();
 
-		let filename = dlg.filename().to_string_lossy().to_string();
+		let mut file_path = dlg.filename();
+
+		file_path.set_extension("json");
+
+		let filename = file_path.to_string_lossy().to_string();
 
 		if !filename.is_empty() {
-			profile.save_profile(filename.as_str()).unwrap();
+			profile.save_profile(&filename).unwrap();
 		}
 
 		self.stop_signals.store_true();
