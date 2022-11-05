@@ -135,11 +135,6 @@ pub fn try_cli() -> Result<(), Report> {
 				} => {
 					let mut manager = manager_result.unwrap();
 
-					#[cfg(target_os = "windows")]
-					if matches!(effect, Effects::Temperature) {
-						panic!("This effect is not supported on Windows");
-					}
-
 					let direction = direction.unwrap_or_default();
 
 					let rgb_array: [u8; 12] = if effect.takes_color_array() {

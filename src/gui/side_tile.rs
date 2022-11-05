@@ -92,10 +92,6 @@ impl SideTile {
 		});
 
 		for effect in Effects::iter() {
-			#[cfg(target_os = "windows")]
-			if effect == Effects::Temperature {
-				continue;
-			}
 			effect_browser.add(effect.to_string().as_str());
 		}
 
