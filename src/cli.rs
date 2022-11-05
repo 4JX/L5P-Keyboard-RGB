@@ -54,8 +54,8 @@ enum Commands {
 		#[arg(short, long, default_value_t = 1, value_parser = clap_value_parser!(["1","2"], u8))]
 		brightness: u8,
 
-		/// The brightness of the effect
-		#[arg(short, long, default_value_t = 1, value_parser = clap_value_parser!(["1","2","3","4"], u8))]
+		/// The speed of the effect
+		#[arg(short, long, default_value_t = 1, value_parser = clap_value_parser!(["1","2","3","4","5"], u8))]
 		speed: u8,
 
 		/// The direction of the effect (If applicable)
