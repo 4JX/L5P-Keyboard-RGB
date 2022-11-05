@@ -80,12 +80,12 @@ impl EffectManager {
 			},
 
 			Effects::Lightning => Lightning::play(self, profile, &mut thread_rng),
-			Effects::AmbientLight => AmbientLight::play(self, profile, &mut thread_rng),
+			Effects::AmbientLight { .. } => AmbientLight::play(self, profile, &mut thread_rng),
 			Effects::SmoothWave => {
 				profile.rgb_array = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 				Swipe::play(self, profile, &mut thread_rng)
 			}
-			Effects::Swipe => Swipe::play(self, profile, &mut thread_rng),
+			Effects::Swipe { .. } => Swipe::play(self, profile, &mut thread_rng),
 			Effects::Disco => Disco::play(self, profile, &mut thread_rng),
 			Effects::Christmas => Christmas::play(self, profile, &mut thread_rng),
 			Effects::Fade => Fade::play(self, profile, &mut thread_rng),

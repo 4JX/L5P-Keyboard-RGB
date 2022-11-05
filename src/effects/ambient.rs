@@ -13,17 +13,30 @@ use crate::{enums::Message, profile::Profile};
 
 use super::{EffectManager, EffectPlayer};
 
+const DEFAULT_FPS: u8 = 10;
+
 pub(super) struct AmbientLight;
 
 impl EffectPlayer for AmbientLight {
-	fn play(manager: &mut EffectManager, _p: Profile, _thread_rng: &mut ThreadRng) {
+	fn play(manager: &mut EffectManager, p: Profile, _thread_rng: &mut ThreadRng) {
 		//Display setup
 		let display = Display::all().unwrap().remove(0);
 
 		let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
 		let (w, h) = (capturer.width(), capturer.height());
 
-		let seconds_per_frame = Duration::from_nanos(1_000_000_000 / 60);
+		let fps = match p.effect {
+			crate::enums::Effects::AmbientLight { fps } => {
+				if fps < 1 {
+					DEFAULT_FPS
+				} else {
+					fps
+				}
+			}
+			_ => unreachable!("Attempted to play AmbientLight effect with wrong profile"),
+		};
+
+		let seconds_per_frame = Duration::from_nanos(1_000_000_000 / fps as u64);
 		let wait_base: i32 = seconds_per_frame.as_millis() as i32;
 		let mut wait = wait_base;
 		let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Lanczos3));

@@ -31,9 +31,9 @@ impl OptionsChoice {
 	}
 }
 
-struct SpeedChoice;
+struct InputChoice;
 
-impl SpeedChoice {
+impl InputChoice {
 	fn create(x: i32, y: i32, width: i32, height: i32, title: &str) -> IntInput {
 		let mut choice = IntInput::new(x, y, width, height, "").with_label(title);
 
@@ -51,20 +51,23 @@ impl SpeedChoice {
 
 #[derive(Clone)]
 pub struct OptionsTile {
-	pub speed_choice: IntInput,
+	pub speed_input: IntInput,
 	pub brightness_choice: Choice,
 	pub direction_choice: Choice,
+	pub fps_input: IntInput,
 }
 
 impl OptionsTile {
 	pub fn create(x: i32, y: i32, tx: &flume::Sender<Message>, stop_signals: &StopSignals) -> Self {
 		let mut options_tile = Tile::new(x, y, 1140, 90, "");
 
-		let mut speed_choice = SpeedChoice::create(x + 25 + 80, y + 25, 45, 35, "Speed: ").center_y(&options_tile);
+		let mut speed_choice = InputChoice::create(x + 25 + 80, y + 25, 45, 35, "Speed: ").center_y(&options_tile);
 
 		let mut brightness_choice = OptionsChoice::create(x + 25 + 140, y + 25, 45, 35, "Brightness: ", "1|2").right_of(&speed_choice, 150);
 
 		let mut direction_choice = OptionsChoice::create(x + 25 + 300, y + 25, 90, 35, "Direction: ", "Left|Right").right_of(&brightness_choice, 130);
+
+		let mut fps_input = InputChoice::create(x + 25 + 80, y + 25, 45, 35, "FPS: ").right_of(&direction_choice, 80);
 
 		options_tile.end();
 
@@ -94,6 +97,32 @@ impl OptionsTile {
 			}
 		});
 
+		fps_input.set_trigger(CallbackTrigger::Changed);
+		fps_input.set_maximum_size(2);
+		fps_input.set_callback({
+			let tx = tx.clone();
+			let stop_signals = stop_signals.clone();
+			move |fps_input| {
+				stop_signals.store_true();
+				if let Ok(fps) = fps_input.value().parse::<u8>() {
+					if fps > 60 {
+						fps_input.set_value("60");
+					} else if fps < 1 {
+						fps_input.set_value("1");
+					} else {
+						fps_input.set_value(&fps.to_string());
+					}
+
+					if (1..=5).contains(&fps) {
+						tx.send(Message::Refresh).unwrap();
+					}
+				}
+			}
+		});
+		fps_input.set_value(&10.to_string());
+		// Hide by default
+		fps_input.hide();
+
 		brightness_choice.set_callback({
 			let tx = tx.clone();
 			let stop_signals = stop_signals.clone();
@@ -120,20 +149,31 @@ impl OptionsTile {
 		});
 
 		Self {
-			speed_choice,
+			speed_input: speed_choice,
 			brightness_choice,
 			direction_choice,
+			fps_input,
 		}
 	}
+
 	pub fn update(&mut self, effect: Effects) {
 		//Conditionally activate the direction setting
-		match effect {
-			Effects::Wave | Effects::SmoothWave | Effects::Swipe => {
-				self.direction_choice.activate();
-			}
-			_ => {
-				self.direction_choice.deactivate();
-			}
+		if effect.takes_direction() {
+			self.direction_choice.activate();
+		} else {
+			self.direction_choice.deactivate();
+		}
+
+		if effect.takes_speed() {
+			self.speed_input.activate()
+		} else {
+			self.speed_input.deactivate()
+		}
+
+		if matches!(effect, Effects::AmbientLight { .. }) {
+			self.fps_input.show();
+		} else {
+			self.fps_input.hide();
 		}
 	}
 }
