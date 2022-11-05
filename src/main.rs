@@ -1,9 +1,9 @@
 mod cli;
 mod custom_effect;
+mod effects;
 mod enums;
 mod error;
 mod gui;
-mod keyboard_manager;
 mod keyboard_utils;
 mod profile;
 mod storage_trait;

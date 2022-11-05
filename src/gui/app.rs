@@ -2,11 +2,14 @@ use super::options::OptionsTile;
 use super::utils::screen_center;
 use super::{color_tiles, options, side_tile};
 use super::{color_tiles::ColorTiles, enums::GuiMessage};
-use crate::keyboard_manager::{KeyboardManager, StopSignals};
 use crate::profile::Profile;
 use crate::{
 	custom_effect::CustomEffect,
 	enums::{Direction, Effects, Message},
+};
+use crate::{
+	effects::{EffectManager, StopSignals},
+	error::Error,
 };
 use crate::{gui::dialog as appdialog, profile::ProfilesData};
 use crate::{gui::menu_bar, profile::Profiles};
@@ -38,7 +41,7 @@ pub struct App {
 }
 
 impl App {
-	pub fn start_ui(show_window: bool) {
+	pub fn start_ui(manager_result: Result<EffectManager, Error>, hidden: bool) {
 		let app = app::App::default();
 
 		app::background(51, 51, 51);
@@ -56,7 +59,6 @@ impl App {
 			app.run().unwrap();
 		}
 
-		let manager_result = KeyboardManager::new();
 		if manager_result.is_err() {
 			appdialog::alert(800, 400, "A valid keyboard model was not found. It may be due to a hardware error.", true);
 			app.run().unwrap();
@@ -69,7 +71,7 @@ impl App {
 		let mut win = Self::create_window(manager);
 		win.set_callback(|win| win.hide());
 
-		if show_window {
+		if !hidden {
 			win.show()
 		};
 
@@ -112,8 +114,8 @@ impl App {
 
 	pub fn update_gui_from_profile(&mut self, profile: &Profile) {
 		self.color_tiles.set_state(&profile.rgb_array, profile.ui_toggle_button_state);
-		self.effect_browser.select(profile.effect as i32 + 1);
-		self.options_tile.speed_choice.set_value(i32::from(profile.speed) - 1);
+		self.effect_browser.select(profile.effect.as_u8() as i32 + 1);
+		self.options_tile.speed_input.set_value(profile.speed.to_string().as_str());
 		self.options_tile.brightness_choice.set_value(i32::from(profile.brightness) - 1);
 
 		self.stop_signals.store_true();
@@ -156,7 +158,7 @@ impl App {
 		let rgb_array = self.color_tiles.get_values();
 		let effect = Effects::from_str(self.effect_browser.selected_text().unwrap().as_str()).unwrap();
 		let direction = Direction::from_str(self.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
-		let speed = self.options_tile.speed_choice.choice().unwrap().parse::<u8>().unwrap();
+		let speed = self.options_tile.speed_input.value().parse::<u8>().unwrap();
 		let brightness = self.options_tile.brightness_choice.choice().unwrap().parse::<u8>().unwrap();
 		let ui_toggle_button_state = self.color_tiles.get_button_state();
 
@@ -177,10 +179,14 @@ impl App {
 		dlg.set_option(dialog::FileDialogOptions::SaveAsConfirm);
 		dlg.show();
 
-		let filename = dlg.filename().to_string_lossy().to_string();
+		let mut file_path = dlg.filename();
+
+		file_path.set_extension("json");
+
+		let filename = file_path.to_string_lossy().to_string();
 
 		if !filename.is_empty() {
-			profile.save_profile(filename.as_str()).unwrap();
+			profile.save_profile(&filename).unwrap();
 		}
 
 		self.stop_signals.store_true();
@@ -216,7 +222,7 @@ impl App {
 		}
 	}
 
-	pub fn create_window(mut manager: KeyboardManager) -> fltk::window::Window {
+	pub fn create_window(mut manager: EffectManager) -> fltk::window::Window {
 		// panic::set_hook(Box::new(|info| {
 		// 	if let Some(s) = info.payload().downcast_ref::<&str>() {
 		// 		appdialog::panic(800, 400, s);
@@ -238,39 +244,39 @@ impl App {
 			profiles: Profiles::from_disk(),
 		};
 
-		update_preset_browser(&mut side_tile.preset_browser, &app.profiles);
+		update_profile_browser(&mut side_tile.profile_browser, &app.profiles);
 
 		menu_bar::AppMenuBar::new(&app);
 
-		side_tile.add_preset_button.set_callback({
+		side_tile.add_profile_button.set_callback({
 			let mut app = app.clone();
-			let mut preset_browser = side_tile.preset_browser.clone();
+			let mut profile_browser = side_tile.profile_browser.clone();
 			move |_button| {
 				let profile = app.create_profile_from_gui();
 				app.profiles.push(profile);
-				update_preset_browser(&mut preset_browser, &app.profiles);
+				update_profile_browser(&mut profile_browser, &app.profiles);
 				ProfilesData::new(&app.profiles).save_profiles().unwrap();
 			}
 		});
 
-		side_tile.remove_preset_button.set_callback({
+		side_tile.remove_profile_button.set_callback({
 			let mut app = app.clone();
-			let mut preset_browser = side_tile.preset_browser.clone();
+			let mut profile_browser = side_tile.profile_browser.clone();
 			move |_button| {
-				if preset_browser.value() > 0 && !app.profiles.is_empty() {
-					app.profiles.remove(preset_browser.value() as usize - 1);
-					update_preset_browser(&mut preset_browser, &app.profiles);
+				if profile_browser.value() > 0 && !app.profiles.is_empty() {
+					app.profiles.remove(profile_browser.value() as usize - 1);
+					update_profile_browser(&mut profile_browser, &app.profiles);
 					ProfilesData::new(&app.profiles).save_profiles().unwrap();
 				}
 			}
 		});
 
-		side_tile.preset_browser.set_callback({
+		side_tile.profile_browser.set_callback({
 			let mut app = app.clone();
-			let preset_browser = side_tile.preset_browser.clone();
+			let profile_browser = side_tile.profile_browser.clone();
 			move |_browser| {
 				let profiles = app.profiles.inner.lock().clone();
-				if let Some(profile) = profiles.get(preset_browser.value() as usize - 1) {
+				if let Some(profile) = profiles.get(profile_browser.value() as usize - 1) {
 					app.update_gui_from_profile(profile);
 				};
 			}
@@ -278,7 +284,7 @@ impl App {
 
 		thread::spawn({
 			let mut app = app.clone();
-			let mut preset_browser = side_tile.preset_browser.clone();
+			let mut profile_browser = side_tile.profile_browser.clone();
 			move || {
 				let device_state = DeviceState::new();
 
@@ -288,18 +294,18 @@ impl App {
 
 						if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::RAlt) {
 							if app.profiles.len() > 1 {
-								if app.profiles.len() == preset_browser.value() as usize {
-									preset_browser.select(1);
+								if app.profiles.len() == profile_browser.value() as usize {
+									profile_browser.select(1);
 								} else {
-									preset_browser.select(preset_browser.value() + 1);
+									profile_browser.select(profile_browser.value() + 1);
 								}
 							} else {
-								preset_browser.select(1);
+								profile_browser.select(1);
 							}
 
 							let profiles = app.profiles.inner.lock().clone();
 
-							if let Some(profile) = profiles.get(preset_browser.value() as usize - 1) {
+							if let Some(profile) = profiles.get(profile_browser.value() as usize - 1) {
 								app.update_gui_from_profile(&profile.clone());
 								thread::sleep(Duration::from_millis(150));
 							};
@@ -331,7 +337,7 @@ impl App {
 							app.update(profile.effect);
 							app::awake();
 
-							manager.set_effect(profile.effect, profile.direction, &profile.rgb_array, profile.speed, profile.brightness);
+							manager.set_effect(profile);
 						}
 						Message::CustomEffect { effect } => {
 							app.color_tiles.deactivate();
@@ -368,10 +374,10 @@ pub fn load_icon_data(image_data: &[u8]) -> IconSource {
 	}
 }
 
-fn update_preset_browser(preset_browser: &mut HoldBrowser, profiles: &Profiles) {
-	preset_browser.clear();
+fn update_profile_browser(profile_browser: &mut HoldBrowser, profiles: &Profiles) {
+	profile_browser.clear();
 
 	for i in 0..profiles.len() {
-		preset_browser.add(format!("Preset {}", i).as_str());
+		profile_browser.add(format!("Profile {}", i).as_str());
 	}
 }

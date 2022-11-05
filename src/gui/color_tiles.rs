@@ -1,7 +1,7 @@
 use super::enums::{BaseColor, Colors};
 use crate::{
+	effects::StopSignals,
 	enums::{Effects, Message},
-	keyboard_manager::StopSignals,
 };
 use fltk::{
 	button::ToggleButton,
@@ -353,13 +353,10 @@ impl ColorTiles {
 	}
 
 	pub fn update(&mut self, effect: Effects) {
-		match effect {
-			Effects::Static | Effects::Breath | Effects::Swipe | Effects::Fade | Effects::Ripple => {
-				self.activate();
-			}
-			Effects::Smooth | Effects::Wave | Effects::Lightning | Effects::AmbientLight | Effects::SmoothWave | Effects::Disco | Effects::Christmas | Effects::Temperature => {
-				self.deactivate();
-			}
+		if effect.takes_color_array() {
+			self.activate();
+		} else {
+			self.deactivate();
 		}
 	}
 
