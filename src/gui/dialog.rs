@@ -160,7 +160,7 @@ pub fn about(width: i32, height: i32) {
 		static ref VERSION: String = env!("CARGO_PKG_VERSION").to_string();
 	};
 
-	let message = "A program made by 4JX.\n\nSomething's not working?: https://github.com/4JX/L5P-Keyboard-RGB\n\nDonate: https://liberapay.com/4JX/donate";
+	let message = "A program made by 4JX.\n\nSomething's not working?: https://github.com/4JX/L5P-Keyboard-RGB";
 	let mut buffer = fltk::text::TextBuffer::default();
 	buffer.set_text(&format!("{}\n\nCurrent version: {}", message, *VERSION));
 

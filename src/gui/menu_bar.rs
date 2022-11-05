@@ -49,6 +49,13 @@ impl AppMenuBar {
 				dialog::about(800, 200);
 			}
 		});
+
+		menu.add("&Donate", Shortcut::None, menu::MenuFlag::Normal, {
+			move |_some| {
+				open::that("https://liberapay.com/4JX/donate").unwrap();
+			}
+		});
+
 		menu.add("Exit", Shortcut::None, menu::MenuFlag::Normal, {
 			move |_some| {
 				std::process::exit(0);
