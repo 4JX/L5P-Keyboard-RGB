@@ -175,5 +175,11 @@ impl OptionsTile {
 		} else {
 			self.fps_input.hide();
 		}
+
+		if matches!(effect, Effects::AmbientLightWarmerDesaturated { .. }) {
+			self.fps_input.show();
+		} else {
+			self.fps_input.hide();
+		}
 	}
 }

@@ -13,9 +13,10 @@ use rand::{rngs::ThreadRng, thread_rng};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use self::{ambient::AmbientLight, christmas::Christmas, disco::Disco, fade::Fade, lightning::Lightning, ripple::Ripple, swipe::Swipe, temperature::Temperature};
+use self::{ambient::AmbientLight, ambient_warmer_desaturated::AmbientLightWarmerDesaturated, christmas::Christmas, disco::Disco, fade::Fade, lightning::Lightning, ripple::Ripple, swipe::Swipe, temperature::Temperature};
 
 mod ambient;
+mod ambient_warmer_desaturated;
 mod christmas;
 mod disco;
 mod fade;
@@ -81,6 +82,7 @@ impl EffectManager {
 
 			Effects::Lightning => Lightning::play(self, profile, &mut thread_rng),
 			Effects::AmbientLight { .. } => AmbientLight::play(self, profile, &mut thread_rng),
+			Effects::AmbientLightWarmerDesaturated { .. } => AmbientLightWarmerDesaturated::play(self, profile, &mut thread_rng),
 			Effects::SmoothWave => {
 				profile.rgb_array = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 				Swipe::play(self, profile, &mut thread_rng)
