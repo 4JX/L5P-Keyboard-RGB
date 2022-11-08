@@ -13,19 +13,26 @@
 
 ## Index <!-- omit in toc -->
 
-- [Download](#download)
-- [Available effects](#available-effects)
-  - [Creating your own effects](#creating-your-own-effects)
-- [Usage](#usage)
-  - [With GUI](#with-gui)
-  - [Via the command line](#via-the-command-line)
-- [Compatibility](#compatibility)
-  - ["How about X model"](#how-about-x-model)
-- [Building from source](#building-from-source)
-  - [Prerequisites](#prerequisites)
-  - [Using `cargo-make`](#using-cargo-make)
-  - [Building manually](#building-manually)
-- [Crashes, freezes, etc](#crashes-freezes-etc)
+- [Legion RGB Control](#legion-rgb-control)
+  - [Download](#download)
+  - [Available effects](#available-effects)
+    - [Creating your own effects](#creating-your-own-effects)
+      - [At a glance](#at-a-glance)
+      - [File sections](#file-sections)
+  - [Usage](#usage)
+    - [With GUI](#with-gui)
+    - [Via the command line](#via-the-command-line)
+  - [Compatibility](#compatibility)
+    - ["How about X model"](#how-about-x-model)
+  - [Building from source](#building-from-source)
+    - [Prerequisites](#prerequisites)
+      - [Ubuntu](#ubuntu)
+      - [Arch Linux](#arch-linux)
+    - [Using `cargo-make`](#using-cargo-make)
+    - [Building manually](#building-manually)
+      - [Windows](#windows)
+      - [Linux](#linux)
+  - [Crashes, freezes, etc](#crashes-freezes-etc)
 
 ## Download
 
@@ -43,6 +50,7 @@ You may also download pre-compiled versions from [here](https://github.com/4JX/L
 
 - **Lightning:** Adds a little _spark_.
 - **AmbientLight:** Reacts to content on your screen.
+- **AmbientLightWarmerDesaturated:** Reacts to content on your screen. Warmer & Desaturated.
 - **Smooth(Left/Right)Wave:** An implementation of the classic wave effect.
 - **(Left/Right)Swipe:** Transitions the selected colors from side to side, useful for custom waves.
 - **Disco:** A portable dance floor!
