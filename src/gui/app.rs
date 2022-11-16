@@ -156,7 +156,11 @@ impl App {
 
 	pub fn create_profile_from_gui(&mut self) -> Profile {
 		let rgb_array = self.color_tiles.get_values();
-		let effect = Effects::from_str(self.effect_browser.selected_text().unwrap().as_str()).unwrap();
+		let mut effect = Effects::from_str(self.effect_browser.selected_text().unwrap().as_str()).unwrap();
+		if let Effects::AmbientLight { fps } = &mut effect {
+			*fps = self.options_tile.fps_input.value().parse::<u8>().unwrap_or(1);
+		}
+
 		let direction = Direction::from_str(self.options_tile.direction_choice.choice().unwrap().as_str()).unwrap();
 		let speed = self.options_tile.speed_input.value().parse::<u8>().unwrap();
 		let brightness = self.options_tile.brightness_choice.choice().unwrap().parse::<u8>().unwrap();

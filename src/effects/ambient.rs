@@ -7,7 +7,7 @@ use std::{
 
 use fast_image_resize as fr;
 use rand::rngs::ThreadRng;
-use scrap::{Capturer, Display};
+use scrap::{Capturer, Display, TraitCapturer};
 
 use crate::{enums::Message, profile::Profile};
 
@@ -23,7 +23,9 @@ impl EffectPlayer for AmbientLight {
 		let display = Display::all().unwrap().remove(0);
 
 		let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-		let (w, h) = (capturer.width(), capturer.height());
+
+		let (width, height) = (NonZeroU32::new(capturer.width() as u32).unwrap(), NonZeroU32::new(capturer.height() as u32).unwrap());
+		let (dst_width, dst_height) = (NonZeroU32::new(4).unwrap(), NonZeroU32::new(1).unwrap());
 
 		let fps = match p.effect {
 			crate::enums::Effects::AmbientLight { fps } => {
@@ -37,9 +39,9 @@ impl EffectPlayer for AmbientLight {
 		};
 
 		let seconds_per_frame = Duration::from_nanos(1_000_000_000 / fps as u64);
-		let wait_base: i32 = seconds_per_frame.as_millis() as i32;
+		let wait_base = seconds_per_frame.as_millis();
 		let mut wait = wait_base;
-		let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Lanczos3));
+		let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Box));
 
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 			if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -47,12 +49,10 @@ impl EffectPlayer for AmbientLight {
 			}
 
 			let now = Instant::now();
-			match capturer.frame(wait as u32) {
+			match capturer.frame(Duration::from_millis(wait as u64)) {
 				Ok(frame) => {
 					// Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
 					// Read source image from file
-					let width = NonZeroU32::new(w as u32).unwrap();
-					let height = NonZeroU32::new(h as u32).unwrap();
 					let mut src_image = fr::Image::from_vec_u8(width, height, frame.to_vec(), fr::PixelType::U8x4).unwrap();
 
 					// Create MulDiv instance
@@ -61,8 +61,6 @@ impl EffectPlayer for AmbientLight {
 					alpha_mul_div.multiply_alpha_inplace(&mut src_image.view_mut()).unwrap();
 
 					// Create container for data of destination image
-					let dst_width = NonZeroU32::new(4).unwrap();
-					let dst_height = NonZeroU32::new(1).unwrap();
 					let mut dst_image = fr::Image::new(dst_width, dst_height, fr::PixelType::U8x4);
 
 					// Get mutable view of destination image data
@@ -93,10 +91,7 @@ impl EffectPlayer for AmbientLight {
 				}
 				Err(error) => match error.kind() {
 					std::io::ErrorKind::WouldBlock => {
-						wait = wait_base - now.elapsed().as_millis() as i32;
-						if wait < 0 {
-							wait = 0;
-						}
+						wait = wait_base - now.elapsed().as_millis();
 					}
 					std::io::ErrorKind::InvalidData => {
 						manager.stop_signals.store_true();

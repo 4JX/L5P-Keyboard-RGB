@@ -104,19 +104,14 @@ impl OptionsTile {
 			let stop_signals = stop_signals.clone();
 			move |fps_input| {
 				stop_signals.store_true();
-				if let Ok(fps) = fps_input.value().parse::<u8>() {
-					if fps > 60 {
-						fps_input.set_value("60");
-					} else if fps < 1 {
-						fps_input.set_value("1");
-					} else {
-						fps_input.set_value(&fps.to_string());
-					}
-
-					if (1..=5).contains(&fps) {
-						tx.send(Message::Refresh).unwrap();
-					}
+				let fps = fps_input.value().parse::<u8>().unwrap_or(1);
+				if fps > 60 {
+					fps_input.set_value("60");
+				} else if fps < 1 {
+					fps_input.set_value("1");
 				}
+
+				tx.send(Message::Refresh).unwrap();
 			}
 		});
 		fps_input.set_value(&10.to_string());
