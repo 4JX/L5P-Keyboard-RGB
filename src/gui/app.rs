@@ -97,11 +97,21 @@ impl App {
 
 		if tray_item_err {
 			loop {
-				app::wait_for(0.2).unwrap();
+				if let Err(err) = app::wait_for(0.2) {
+					match err {
+						FltkError::Unknown(_) => (),
+						other => panic!("{}", other)
+					}
+				}
 			}
 		} else {
 			loop {
-				app::wait_for(0.2).unwrap();
+				if let Err(err) = app::wait_for(0.2) {
+					match err {
+						FltkError::Unknown(_) => (),
+						other => panic!("{}", other)
+					}
+				}
 				if let Ok(msg) = window_receiver.try_recv() {
 					match msg {
 						GuiMessage::ShowWindow => win.show(),
