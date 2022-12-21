@@ -33,7 +33,7 @@ impl CustomEffect {
 
 		//If loading from the cli, the loop is intentional
 		#[allow(clippy::while_immutable_condition)]
-		'outer: while self.should_loop {
+		'outer: loop {
 			for step in self.effect_steps.clone() {
 				manager.keyboard.set_speed(step.speed);
 				manager.keyboard.set_brightness(step.brightness);
@@ -49,6 +49,9 @@ impl CustomEffect {
 					break 'outer;
 				}
 				thread::sleep(Duration::from_millis(step.sleep));
+			}
+			if !self.should_loop {
+				break;
 			}
 		}
 	}
