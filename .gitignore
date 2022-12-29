@@ -7,6 +7,10 @@
 # Rust
 target
 
+# Nix
+.direnv
+result
+
 # Other
 things.md
 *.json
