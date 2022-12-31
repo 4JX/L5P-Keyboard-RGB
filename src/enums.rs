@@ -25,6 +25,7 @@ impl Default for Effects {
 	}
 }
 
+#[allow(dead_code)]
 impl Effects {
 	pub fn takes_color_array(&self) -> bool {
 		matches!(self, Effects::Static | Effects::Breath | Effects::Swipe { .. } | Effects::Fade | Effects::Ripple)
@@ -40,24 +41,6 @@ impl Effects {
 			Effects::Breath | Effects::Smooth | Effects::Wave | Effects::Lightning | Effects::SmoothWave | Effects::Swipe | Effects::Disco | Effects::Fade | Effects::Ripple
 		)
 	}
-
-	pub fn as_u8(&self) -> u8 {
-		match self {
-			Effects::Static => 0,
-			Effects::Breath => 1,
-			Effects::Smooth => 2,
-			Effects::Wave => 3,
-			Effects::Lightning => 4,
-			Effects::AmbientLight { .. } => 5,
-			Effects::SmoothWave => 6,
-			Effects::Swipe => 7,
-			Effects::Disco => 8,
-			Effects::Christmas => 9,
-			Effects::Fade => 10,
-			Effects::Temperature => 11,
-			Effects::Ripple => 12,
-		}
-	}
 }
 
 #[derive(Clone, Copy, EnumString, Serialize, Deserialize)]
@@ -72,6 +55,7 @@ impl Default for Direction {
 	}
 }
 
+#[allow(dead_code)]
 pub enum Message {
 	CustomEffect { effect: CustomEffect },
 	Refresh,

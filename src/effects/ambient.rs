@@ -6,19 +6,17 @@ use std::{
 };
 
 use fast_image_resize as fr;
-use rand::rngs::ThreadRng;
+
 use scrap::{Capturer, Display, TraitCapturer};
 
-use crate::{enums::Message, profile::Profile};
+use crate::enums::Message;
 
-use super::{EffectManager, EffectPlayer};
-
-const DEFAULT_FPS: u8 = 10;
+use super::EffectManager;
 
 pub(super) struct AmbientLight;
 
-impl EffectPlayer for AmbientLight {
-	fn play(manager: &mut EffectManager, p: Profile, _thread_rng: &mut ThreadRng) {
+impl AmbientLight {
+	pub fn play(manager: &mut EffectManager, fps: u8) {
 		//Display setup
 		let display = Display::all().unwrap().remove(0);
 
@@ -26,17 +24,6 @@ impl EffectPlayer for AmbientLight {
 
 		let (width, height) = (NonZeroU32::new(capturer.width() as u32).unwrap(), NonZeroU32::new(capturer.height() as u32).unwrap());
 		let (dst_width, dst_height) = (NonZeroU32::new(4).unwrap(), NonZeroU32::new(1).unwrap());
-
-		let fps = match p.effect {
-			crate::enums::Effects::AmbientLight { fps } => {
-				if fps < 1 {
-					DEFAULT_FPS
-				} else {
-					fps
-				}
-			}
-			_ => unreachable!("Attempted to play AmbientLight effect with wrong profile"),
-		};
 
 		let seconds_per_frame = Duration::from_nanos(1_000_000_000 / fps as u64);
 		let wait_base = seconds_per_frame.as_millis();

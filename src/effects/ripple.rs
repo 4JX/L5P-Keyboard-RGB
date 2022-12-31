@@ -11,12 +11,10 @@ use device_query::{DeviceQuery, DeviceState, Keycode};
 
 use crate::profile::Profile;
 
-use super::EffectPlayer;
-
 pub(super) struct Ripple;
 
-impl EffectPlayer for Ripple {
-	fn play(manager: &mut super::EffectManager, p: Profile, _thread_rng: &mut rand::rngs::ThreadRng) {
+impl Ripple {
+	pub fn play(manager: &mut super::EffectManager, p: Profile) {
 		// Welcome to the definition of i-don't-know-what-im-doing
 		let keys_zone_1: [Keycode; 24] = [
 			Keycode::Escape,

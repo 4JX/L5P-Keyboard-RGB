@@ -27,11 +27,14 @@ macro_rules! clap_value_parser {
     long_about = None,
     name = "Legion Keyboard Control",
     // arg_required_else_help(true),
-    rename_all = "PascalCase",
+    rename_all = "camelCase",
 )]
 struct Cli {
 	#[command(subcommand)]
 	command: Option<Commands>,
+	// /// Start the GUI
+	// #[arg(short, long, default_value_t = false)]
+	// gui: bool,
 }
 
 #[derive(Subcommand)]
@@ -76,17 +79,10 @@ enum Commands {
 		path: PathBuf,
 	},
 
-	/// Load an effect from a file
-	LoadEffect {
+	/// Load a custom effect from a file
+	CustomEffect {
 		#[arg(short, long)]
 		path: PathBuf,
-	},
-
-	/// Start the GUI
-	Gui {
-		/// Keep the window hidden on startup
-		#[arg(short, long, default_value_t = false)]
-		hidden: bool,
 	},
 }
 
@@ -117,7 +113,7 @@ pub fn try_cli() -> Result<(), Report> {
 		Some(subcommand) => {
 			// Early logic for specific subcommands
 			match subcommand {
-				Commands::Set { .. } | Commands::LoadEffect { .. } | Commands::LoadProfile { .. } => {
+				Commands::Set { .. } | Commands::CustomEffect { .. } | Commands::LoadProfile { .. } => {
 					let instance = SingleInstance::new(crate_name!()).unwrap();
 					assert!(instance.is_single(), "Another instance of the program is already running, please close it before starting a new one.");
 				}
@@ -179,7 +175,8 @@ pub fn try_cli() -> Result<(), Report> {
 						}
 					}
 				}
-				Commands::LoadEffect { path } => {
+
+				Commands::CustomEffect { path } => {
 					let mut manager = manager_result.unwrap();
 
 					match CustomEffect::from_file(path.to_string_lossy().to_string()) {
@@ -191,16 +188,12 @@ pub fn try_cli() -> Result<(), Report> {
 						}
 					}
 				}
-
-				Commands::Gui { hidden } => {
-					crate::gui::app::App::start_ui(manager_result, hidden);
-				}
 			}
 		}
 		None => {
 			let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 			println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
-			crate::gui::app::App::start_ui(manager_result, false);
+			panic!("unimplemented");
 		}
 	}
 

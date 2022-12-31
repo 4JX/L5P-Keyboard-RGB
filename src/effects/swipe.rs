@@ -2,12 +2,10 @@ use std::{sync::atomic::Ordering, thread, time::Duration};
 
 use crate::{enums::Direction, profile::Profile};
 
-use super::EffectPlayer;
-
 pub(super) struct Swipe;
 
-impl EffectPlayer for Swipe {
-	fn play(manager: &mut super::EffectManager, mut p: Profile, _thread_rng: &mut rand::rngs::ThreadRng) {
+impl Swipe {
+	pub fn play(manager: &mut super::EffectManager, mut p: Profile) {
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 			if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 				break;

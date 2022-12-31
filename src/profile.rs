@@ -13,6 +13,7 @@ pub struct Profiles {
 	pub inner: Arc<Mutex<Vec<Profile>>>,
 }
 
+#[allow(dead_code)]
 impl Profiles {
 	pub fn new(profiles_data: ProfilesData) -> Self {
 		let inner = Arc::new(Mutex::new(profiles_data.inner));
@@ -46,6 +47,7 @@ pub struct ProfilesData {
 	pub inner: Vec<Profile>,
 }
 
+#[allow(dead_code)]
 impl ProfilesData {
 	pub fn new(profiles: &Profiles) -> Self {
 		let inner = profiles.inner.lock().clone();

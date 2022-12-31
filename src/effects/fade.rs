@@ -8,12 +8,10 @@ use device_query::{DeviceQuery, DeviceState, Keycode};
 
 use crate::profile::Profile;
 
-use super::EffectPlayer;
-
 pub(super) struct Fade;
 
-impl EffectPlayer for Fade {
-	fn play(manager: &mut super::EffectManager, p: Profile, _thread_rng: &mut rand::rngs::ThreadRng) {
+impl Fade {
+	pub fn play(manager: &mut super::EffectManager, p: Profile) {
 		let stop_signals = manager.stop_signals.clone();
 		thread::spawn(move || {
 			let device_state = DeviceState::new();

@@ -9,7 +9,7 @@ use crate::{
 };
 
 use flume::{Receiver, Sender};
-use rand::{rngs::ThreadRng, thread_rng};
+use rand::thread_rng;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -80,17 +80,17 @@ impl EffectManager {
 			},
 
 			Effects::Lightning => Lightning::play(self, profile, &mut thread_rng),
-			Effects::AmbientLight { .. } => AmbientLight::play(self, profile, &mut thread_rng),
+			Effects::AmbientLight { fps } => AmbientLight::play(self, fps),
 			Effects::SmoothWave => {
 				profile.rgb_array = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
-				Swipe::play(self, profile, &mut thread_rng)
+				Swipe::play(self, profile)
 			}
-			Effects::Swipe { .. } => Swipe::play(self, profile, &mut thread_rng),
+			Effects::Swipe => Swipe::play(self, profile),
 			Effects::Disco => Disco::play(self, profile, &mut thread_rng),
-			Effects::Christmas => Christmas::play(self, profile, &mut thread_rng),
-			Effects::Fade => Fade::play(self, profile, &mut thread_rng),
-			Effects::Temperature => Temperature::play(self, profile, &mut thread_rng),
-			Effects::Ripple => Ripple::play(self, profile, &mut thread_rng),
+			Effects::Christmas => Christmas::play(self, &mut thread_rng),
+			Effects::Fade => Fade::play(self, profile),
+			Effects::Temperature => Temperature::play(self),
+			Effects::Ripple => Ripple::play(self, profile),
 		}
 		self.stop_signals.store_false();
 	}
@@ -111,8 +111,4 @@ impl StopSignals {
 		self.keyboard_stop_signal.store(false, Ordering::SeqCst);
 		self.manager_stop_signal.store(false, Ordering::SeqCst);
 	}
-}
-
-trait EffectPlayer {
-	fn play(manager: &mut EffectManager, p: Profile, thread_rng: &mut ThreadRng);
 }

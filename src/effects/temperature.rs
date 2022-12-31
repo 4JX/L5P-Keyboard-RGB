@@ -2,14 +2,10 @@ use std::{sync::atomic::Ordering, thread, time::Duration};
 
 use sysinfo::{ComponentExt, System, SystemExt};
 
-use crate::profile::Profile;
-
-use super::EffectPlayer;
-
 pub(super) struct Temperature;
 
-impl EffectPlayer for Temperature {
-	fn play(manager: &mut super::EffectManager, _p: Profile, _thread_rng: &mut rand::rngs::ThreadRng) {
+impl Temperature {
+	pub fn play(manager: &mut super::EffectManager) {
 		let safe_temp = 30.0;
 		let ramp_boost = 1.6;
 		let temp_cool: [f32; 12] = [0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0];
