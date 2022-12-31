@@ -59,6 +59,42 @@
           xorg.libxcb
         ] ++ sharedDeps;
 
+        vcpkgHook =
+          let
+            vcpkg_target = "x64-linux";
+
+            updates_vcpkg_file = pkgs.writeText "update_vcpkg_legion-kb-rgb"
+              ''
+                Package : libyuv
+                Architecture : ${vcpkg_target}
+                Version : 1.0
+                Status : is installed
+                Package : libvpx
+                Architecture : ${vcpkg_target}
+                Version : 1.0
+                Status : is installed
+              '';
+          in
+          ''
+            export VCPKG_ROOT="$TMP/vcpkg"
+            mkdir -p $VCPKG_ROOT/.vcpkg-root
+            mkdir -p $VCPKG_ROOT/installed/${vcpkg_target}/lib
+            mkdir -p $VCPKG_ROOT/installed/vcpkg/updates
+            ln -s ${updates_vcpkg_file} $VCPKG_ROOT/installed/vcpkg/status
+            mkdir -p $VCPKG_ROOT/installed/vcpkg/info
+            touch $VCPKG_ROOT/installed/vcpkg/info/libyuv_1.0_${vcpkg_target}.list
+            touch $VCPKG_ROOT/installed/vcpkg/info/libvpx_1.0_${vcpkg_target}.list
+            ln -s ${pkgs.libvpx.out}/lib/* $VCPKG_ROOT/installed/${vcpkg_target}/lib/
+            ln -s ${pkgs.libyuv.out}/lib/* $VCPKG_ROOT/installed/${vcpkg_target}/lib/
+          '';
+
+        envVars = rec {
+          RUST_BACKTRACE = 1;
+          MOLD_PATH = "${pkgs.mold.out}/bin/mold";
+          RUSTFLAGS = "-Clink-arg=-fuse-ld=${MOLD_PATH} -Clinker=clang";
+          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+        };
+
         # Allow a few more files to be included in the build workspace
         workspaceSrc = ./.;
         workspaceSrcString = builtins.toString workspaceSrc;
@@ -71,7 +107,7 @@
 
         # The main application derivation
         legion-kb-rgb = craneLib.buildPackage
-          rec {
+          ({
             src = nixLib.cleanSourceWith
               {
                 src = workspaceSrc;
@@ -98,40 +134,8 @@
 
             # Manually simulate a vcpkg installation so that it can link the libaries
             # properly. Borrowed from: https://github.com/NixOS/nixpkgs/blob/69a35ff92dc404bf04083be2fad4f3643b2152c9/pkgs/applications/networking/remote/rustdesk/default.nix#L51
-            postUnpack =
-              let
-                vcpkg_target = "x64-linux";
-
-                updates_vcpkg_file = pkgs.writeText "update_vcpkg_legion-kb-rgb"
-                  ''
-                    Package : libyuv
-                    Architecture : ${vcpkg_target}
-                    Version : 1.0
-                    Status : is installed
-                    Package : libvpx
-                    Architecture : ${vcpkg_target}
-                    Version : 1.0
-                    Status : is installed
-                  '';
-              in
-              ''
-                export VCPKG_ROOT="$TMP/vcpkg"
-                mkdir -p $VCPKG_ROOT/.vcpkg-root
-                mkdir -p $VCPKG_ROOT/installed/${vcpkg_target}/lib
-                mkdir -p $VCPKG_ROOT/installed/vcpkg/updates
-                ln -s ${updates_vcpkg_file} $VCPKG_ROOT/installed/vcpkg/status
-                mkdir -p $VCPKG_ROOT/installed/vcpkg/info
-                touch $VCPKG_ROOT/installed/vcpkg/info/libyuv_1.0_${vcpkg_target}.list
-                touch $VCPKG_ROOT/installed/vcpkg/info/libvpx_1.0_${vcpkg_target}.list
-                ln -s ${pkgs.libvpx.out}/lib/* $VCPKG_ROOT/installed/${vcpkg_target}/lib/
-                ln -s ${pkgs.libyuv.out}/lib/* $VCPKG_ROOT/installed/${vcpkg_target}/lib/
-              '';
-
-            RUST_BACKTRACE = 1;
-            MOLD_PATH = "${pkgs.mold.out}/bin/mold";
-            RUSTFLAGS = "-Clink-arg=-fuse-ld=${MOLD_PATH} -Clinker=clang";
-            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-          };
+            postUnpack = vcpkgHook;
+          } // envVars);
 
         # Wrap the program for ease of use
         wrappedProgram = pkgs.symlinkJoin rec {
@@ -158,7 +162,9 @@
           drv = wrappedProgram;
         };
 
-        devShells.default = pkgs.mkShell {
+        devShells.default = pkgs.mkShell ({
+          shellHook = vcpkgHook;
+
           inputsFrom = builtins.attrValues self.checks;
 
           inherit (legion-kb-rgb) buildInputs;
@@ -166,7 +172,7 @@
           # Extra inputs can be added here
           nativeBuildInputs = [
             rust
-          ];
-        };
+          ] ++ legion-kb-rgb.nativeBuildInputs;
+        } // envVars);
       });
 }
