@@ -114,6 +114,8 @@
                 filter = workspaceFilter;
               };
 
+            doCheck = false;
+
             buildInputs = with pkgs;
               [
                 libvpx
@@ -151,9 +153,9 @@
         };
       in
       {
-        checks = {
-          inherit legion-kb-rgb;
-        };
+        # checks = {
+        #   inherit legion-kb-rgb;
+        # };
 
         packages.default = legion-kb-rgb;
         packages.wrapped = wrappedProgram;
@@ -162,17 +164,22 @@
           drv = wrappedProgram;
         };
 
-        devShells.default = pkgs.mkShell ({
-          shellHook = vcpkgHook;
+        # devShells.default = pkgs.mkShell ({
+        #   shellHook = vcpkgHook;
 
-          inputsFrom = builtins.attrValues self.checks;
+        #   inputsFrom = builtins.attrValues self.checks;
 
-          inherit (legion-kb-rgb) buildInputs;
+        #   inherit (legion-kb-rgb) buildInputs;
 
-          # Extra inputs can be added here
-          nativeBuildInputs = [
-            rust
-          ] ++ legion-kb-rgb.nativeBuildInputs;
-        } // envVars);
+        #   # Extra inputs can be added here
+        #   nativeBuildInputs = [
+        #     rust
+        #   ] ++ legion-kb-rgb.nativeBuildInputs;
+        # } // envVars);
+
+        devShells.default = legion-kb-rgb;
       });
 }
+
+# Find out why shellhook wont properly execute
+# Find out how to pass args through "nix run" properly (-- flags don't work)

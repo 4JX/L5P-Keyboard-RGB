@@ -144,7 +144,11 @@ impl Inner {
 			},
 
 			Effects::Lightning => Lightning::play(self, profile, &mut thread_rng),
-			Effects::AmbientLight { fps } => AmbientLight::play(self, fps),
+			Effects::AmbientLight { mut fps } => {
+				fps = fps.clamp(1, 60);
+
+				AmbientLight::play(self, fps)
+			}
 			Effects::SmoothWave => {
 				profile.rgb_array = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
 				Swipe::play(self, profile)
