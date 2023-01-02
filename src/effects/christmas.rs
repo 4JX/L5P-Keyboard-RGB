@@ -5,7 +5,7 @@ use rand::Rng;
 pub(super) struct Christmas;
 
 impl Christmas {
-	pub fn play(manager: &mut super::EffectManager, thread_rng: &mut rand::rngs::ThreadRng) {
+	pub fn play(manager: &mut super::Inner, thread_rng: &mut rand::rngs::ThreadRng) {
 		let xmas_color_array = [[255, 10, 10], [255, 255, 20], [30, 255, 30], [70, 70, 255]];
 		let subeffect_count = 4;
 		let mut last_subeffect = -1;

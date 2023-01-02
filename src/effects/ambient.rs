@@ -11,12 +11,10 @@ use scrap::{Capturer, Display, TraitCapturer};
 
 use crate::enums::Message;
 
-use super::EffectManager;
-
 pub(super) struct AmbientLight;
 
 impl AmbientLight {
-	pub fn play(manager: &mut EffectManager, fps: u8) {
+	pub fn play(manager: &mut super::Inner, fps: u8) {
 		//Display setup
 		let display = Display::all().unwrap().remove(0);
 

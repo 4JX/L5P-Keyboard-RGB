@@ -5,7 +5,7 @@ use sysinfo::{ComponentExt, System, SystemExt};
 pub(super) struct Temperature;
 
 impl Temperature {
-	pub fn play(manager: &mut super::EffectManager) {
+	pub fn play(manager: &mut super::Inner) {
 		let safe_temp = 30.0;
 		let ramp_boost = 1.6;
 		let temp_cool: [f32; 12] = [0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0];

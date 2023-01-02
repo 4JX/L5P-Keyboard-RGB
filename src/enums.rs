@@ -1,8 +1,8 @@
-use crate::custom_effect::CustomEffect;
+use crate::{effects::custom_effect::CustomEffect, profile::Profile};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, PartialEq, Eq)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, PartialEq, Eq, Debug)]
 pub enum Effects {
 	Static,
 	Breath,
@@ -43,7 +43,7 @@ impl Effects {
 	}
 }
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Debug)]
 pub enum Direction {
 	Left,
 	Right,
@@ -55,8 +55,10 @@ impl Default for Direction {
 	}
 }
 
-#[allow(dead_code)]
+#[derive(Debug)]
 pub enum Message {
 	CustomEffect { effect: CustomEffect },
 	Refresh,
+	Profile { profile: Profile },
+	Exit,
 }

@@ -6,8 +6,7 @@ use single_instance::SingleInstance;
 use strum::IntoEnumIterator;
 
 use crate::{
-	custom_effect::CustomEffect,
-	effects::EffectManager,
+	effects::custom_effect::CustomEffect,
 	enums::{Direction, Effects},
 	profile::Profile,
 };
@@ -32,9 +31,10 @@ macro_rules! clap_value_parser {
 struct Cli {
 	#[command(subcommand)]
 	command: Option<Commands>,
-	// /// Start the GUI
-	// #[arg(short, long, default_value_t = false)]
-	// gui: bool,
+
+	/// Start the GUI
+	#[arg(short, long, default_value_t = false)]
+	gui: bool,
 }
 
 #[derive(Subcommand)]
@@ -64,20 +64,19 @@ enum Commands {
 		/// The direction of the effect (If applicable)
 		#[arg(short, long, value_enum)]
 		direction: Option<Direction>,
-
-		/// A filename to save the effect at
-		#[arg(long, value_enum)]
-		save: Option<String>,
+		// A filename to save the effect at
+		// #[arg(long, value_enum)]
+		// save: Option<String>,
 	},
 
 	/// List all the available effects
 	List,
 
 	/// Load a profile from a file
-	LoadProfile {
-		#[arg(short, long)]
-		path: PathBuf,
-	},
+	// LoadProfile {
+	// 	#[arg(short, long)]
+	// 	path: PathBuf,
+	// },
 
 	/// Load a custom effect from a file
 	CustomEffect {
@@ -104,16 +103,28 @@ fn parse_colors(arg: &str) -> Result<[u8; 12], String> {
 	}
 }
 
-pub fn try_cli() -> Result<(), Report> {
-	let cli = Cli::parse();
+pub struct CliOutput {
+	/// Indicates if the user wants to start the GUI
+	pub start_gui: bool,
 
-	let manager_result = EffectManager::new();
+	/// What instruction was received through the CLI
+	pub output: CliOutputType,
+}
+
+pub enum CliOutputType {
+	Profile(Profile),
+	Custom(CustomEffect),
+	Exit,
+}
+
+pub fn try_cli() -> Result<CliOutput, Report> {
+	let cli = Cli::parse();
 
 	match cli.command {
 		Some(subcommand) => {
 			// Early logic for specific subcommands
 			match subcommand {
-				Commands::Set { .. } | Commands::CustomEffect { .. } | Commands::LoadProfile { .. } => {
+				Commands::Set { .. } | Commands::CustomEffect { .. } => {
 					let instance = SingleInstance::new(crate_name!()).unwrap();
 					assert!(instance.is_single(), "Another instance of the program is already running, please close it before starting a new one.");
 				}
@@ -127,10 +138,7 @@ pub fn try_cli() -> Result<(), Report> {
 					brightness,
 					speed,
 					direction,
-					save,
 				} => {
-					let mut manager = manager_result.unwrap();
-
 					let direction = direction.unwrap_or_default();
 
 					let rgb_array: [u8; 12] = if effect.takes_color_array() {
@@ -151,51 +159,56 @@ pub fn try_cli() -> Result<(), Report> {
 						ui_toggle_button_state: [false; 5],
 					};
 
-					if let Some(filename) = save {
-						profile.save_profile(&filename).expect("Failed to save.");
-					}
+					// if let Some(filename) = save {
+					// 	profile.save_profile(&filename).expect("Failed to save.");
+					// }
 
-					manager.set_effect(profile);
+					Ok(CliOutput {
+						start_gui: cli.gui,
+						output: CliOutputType::Profile(profile),
+					})
 				}
 				Commands::List => {
 					println!("List of available effects:");
 					for (i, effect) in Effects::iter().enumerate() {
 						println!("{i}. {}", effect);
 					}
-				}
-				Commands::LoadProfile { path } => {
-					let mut manager = manager_result.unwrap();
 
-					match Profile::load_profile(path) {
-						Ok(profile) => {
-							manager.set_effect(profile);
-						}
-						Err(err) => {
-							return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid profile."));
-						}
+					Ok(CliOutput {
+						start_gui: false,
+						output: CliOutputType::Exit,
+					})
+				}
+				// Commands::LoadProfile { path } => {
+				// 	let mut manager = manager_result.unwrap();
+
+				// 	match Profile::load_profile(path) {
+				// 		Ok(profile) => {
+				// 			manager.set_effect(profile);
+				// 		}
+				// 		Err(err) => {
+				// 			return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid profile."));
+				// 		}
+				// 	}
+				// }
+				Commands::CustomEffect { path } => match CustomEffect::from_file(path.to_string_lossy().to_string()) {
+					Ok(effect) => Ok(CliOutput {
+						start_gui: cli.gui,
+						output: CliOutputType::Custom(effect),
+					}),
+					Err(err) => {
+						return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid effect"));
 					}
-				}
-
-				Commands::CustomEffect { path } => {
-					let mut manager = manager_result.unwrap();
-
-					match CustomEffect::from_file(path.to_string_lossy().to_string()) {
-						Ok(effect) => {
-							effect.play(&mut manager);
-						}
-						Err(err) => {
-							return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid effect"));
-						}
-					}
-				}
+				},
 			}
 		}
 		None => {
 			let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 			println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
-			panic!("unimplemented");
+			Ok(CliOutput {
+				start_gui: true,
+				output: CliOutputType::Profile(Profile::default()),
+			})
 		}
 	}
-
-	Ok(())
 }

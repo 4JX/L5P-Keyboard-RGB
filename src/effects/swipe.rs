@@ -5,7 +5,7 @@ use crate::{enums::Direction, profile::Profile};
 pub(super) struct Swipe;
 
 impl Swipe {
-	pub fn play(manager: &mut super::EffectManager, mut p: Profile) {
+	pub fn play(manager: &mut super::Inner, mut p: Profile) {
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 			if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 				break;

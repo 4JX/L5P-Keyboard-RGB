@@ -1,5 +1,4 @@
 mod cli;
-mod custom_effect;
 mod effects;
 mod enums;
 mod error;
@@ -8,6 +7,7 @@ mod profile;
 mod storage_trait;
 
 use color_eyre::{Report, Result};
+use effects::EffectManager;
 
 fn main() -> Result<(), Report> {
 	color_eyre::install()?;
@@ -38,7 +38,27 @@ fn main() -> Result<(), Report> {
 		}
 	}
 
-	cli::try_cli()?;
+	let effect_manager_result = EffectManager::new();
 
-	Ok(())
+	let output = cli::try_cli()?;
+
+	if output.start_gui {
+		panic!("Unimplemented");
+	} else {
+		let effect_manager = effect_manager_result.unwrap();
+
+		match output.output {
+			cli::CliOutputType::Profile(profile) => {
+				effect_manager.set_profile(profile);
+				effect_manager.join_and_exit();
+				Ok(())
+			}
+			cli::CliOutputType::Custom(effect) => {
+				effect_manager.custom_effect(effect);
+				effect_manager.join_and_exit();
+				Ok(())
+			}
+			cli::CliOutputType::Exit => Ok(()),
+		}
+	}
 }

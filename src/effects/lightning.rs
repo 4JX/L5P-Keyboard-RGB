@@ -4,12 +4,10 @@ use rand::{rngs::ThreadRng, Rng};
 
 use crate::profile::Profile;
 
-use super::EffectManager;
-
 pub(super) struct Lightning;
 
 impl Lightning {
-	pub fn play(manager: &mut EffectManager, p: Profile, thread_rng: &mut ThreadRng) {
+	pub fn play(manager: &mut super::Inner, p: Profile, thread_rng: &mut ThreadRng) {
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 			if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 				break;
