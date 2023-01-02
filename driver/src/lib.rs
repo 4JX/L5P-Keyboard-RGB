@@ -8,7 +8,7 @@ use std::{
 	time::Duration,
 };
 
-use crate::error;
+pub mod error;
 
 #[cfg(target_os = "linux")]
 const DEVICE_INFO_2022: (u16, u16, u16, u16) = (0x048d, 0xc975, 0, 0);

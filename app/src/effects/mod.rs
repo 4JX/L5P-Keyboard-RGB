@@ -1,14 +1,11 @@
+use crate::error;
 use crate::{
 	enums::{Direction, Effects, Message},
-	keyboard_utils,
 	profile::Profile,
-};
-use crate::{
-	error,
-	keyboard_utils::{BaseEffects, Keyboard},
 };
 
 use crossbeam_channel::{Receiver, Sender};
+use legion_rgb_driver::{BaseEffects, Keyboard};
 use rand::thread_rng;
 use std::{
 	sync::atomic::{AtomicBool, Ordering},
@@ -61,7 +58,7 @@ impl EffectManager {
 			keyboard_stop_signal: Arc::new(AtomicBool::new(false)),
 		};
 
-		let keyboard = keyboard_utils::get_keyboard(stop_signals.keyboard_stop_signal.clone())?;
+		let keyboard = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())?;
 
 		let (tx, rx) = crossbeam_channel::unbounded::<Message>();
 

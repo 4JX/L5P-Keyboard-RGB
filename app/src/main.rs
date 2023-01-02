@@ -2,7 +2,6 @@ mod cli;
 mod effects;
 mod enums;
 mod error;
-mod keyboard_utils;
 mod profile;
 mod storage_trait;
 

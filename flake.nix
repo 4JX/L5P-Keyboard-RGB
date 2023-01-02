@@ -99,9 +99,9 @@
         workspaceSrc = ./.;
         workspaceSrcString = builtins.toString workspaceSrc;
 
-        protoFilter = path: _type: builtins.match "${workspaceSrcString}/libs/hbb_common/protos/.*.proto$" path != null;
-        vpxHeaderFileFilter = path: _type: builtins.match "${workspaceSrcString}/libs/scrap/vpx_ffi.h$" path != null;
-        resFileFilter = path: _type: builtins.match "${workspaceSrcString}/res/.*" path != null;
+        protoFilter = path: _type: builtins.match "${workspaceSrcString}/app/libs/hbb_common/protos/.*.proto$" path != null;
+        vpxHeaderFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/libs/scrap/vpx_ffi.h$" path != null;
+        resFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/res/.*" path != null;
         workspaceFilter = path: type:
           (protoFilter path type) || (vpxHeaderFileFilter path type) || (resFileFilter path type) || (craneLib.filterCargoSources path type);
 
