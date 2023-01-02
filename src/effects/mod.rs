@@ -162,9 +162,7 @@ impl Inner {
 	fn custom_effect(&mut self, custom_effect: CustomEffect) {
 		self.stop_signals.store_false();
 
-		//If loading from the cli, the loop is intentional
-		#[allow(clippy::while_immutable_condition)]
-		'outer: while custom_effect.should_loop {
+		'outer: loop {
 			for step in custom_effect.effect_steps.clone() {
 				self.keyboard.set_speed(step.speed);
 				self.keyboard.set_brightness(step.brightness);
@@ -177,6 +175,9 @@ impl Inner {
 					break 'outer;
 				}
 				thread::sleep(Duration::from_millis(step.sleep));
+			}
+			if !custom_effect.should_loop {
+				break;
 			}
 		}
 	}
