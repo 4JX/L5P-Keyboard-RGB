@@ -49,6 +49,7 @@ pub struct ManagerCreationError;
 pub struct EffectManager {
 	pub tx: Sender<Message>,
 	inner_handle: JoinHandle<()>,
+	stop_signals: StopSignals,
 }
 
 /// Controls the keyboard lighting logic
@@ -60,8 +61,13 @@ struct Inner {
 	last_profile: Profile,
 }
 
+pub enum OperationMode {
+	Cli,
+	Gui,
+}
+
 impl EffectManager {
-	pub fn new() -> Result<Self, ManagerCreationError> {
+	pub fn new(operation_mode: OperationMode) -> Result<Self, ManagerCreationError> {
 		let stop_signals = StopSignals {
 			manager_stop_signal: Arc::new(AtomicBool::new(false)),
 			keyboard_stop_signal: Arc::new(AtomicBool::new(false)),
@@ -85,41 +91,52 @@ impl EffectManager {
 			keyboard,
 			rx,
 			tx: tx.clone(),
-			stop_signals,
+			stop_signals: stop_signals.clone(),
 			last_profile: Profile::default(),
 		};
 
-		let inner_handle = thread::spawn(move || loop {
-			match inner.rx.try_recv().ok() {
-				Some(message) => match message {
-					Message::Refresh => {
-						inner.refresh();
+		macro_rules! effect_thread_loop {
+			($e: expr) => {
+				thread::spawn(move || loop {
+					match $e {
+						Some(message) => match message {
+							Message::Refresh => {
+								inner.refresh();
+							}
+							Message::Profile { profile } => {
+								inner.last_profile = profile;
+								inner.set_profile(profile);
+							}
+							Message::CustomEffect { effect } => {
+								inner.custom_effect(effect);
+							}
+							Message::Exit => break,
+						},
+						None => {
+							thread::sleep(Duration::from_millis(20));
+						}
 					}
-					Message::Profile { profile } => {
-						inner.last_profile = profile;
-						inner.set_profile(profile);
-					}
-					Message::CustomEffect { effect } => {
-						inner.custom_effect(effect);
-					}
-					Message::Exit => break,
-				},
-				None => {
-					thread::sleep(Duration::from_millis(20));
-				}
-			}
-		});
+				})
+			};
+		}
 
-		let manager = Self { tx, inner_handle };
+		let inner_handle = match operation_mode {
+			OperationMode::Cli => effect_thread_loop!(inner.rx.try_recv().ok()),
+			OperationMode::Gui => effect_thread_loop!(inner.rx.try_iter().last()),
+		};
+
+		let manager = Self { tx, inner_handle, stop_signals };
 
 		Ok(manager)
 	}
 
-	pub fn set_profile(&self, profile: Profile) {
+	pub fn set_profile(&mut self, profile: Profile) {
+		self.stop_signals.store_true();
 		self.tx.try_send(Message::Profile { profile }).unwrap();
 	}
 
 	pub fn custom_effect(&self, effect: CustomEffect) {
+		self.stop_signals.store_true();
 		self.tx.send(Message::CustomEffect { effect }).unwrap();
 	}
 
@@ -139,7 +156,9 @@ impl Inner {
 		let mut thread_rng = thread_rng();
 
 		self.keyboard.set_effect(BaseEffects::Static).unwrap();
-		self.keyboard.set_speed(profile.speed).unwrap();
+		if profile.effect.is_built_in() {
+			self.keyboard.set_speed(profile.speed).unwrap();
+		};
 		self.keyboard.set_brightness(profile.brightness).unwrap();
 
 		match profile.effect {

@@ -1,5 +1,7 @@
+use clap::crate_name;
 use error_stack::{IntoReport, Result, ResultExt};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use single_instance::SingleInstance;
 use std::{fs::File, io::Write, path::PathBuf};
 use thiserror::Error;
 
@@ -33,4 +35,8 @@ where
 
 		Ok(())
 	}
+}
+
+pub fn is_unique_instance() -> bool {
+	SingleInstance::new(crate_name!()).unwrap().is_single()
 }

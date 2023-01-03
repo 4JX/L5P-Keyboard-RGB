@@ -2,28 +2,49 @@ use std::{convert::TryInto, path::PathBuf};
 
 use crate::{
 	enums::{Direction, Effects},
-	storage_trait::StorageTrait,
+	util::StorageTrait,
 };
 
 use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Clone, Copy, Serialize, Deserialize, Default, Debug)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub struct KeyboardZone {
-	rgb: [u8; 3],
-	enabled: bool,
+	pub rgb: [u8; 3],
+	pub enabled: bool,
+}
+
+impl Default for KeyboardZone {
+	fn default() -> Self {
+		Self {
+			rgb: Default::default(),
+			enabled: true,
+		}
+	}
 }
 
 type Zones = [KeyboardZone; 4];
 
-#[derive(Serialize, Deserialize, Clone, Copy, Default, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct Profile {
 	pub rgb_zones: Zones,
 	pub effect: Effects,
 	pub direction: Direction,
 	pub speed: u8,
 	pub brightness: u8,
+}
+
+impl Default for Profile {
+	fn default() -> Self {
+		Self {
+			rgb_zones: Default::default(),
+			effect: Default::default(),
+			direction: Default::default(),
+			speed: 1,
+			brightness: 1,
+		}
+	}
 }
 
 #[derive(Debug, Error)]

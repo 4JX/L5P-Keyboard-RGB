@@ -4,7 +4,7 @@ use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::storage_trait::StorageTrait;
+use crate::util::StorageTrait;
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct EffectStep {

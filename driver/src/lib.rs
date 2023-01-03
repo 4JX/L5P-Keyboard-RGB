@@ -20,7 +20,7 @@ const KNOWN_DEVICE_INFOS: [(u16, u16, u16, u16); 4] = [
 
 const SPEED_RANGE: std::ops::Range<u8> = 1..5;
 const BRIGHTNESS_RANGE: std::ops::Range<u8> = 1..3;
-const ZONE_RANGE: std::ops::Range<u8> = 0..3;
+const ZONE_RANGE: std::ops::Range<u8> = 0..4;
 
 pub enum BaseEffects {
 	Static,

@@ -44,19 +44,17 @@
           dbus
           xorg.libX11
           libusb
-          pango
-          xorg.libXinerama
-          xorg.libXcursor
-          xorg.libXfixes
+          fontconfig
         ];
 
-        # Libraries needed only at runtime
+        # Libraries needed at runtime
         runtimeDeps = with pkgs; [
-          fontconfig
-          gobject-introspection
-          glib
-          cairo
+          xorg.libXcursor
           xorg.libxcb
+          freetype
+          xorg.libXrandr
+          xorg.libXi
+          libGL
         ] ++ sharedDeps;
 
         vcpkgHook =
@@ -127,11 +125,8 @@
             nativeBuildInputs = with pkgs;
               [
                 pkg-config
-                git
                 cmake
                 clang
-                gcc
-                ninja
               ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
             # Manually simulate a vcpkg installation so that it can link the libaries

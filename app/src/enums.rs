@@ -1,8 +1,8 @@
 use crate::{effects::custom_effect::CustomEffect, profile::Profile};
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumIter, EnumString};
+use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr};
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, PartialEq, Eq, Debug, IntoStaticStr)]
 pub enum Effects {
 	Static,
 	Breath,
@@ -41,9 +41,13 @@ impl Effects {
 			Effects::Breath | Effects::Smooth | Effects::Wave | Effects::Lightning | Effects::SmoothWave | Effects::Swipe | Effects::Disco | Effects::Fade | Effects::Ripple
 		)
 	}
+
+	pub fn is_built_in(&self) -> bool {
+		matches!(self, Effects::Static | Effects::Breath | Effects::Smooth | Effects::Wave)
+	}
 }
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Debug, EnumIter, IntoStaticStr, PartialEq)]
 pub enum Direction {
 	Left,
 	Right,

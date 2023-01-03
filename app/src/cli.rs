@@ -1,8 +1,7 @@
 use std::{convert::TryInto, path::PathBuf, process, str::FromStr};
 
-use clap::{arg, command, crate_name, Parser, Subcommand};
+use clap::{arg, command, Parser, Subcommand};
 use error_stack::{Result, ResultExt};
-use single_instance::SingleInstance;
 use strum::IntoEnumIterator;
 use thiserror::Error;
 
@@ -123,7 +122,7 @@ pub enum CliOutputType {
 #[error("There was an error while executing the CLI")]
 pub struct CliError;
 
-pub fn try_cli() -> Result<CliOutput, CliError> {
+pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 	let cli = Cli::parse();
 
 	match cli.command {
@@ -131,8 +130,7 @@ pub fn try_cli() -> Result<CliOutput, CliError> {
 			// Early logic for specific subcommands
 			match subcommand {
 				Commands::Set { .. } | Commands::CustomEffect { .. } => {
-					let instance = SingleInstance::new(crate_name!()).unwrap();
-					assert!(instance.is_single(), "Another instance of the program is already running, please close it before starting a new one.");
+					assert!(is_unique_instance, "Another instance of the program is already running, please close it before starting a new one.");
 				}
 				_ => {}
 			}

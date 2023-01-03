@@ -2,11 +2,15 @@ mod cli;
 mod effects;
 mod enums;
 mod error;
+mod gui;
 mod profile;
-mod storage_trait;
+mod util;
 
 use color_eyre::{eyre::eyre, Result};
 use effects::EffectManager;
+use eframe::IconData;
+use gui::App;
+use util::is_unique_instance;
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
@@ -37,14 +41,27 @@ fn main() -> Result<()> {
 		}
 	}
 
-	let effect_manager_result = EffectManager::new();
+	let is_unique = is_unique_instance();
 
-	let cli_output = cli::try_cli().map_err(|err| eyre!("{:?}", err))?;
+	let cli_output = cli::try_cli(is_unique).map_err(|err| eyre!("{:?}", err))?;
 
 	if cli_output.start_gui {
-		panic!("Unimplemented");
+		// TODO: Handle errors visually
+		let effect_manager = EffectManager::new(effects::OperationMode::Gui).unwrap();
+
+		let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
+		let native_options = eframe::NativeOptions {
+			// initial_window_size: Some(Vec2::new(970., 300.)),
+			// min_window_size: Some(Vec2::new(600., 300.)),
+			icon_data: Some(app_icon),
+			..eframe::NativeOptions::default()
+		};
+
+		eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(App::new(cc, effect_manager))));
+
+		Ok(())
 	} else {
-		let effect_manager = effect_manager_result.unwrap();
+		let mut effect_manager = EffectManager::new(effects::OperationMode::Cli).unwrap();
 
 		match cli_output.output {
 			cli::CliOutputType::Profile(profile) => {
@@ -59,5 +76,18 @@ fn main() -> Result<()> {
 			}
 			cli::CliOutputType::Exit => Ok(()),
 		}
+	}
+}
+
+#[must_use]
+pub fn load_icon_data(image_data: &[u8]) -> IconData {
+	let image = image::load_from_memory(image_data).unwrap();
+	let image_buffer = image.to_rgba8();
+	let pixels = image_buffer.as_raw().clone();
+
+	IconData {
+		rgba: pixels,
+		width: image.width(),
+		height: image.height(),
 	}
 }
