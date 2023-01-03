@@ -216,7 +216,7 @@ impl Ripple {
 				}
 			}
 
-			manager.keyboard.transition_colors_to(&final_arr, 20, 0);
+			manager.keyboard.transition_colors_to(&final_arr, 20, 0).unwrap();
 			thread::sleep(Duration::from_millis(50));
 		}
 	}

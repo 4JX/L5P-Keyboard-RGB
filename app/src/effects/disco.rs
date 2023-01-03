@@ -14,7 +14,7 @@ impl Disco {
 			let new_values = colors[colors_index];
 
 			let zone_index = thread_rng.gen_range(0..4);
-			manager.keyboard.set_zone_by_index(zone_index, new_values);
+			manager.keyboard.set_zone_by_index(zone_index, new_values).unwrap();
 			thread::sleep(Duration::from_millis(2000 / (u64::from(p.speed) * 4)));
 		}
 	}

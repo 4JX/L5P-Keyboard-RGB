@@ -16,7 +16,7 @@ impl Swipe {
 				Direction::Right => p.rgb_array.rotate_left(3),
 			}
 
-			manager.keyboard.transition_colors_to(&p.rgb_array, 150 / p.speed, 10);
+			manager.keyboard.transition_colors_to(&p.rgb_array, 150 / p.speed, 10).unwrap();
 
 			if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 				break;

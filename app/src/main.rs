@@ -5,10 +5,10 @@ mod error;
 mod profile;
 mod storage_trait;
 
-use color_eyre::{Report, Result};
+use color_eyre::{eyre::eyre, Result};
 use effects::EffectManager;
 
-fn main() -> Result<(), Report> {
+fn main() -> Result<()> {
 	color_eyre::install()?;
 
 	// Clear/Hide console if not running via one (Windows specific)
@@ -39,14 +39,14 @@ fn main() -> Result<(), Report> {
 
 	let effect_manager_result = EffectManager::new();
 
-	let output = cli::try_cli()?;
+	let cli_output = cli::try_cli().map_err(|err| eyre!("{:?}", err))?;
 
-	if output.start_gui {
+	if cli_output.start_gui {
 		panic!("Unimplemented");
 	} else {
 		let effect_manager = effect_manager_result.unwrap();
 
-		match output.output {
+		match cli_output.output {
 			cli::CliOutputType::Profile(profile) => {
 				effect_manager.set_profile(profile);
 				effect_manager.join_and_exit();

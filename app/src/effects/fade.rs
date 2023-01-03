@@ -30,12 +30,12 @@ impl Fade {
 			let keys: Vec<Keycode> = device_state.get_keys();
 			if keys.is_empty() {
 				if now.elapsed() > Duration::from_secs(20 / u64::from(p.speed)) {
-					manager.keyboard.transition_colors_to(&[0; 12], 230, 3);
+					manager.keyboard.transition_colors_to(&[0; 12], 230, 3).unwrap();
 				} else {
 					thread::sleep(Duration::from_millis(20));
 				}
 			} else {
-				manager.keyboard.set_colors_to(&p.rgb_array);
+				manager.keyboard.set_colors_to(&p.rgb_array).unwrap();
 				manager.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
 				now = Instant::now();
 			}

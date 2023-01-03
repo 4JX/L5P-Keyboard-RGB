@@ -153,9 +153,9 @@
         };
       in
       {
-        # checks = {
-        #   inherit legion-kb-rgb;
-        # };
+        checks = {
+          # inherit legion-kb-rgb;
+        };
 
         packages.default = legion-kb-rgb;
         packages.wrapped = wrappedProgram;

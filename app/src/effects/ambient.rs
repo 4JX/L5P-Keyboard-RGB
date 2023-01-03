@@ -68,7 +68,7 @@ impl AmbientLight {
 						dst[2] = src[0];
 					}
 
-					manager.keyboard.set_colors_to(&rgb);
+					manager.keyboard.set_colors_to(&rgb).unwrap();
 					let elapsed_time = now.elapsed();
 					if elapsed_time < seconds_per_frame {
 						thread::sleep(seconds_per_frame - elapsed_time);

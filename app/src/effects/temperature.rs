@@ -33,7 +33,7 @@ impl Temperature {
 					for index in 0..12 {
 						target[index] = color_differences[index].mul_add(temp_percent, temp_cool[index]);
 					}
-					manager.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1);
+					manager.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1).unwrap();
 					thread::sleep(Duration::from_millis(20));
 				}
 			}

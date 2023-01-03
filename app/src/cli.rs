@@ -1,9 +1,10 @@
 use std::{convert::TryInto, path::PathBuf, process, str::FromStr};
 
 use clap::{arg, command, crate_name, Parser, Subcommand};
-use color_eyre::{eyre::eyre, Help, Report};
+use error_stack::{Result, ResultExt};
 use single_instance::SingleInstance;
 use strum::IntoEnumIterator;
+use thiserror::Error;
 
 use crate::{
 	effects::custom_effect::CustomEffect,
@@ -64,19 +65,20 @@ enum Commands {
 		/// The direction of the effect (If applicable)
 		#[arg(short, long, value_enum)]
 		direction: Option<Direction>,
-		// A filename to save the effect at
-		// #[arg(long, value_enum)]
-		// save: Option<String>,
+
+		/// A filename to save the effect at
+		#[arg(long, value_enum)]
+		save: Option<PathBuf>,
 	},
 
 	/// List all the available effects
 	List,
 
 	/// Load a profile from a file
-	// LoadProfile {
-	// 	#[arg(short, long)]
-	// 	path: PathBuf,
-	// },
+	LoadProfile {
+		#[arg(short, long)]
+		path: PathBuf,
+	},
 
 	/// Load a custom effect from a file
 	CustomEffect {
@@ -85,17 +87,17 @@ enum Commands {
 	},
 }
 
-fn parse_colors(arg: &str) -> Result<[u8; 12], String> {
+fn parse_colors(arg: &str) -> std::result::Result<[u8; 12], String> {
 	fn input_err<E>(_e: E) -> String {
 		"Invalid input, please check you used the correct format for the colors".to_string()
 	}
 
-	let vec: Result<Vec<u8>, <u8 as FromStr>::Err> = arg.split(',').map(str::parse::<u8>).collect();
+	let vec: std::result::Result<Vec<u8>, <u8 as FromStr>::Err> = arg.split(',').map(str::parse::<u8>).collect();
 	let vec = vec.map_err(input_err);
 
 	match vec {
 		Ok(vec) => {
-			let vec: Result<[u8; 12], Vec<u8>> = vec.try_into();
+			let vec: std::result::Result<[u8; 12], Vec<u8>> = vec.try_into();
 
 			vec.map_err(input_err)
 		}
@@ -117,7 +119,11 @@ pub enum CliOutputType {
 	Exit,
 }
 
-pub fn try_cli() -> Result<CliOutput, Report> {
+#[derive(Debug, Error)]
+#[error("There was an error while executing the CLI")]
+pub struct CliError;
+
+pub fn try_cli() -> Result<CliOutput, CliError> {
 	let cli = Cli::parse();
 
 	match cli.command {
@@ -138,6 +144,7 @@ pub fn try_cli() -> Result<CliOutput, Report> {
 					brightness,
 					speed,
 					direction,
+					save,
 				} => {
 					let direction = direction.unwrap_or_default();
 
@@ -159,9 +166,9 @@ pub fn try_cli() -> Result<CliOutput, Report> {
 						ui_toggle_button_state: [false; 5],
 					};
 
-					// if let Some(filename) = save {
-					// 	profile.save_profile(&filename).expect("Failed to save.");
-					// }
+					if let Some(filename) = save {
+						profile.save_profile(filename).expect("Failed to save.");
+					}
 
 					Ok(CliOutput {
 						start_gui: cli.gui,
@@ -179,29 +186,27 @@ pub fn try_cli() -> Result<CliOutput, Report> {
 						output: CliOutputType::Exit,
 					})
 				}
-				// Commands::LoadProfile { path } => {
-				// 	let mut manager = manager_result.unwrap();
 
-				// 	match Profile::load_profile(path) {
-				// 		Ok(profile) => {
-				// 			manager.set_effect(profile);
-				// 		}
-				// 		Err(err) => {
-				// 			return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid profile."));
-				// 		}
-				// 	}
-				// }
-				Commands::CustomEffect { path } => match CustomEffect::from_file(path.to_string_lossy().to_string()) {
-					Ok(effect) => Ok(CliOutput {
+				Commands::LoadProfile { path } => {
+					let profile = Profile::load_profile(path).change_context(CliError)?;
+
+					Ok(CliOutput {
+						start_gui: cli.gui,
+						output: CliOutputType::Profile(profile),
+					})
+				}
+
+				Commands::CustomEffect { path } => {
+					let effect = CustomEffect::from_file(path).change_context(CliError)?;
+
+					Ok(CliOutput {
 						start_gui: cli.gui,
 						output: CliOutputType::Custom(effect),
-					}),
-					Err(err) => {
-						return Err(eyre!("{} ", err.to_string()).suggestion("Make sure you are using a valid effect"));
-					}
-				},
+					})
+				}
 			}
 		}
+
 		None => {
 			let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 			println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);

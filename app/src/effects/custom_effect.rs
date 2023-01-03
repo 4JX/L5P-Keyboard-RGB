@@ -1,8 +1,10 @@
-use std::{fs, path::Path};
+use std::path::PathBuf;
 
+use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use crate::error;
+use crate::storage_trait::StorageTrait;
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct EffectStep {
@@ -27,15 +29,14 @@ pub struct CustomEffect {
 	pub should_loop: bool,
 }
 
+#[derive(Debug, Error)]
+#[error("Could not load custom effect")]
+pub struct LoadCustomEffectError;
+
 impl CustomEffect {
-	pub fn from_file(mut path_string: String) -> Result<Self, error::Error> {
-		if path_string.rsplit('.').next().map(|ext| ext.eq_ignore_ascii_case("json")) != Some(true) {
-			path_string = format!("{}{}", path_string, ".json");
-		}
-		let path = Path::new(&path_string);
-		let full_path = fs::canonicalize(path)?;
-		let struct_json = fs::read_to_string(&full_path)?;
-		let profile: Self = serde_json::from_str(struct_json.as_str())?;
-		Ok(profile)
+	pub fn from_file(path: PathBuf) -> Result<Self, LoadCustomEffectError> {
+		Self::load(path).change_context(LoadCustomEffectError)
 	}
 }
+
+impl<'a> StorageTrait<'a> for CustomEffect {}

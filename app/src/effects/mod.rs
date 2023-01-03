@@ -1,10 +1,10 @@
-use crate::error;
 use crate::{
 	enums::{Direction, Effects, Message},
 	profile::Profile,
 };
 
 use crossbeam_channel::{Receiver, Sender};
+use error_stack::{IntoReport, Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard};
 use rand::thread_rng;
 use std::{
@@ -13,6 +13,7 @@ use std::{
 	time::Duration,
 };
 use std::{sync::Arc, thread::JoinHandle};
+use thiserror::Error;
 
 use self::{
 	ambient::AmbientLight,
@@ -36,6 +37,14 @@ mod ripple;
 mod swipe;
 mod temperature;
 
+#[derive(Debug, Error)]
+#[error("There was an error getting a valid keyboard")]
+pub struct AcquireKeyboardError;
+
+#[derive(Debug, Error)]
+#[error("Could not create keyboard manager")]
+pub struct ManagerCreationError;
+
 /// Manager wrapper
 pub struct EffectManager {
 	pub tx: Sender<Message>,
@@ -52,13 +61,23 @@ struct Inner {
 }
 
 impl EffectManager {
-	pub fn new() -> Result<Self, error::Error> {
+	pub fn new() -> Result<Self, ManagerCreationError> {
 		let stop_signals = StopSignals {
 			manager_stop_signal: Arc::new(AtomicBool::new(false)),
 			keyboard_stop_signal: Arc::new(AtomicBool::new(false)),
 		};
 
-		let keyboard = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())?;
+		let mut keyboard_result = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())
+			.into_report()
+			.change_context(AcquireKeyboardError)
+			.attach_printable("Ensure that you have a supported model and that the application has access to it.");
+
+		#[cfg(target_os = "linux")]
+		{
+			keyboard_result = keyboard_result.attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage");
+		}
+
+		let keyboard = keyboard_result.change_context(ManagerCreationError)?;
 
 		let (tx, rx) = crossbeam_channel::unbounded::<Message>();
 
@@ -119,25 +138,29 @@ impl Inner {
 		self.stop_signals.store_false();
 		let mut thread_rng = thread_rng();
 
-		self.keyboard.set_effect(BaseEffects::Static);
-		self.keyboard.set_speed(profile.speed);
-		self.keyboard.set_brightness(profile.brightness);
+		self.keyboard.set_effect(BaseEffects::Static).unwrap();
+		self.keyboard.set_speed(profile.speed).unwrap();
+		self.keyboard.set_brightness(profile.brightness).unwrap();
 
 		match profile.effect {
 			Effects::Static => {
-				self.keyboard.set_colors_to(&profile.rgb_array);
-				self.keyboard.set_effect(BaseEffects::Static);
+				self.keyboard.set_colors_to(&profile.rgb_array).unwrap();
+				self.keyboard.set_effect(BaseEffects::Static).unwrap();
 			}
 			Effects::Breath => {
-				self.keyboard.set_colors_to(&profile.rgb_array);
-				self.keyboard.set_effect(BaseEffects::Breath);
+				self.keyboard.set_colors_to(&profile.rgb_array).unwrap();
+				self.keyboard.set_effect(BaseEffects::Breath).unwrap();
 			}
 			Effects::Smooth => {
-				self.keyboard.set_effect(BaseEffects::Smooth);
+				self.keyboard.set_effect(BaseEffects::Smooth).unwrap();
 			}
 			Effects::Wave => match profile.direction {
-				Direction::Left => self.keyboard.set_effect(BaseEffects::LeftWave),
-				Direction::Right => self.keyboard.set_effect(BaseEffects::RightWave),
+				Direction::Left => {
+					self.keyboard.set_effect(BaseEffects::LeftWave).unwrap();
+				}
+				Direction::Right => {
+					self.keyboard.set_effect(BaseEffects::RightWave).unwrap();
+				}
 			},
 
 			Effects::Lightning => Lightning::play(self, profile, &mut thread_rng),
@@ -165,12 +188,12 @@ impl Inner {
 
 		'outer: loop {
 			for step in custom_effect.effect_steps.clone() {
-				self.keyboard.set_speed(step.speed);
-				self.keyboard.set_brightness(step.brightness);
+				self.keyboard.set_speed(step.speed).unwrap();
+				self.keyboard.set_brightness(step.brightness).unwrap();
 				if let EffectType::Set = step.step_type {
-					self.keyboard.set_colors_to(&step.rgb_array);
+					self.keyboard.set_colors_to(&step.rgb_array).unwrap();
 				} else {
-					self.keyboard.transition_colors_to(&step.rgb_array, step.steps, step.delay_between_steps);
+					self.keyboard.transition_colors_to(&step.rgb_array, step.steps, step.delay_between_steps).unwrap();
 				}
 				if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 					break 'outer;

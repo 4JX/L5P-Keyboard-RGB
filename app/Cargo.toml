@@ -31,6 +31,7 @@ image = "0.24.4"
 parking_lot = "0.12.1"
 lazy_static = "1.4.0"
 open = "3.0.3"
+error-stack = "0.2.4"
 
 # Dependabot alerts
 regex = "1.6.0"
