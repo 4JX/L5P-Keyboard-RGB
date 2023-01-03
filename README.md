@@ -1,7 +1,7 @@
 <div align="center">
 
 [![Latest Version](https://img.shields.io/github/v/tag/4JX/L5P-Keyboard-RGB?style=for-the-badge&label=Download+Latest)](https://github.com/4JX/L5P-Keyboard-RGB/releases)
-![Build Status](https://img.shields.io/github/workflow/status/4JX/L5P-Keyboard-RGB/Compile%20releases?style=for-the-badge)
+![Build Status](https://img.shields.io/github/actions/workflow/status/4JX/L5P-Keyboard-RGB/release-rust.yml?style=for-the-badge)
 [![Support Server](https://img.shields.io/discord/819491422327406592?style=for-the-badge)](https://discord.gg/rQEQzsyPe8)
 [![Donate](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/4JX/donate)
 
@@ -87,7 +87,11 @@ The best way to add a new effect is to directly edit the source code, as it allo
 - **2022 Models:**
 
 ```sh
+# Regular legions
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c975", MODE="0666"
+
+# Ideapad models
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c973", MODE="0666"
 ```
 
 - **2021 Models:**
@@ -98,7 +102,7 @@ SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c965", MODE="0666"
 
 
 # Ideapad models
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c965", MODE="0666"
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c963", MODE="0666"
 ```
 
 - **2020 Models:**
