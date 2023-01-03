@@ -7,6 +7,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
+	cli::CliOutputType,
 	effects::EffectManager,
 	enums::{Direction, Effects},
 	profile::Profile,
@@ -25,11 +26,23 @@ enum Brightness {
 }
 
 impl App {
-	pub fn new(_cc: &CreationContext, manager: EffectManager) -> Self {
-		Self {
-			manager,
-			profile: Profile::default(),
-			selected_brightness: Brightness::Low,
+	pub fn new(_cc: &CreationContext, manager: EffectManager, output: CliOutputType) -> Self {
+		match output {
+			CliOutputType::Profile(profile) => Self {
+				manager,
+				profile,
+				selected_brightness: Brightness::Low,
+			},
+			CliOutputType::Custom(effect) => {
+				// TODO: Handle custom effects
+				let _ = effect;
+				Self {
+					manager,
+					profile: Profile::default(),
+					selected_brightness: Brightness::Low,
+				}
+			}
+			CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
 		}
 	}
 }
@@ -73,17 +86,21 @@ impl eframe::App for App {
 					}
 				});
 
-			ComboBox::from_label("Direction")
-				.selected_text(format! {"{}", {
-						let text: &'static str = self.profile.direction.into();
-						text
-				}})
-				.show_ui(ui, |ui| {
-					for val in Direction::iter() {
-						let text: &'static str = val.into();
-						changed |= ui.selectable_value(&mut self.profile.direction, val, text).changed();
-					}
-				});
+			ui.scope(|ui| {
+				ui.set_enabled(self.profile.effect.takes_direction());
+
+				ComboBox::from_label("Direction")
+					.selected_text(format! {"{}", {
+							let text: &'static str = self.profile.direction.into();
+							text
+					}})
+					.show_ui(ui, |ui| {
+						for val in Direction::iter() {
+							let text: &'static str = val.into();
+							changed |= ui.selectable_value(&mut self.profile.direction, val, text).changed();
+						}
+					});
+			});
 
 			let range = if self.profile.effect.is_built_in() { 1..=3 } else { 1..=10 };
 			changed |= ui.add_enabled(self.profile.effect.takes_speed(), Slider::new(&mut self.profile.speed, range)).changed();

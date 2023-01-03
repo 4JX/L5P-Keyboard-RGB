@@ -57,7 +57,7 @@ fn main() -> Result<()> {
 			..eframe::NativeOptions::default()
 		};
 
-		eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(App::new(cc, effect_manager))));
+		eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(App::new(cc, effect_manager, cli_output.output))));
 
 		Ok(())
 	} else {
