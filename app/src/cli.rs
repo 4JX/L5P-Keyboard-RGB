@@ -9,7 +9,7 @@ use thiserror::Error;
 use crate::{
 	effects::custom_effect::CustomEffect,
 	enums::{Direction, Effects},
-	profile::Profile,
+	profile::{self, Profile},
 };
 
 #[macro_export]
@@ -158,12 +158,11 @@ pub fn try_cli() -> Result<CliOutput, CliError> {
 					};
 
 					let profile = Profile {
-						rgb_array,
+						rgb_zones: profile::arr_to_zones(rgb_array),
 						effect,
 						direction,
 						speed,
 						brightness,
-						ui_toggle_button_state: [false; 5],
 					};
 
 					if let Some(filename) = save {

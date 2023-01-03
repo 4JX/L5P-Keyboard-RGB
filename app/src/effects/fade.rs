@@ -35,7 +35,7 @@ impl Fade {
 					thread::sleep(Duration::from_millis(20));
 				}
 			} else {
-				manager.keyboard.set_colors_to(&p.rgb_array).unwrap();
+				manager.keyboard.set_colors_to(&p.rgb_array()).unwrap();
 				manager.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
 				now = Instant::now();
 			}

@@ -206,12 +206,13 @@ impl Ripple {
 			}
 
 			effect_active.store(false, Ordering::SeqCst);
+			let rgb_array = p.rgb_array();
 			let mut final_arr: [u8; 12] = [0; 12];
 			for (i, ripple_move) in zone_state.iter().enumerate() {
 				if ripple_move != &RippleMove::Off {
-					final_arr[i * 3] = p.rgb_array[i * 3];
-					final_arr[i * 3 + 1] = p.rgb_array[i * 3 + 1];
-					final_arr[i * 3 + 2] = p.rgb_array[i * 3 + 2];
+					final_arr[i * 3] = rgb_array[i * 3];
+					final_arr[i * 3 + 1] = rgb_array[i * 3 + 1];
+					final_arr[i * 3 + 2] = rgb_array[i * 3 + 2];
 					effect_active.store(true, Ordering::SeqCst);
 				}
 			}

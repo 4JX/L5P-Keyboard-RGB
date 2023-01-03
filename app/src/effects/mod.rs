@@ -1,6 +1,6 @@
 use crate::{
 	enums::{Direction, Effects, Message},
-	profile::Profile,
+	profile::{self, Profile},
 };
 
 use crossbeam_channel::{Receiver, Sender};
@@ -144,11 +144,11 @@ impl Inner {
 
 		match profile.effect {
 			Effects::Static => {
-				self.keyboard.set_colors_to(&profile.rgb_array).unwrap();
+				self.keyboard.set_colors_to(&profile.rgb_array()).unwrap();
 				self.keyboard.set_effect(BaseEffects::Static).unwrap();
 			}
 			Effects::Breath => {
-				self.keyboard.set_colors_to(&profile.rgb_array).unwrap();
+				self.keyboard.set_colors_to(&profile.rgb_array()).unwrap();
 				self.keyboard.set_effect(BaseEffects::Breath).unwrap();
 			}
 			Effects::Smooth => {
@@ -170,7 +170,7 @@ impl Inner {
 				AmbientLight::play(self, fps)
 			}
 			Effects::SmoothWave => {
-				profile.rgb_array = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255];
+				profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
 				Swipe::play(self, profile)
 			}
 			Effects::Swipe => Swipe::play(self, profile),
