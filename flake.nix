@@ -45,6 +45,7 @@
           xorg.libX11
           libusb
           fontconfig
+          # libappindicator
         ];
 
         # Libraries needed at runtime
@@ -175,6 +176,3 @@
         devShells.default = legion-kb-rgb;
       });
 }
-
-# Find out why shellhook wont properly execute
-# Find out how to pass args through "nix run" properly (-- flags don't work)

@@ -8,9 +8,11 @@ mod util;
 
 use color_eyre::{eyre::eyre, Result};
 use effects::EffectManager;
-use eframe::IconData;
+use eframe::{epaint::Vec2, IconData};
 use gui::App;
 use util::is_unique_instance;
+
+const WINDOW_SIZE: Vec2 = Vec2::new(500., 220.);
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
@@ -51,8 +53,9 @@ fn main() -> Result<()> {
 
 		let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
 		let native_options = eframe::NativeOptions {
-			// initial_window_size: Some(Vec2::new(970., 300.)),
-			// min_window_size: Some(Vec2::new(600., 300.)),
+			initial_window_size: Some(WINDOW_SIZE),
+			min_window_size: Some(WINDOW_SIZE),
+			max_window_size: Some(WINDOW_SIZE),
 			icon_data: Some(app_icon),
 			..eframe::NativeOptions::default()
 		};
@@ -80,7 +83,7 @@ fn main() -> Result<()> {
 }
 
 #[must_use]
-pub fn load_icon_data(image_data: &[u8]) -> IconData {
+fn load_icon_data(image_data: &[u8]) -> IconData {
 	let image = image::load_from_memory(image_data).unwrap();
 	let image_buffer = image.to_rgba8();
 	let pixels = image_buffer.as_raw().clone();
