@@ -12,7 +12,7 @@ use eframe::{epaint::Vec2, IconData};
 use gui::App;
 use util::is_unique_instance;
 
-const WINDOW_SIZE: Vec2 = Vec2::new(500., 220.);
+const WINDOW_SIZE: Vec2 = Vec2::new(500., 320.);
 
 fn main() -> Result<()> {
 	color_eyre::install()?;

@@ -108,9 +108,9 @@ impl eframe::App for App {
 			.show(ctx, |ui| {
 				ui.style_mut().spacing.item_spacing = Vec2::splat(self.spacing.large);
 
-				ui.horizontal(|ui| {
+				ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
 					ui.vertical(|ui| {
-						ui.scope(|ui| {
+						let res = ui.scope(|ui| {
 							ui.style_mut().spacing.item_spacing.y = self.spacing.medium;
 
 							ui.set_enabled(self.profile.effect.takes_color_array());
@@ -132,58 +132,86 @@ impl eframe::App for App {
 
 								update_lights = true;
 							};
+
+							response.response
 						});
 
-						ui.style_mut().spacing.item_spacing = self.spacing.default;
-
-						ComboBox::from_label("Brightness")
-							.selected_text(format! {"{}", {
-									let text: &'static str = self.selected_brightness.into();
-									text
-							}})
-							.show_ui(ui, |ui| {
-								for val in Brightness::iter() {
-									let text: &'static str = val.into();
-									update_lights |= ui.selectable_value(&mut self.selected_brightness, val, text).changed();
-								}
-							});
-
 						ui.scope(|ui| {
-							ui.set_enabled(self.profile.effect.takes_direction());
+							ui.style_mut().spacing.item_spacing = self.spacing.default;
 
-							ComboBox::from_label("Direction")
+							ComboBox::from_label("Brightness")
 								.selected_text(format! {"{}", {
-										let text: &'static str = self.profile.direction.into();
+										let text: &'static str = self.selected_brightness.into();
 										text
 								}})
 								.show_ui(ui, |ui| {
-									for val in Direction::iter() {
+									for val in Brightness::iter() {
 										let text: &'static str = val.into();
-										update_lights |= ui.selectable_value(&mut self.profile.direction, val, text).changed();
+										update_lights |= ui.selectable_value(&mut self.selected_brightness, val, text).changed();
 									}
 								});
+
+							ui.scope(|ui| {
+								ui.set_enabled(self.profile.effect.takes_direction());
+
+								ComboBox::from_label("Direction")
+									.selected_text(format! {"{}", {
+											let text: &'static str = self.profile.direction.into();
+											text
+									}})
+									.show_ui(ui, |ui| {
+										for val in Direction::iter() {
+											let text: &'static str = val.into();
+											update_lights |= ui.selectable_value(&mut self.profile.direction, val, text).changed();
+										}
+									});
+							});
+
+							let range = if self.profile.effect.is_built_in() { 1..=3 } else { 1..=10 };
+							update_lights |= ui.add_enabled(self.profile.effect.takes_speed(), Slider::new(&mut self.profile.speed, range)).changed();
 						});
 
-						let range = if self.profile.effect.is_built_in() { 1..=3 } else { 1..=10 };
-						update_lights |= ui.add_enabled(self.profile.effect.takes_speed(), Slider::new(&mut self.profile.speed, range)).changed();
-					});
-
-					ui.scope(|ui| {
-						Frame {
-							rounding: Rounding::same(6.0),
-							fill: Color32::from_gray(20),
-							..Frame::default()
-						}
-						.show(ui, |ui| {
+						ui.scope(|ui| {
 							ui.style_mut().spacing.item_spacing = self.spacing.default;
 
-							ScrollArea::vertical().show(ui, |ui| {
-								ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
-									for val in Effects::iter() {
-										let text: &'static str = val.into();
-										update_lights |= ui.selectable_value(&mut self.profile.effect, val, text).changed();
-									}
-								});
+							ui.horizontal(|ui| {
+								ui.heading("Profiles");
+								if ui.button("+").clicked() {}
+								if ui.button("-").clicked() {}
+							});
+
+							Frame {
+								rounding: Rounding::same(6.0),
+								fill: Color32::from_gray(20),
+								..Frame::default()
+							}
+							.show(ui, |ui| {
+								ui.set_width(res.inner.rect.width());
+								ui.set_height(ui.available_height());
+
+								ui.centered_and_justified(|ui| ui.label("No profiles added"));
+							});
+						});
+					});
+
+					Frame {
+						rounding: Rounding::same(6.0),
+						fill: Color32::from_gray(20),
+						..Frame::default()
+					}
+					.show(ui, |ui| {
+						ui.style_mut().spacing.item_spacing = self.spacing.default;
+
+						ScrollArea::vertical().show(ui, |ui| {
+							ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
+								ui.add_space(ui.visuals().clip_rect_margin);
+
+								for val in Effects::iter() {
+									let text: &'static str = val.into();
+									update_lights |= ui.selectable_value(&mut self.profile.effect, val, text).changed();
+								}
+
+								ui.add_space(ui.visuals().clip_rect_margin);
 							});
 						});
 					});
