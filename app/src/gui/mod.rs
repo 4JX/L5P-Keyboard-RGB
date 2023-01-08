@@ -1,22 +1,18 @@
 use eframe::{
-	egui::{style::DebugOptions, CentralPanel, ComboBox, Context, Frame, Layout, ScrollArea, Slider, Style},
+	egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style},
 	emath::Align,
 	epaint::{Color32, Rounding, Vec2},
 	CreationContext,
 };
 use strum::IntoEnumIterator;
-use strum_macros::{EnumIter, IntoStaticStr};
+
 use tray_item::{IconSource, TrayItem};
 
-use crate::{
-	cli::CliOutputType,
-	effects::EffectManager,
-	enums::{Direction, Effects},
-	profile::Profile,
-};
+use crate::{cli::CliOutputType, effects::EffectManager, enums::Effects, profile::Profile};
 
-use self::style::SpacingStyle;
+use self::{effect_options::EffectOptions, style::SpacingStyle};
 
+mod effect_options;
 mod style;
 
 pub struct App {
@@ -24,15 +20,9 @@ pub struct App {
 	window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
 	manager: EffectManager,
 	profile: Profile,
+	effect_options: EffectOptions,
 	global_rgb: [u8; 3],
-	selected_brightness: Brightness,
 	spacing: SpacingStyle,
-}
-
-#[derive(PartialEq, EnumIter, IntoStaticStr, Clone, Copy)]
-enum Brightness {
-	Low,
-	High,
 }
 
 enum GuiMessage {
@@ -57,8 +47,8 @@ impl App {
 				window_open_rx: None,
 				manager,
 				profile,
+				effect_options: EffectOptions::default(),
 				global_rgb: [0; 3],
-				selected_brightness: Brightness::Low,
 				spacing: SpacingStyle::default(),
 			},
 			CliOutputType::Custom(effect) => {
@@ -69,8 +59,8 @@ impl App {
 					window_open_rx: None,
 					manager,
 					profile: Profile::default(),
+					effect_options: EffectOptions::default(),
 					global_rgb: [0; 3],
-					selected_brightness: Brightness::Low,
 					spacing: SpacingStyle::default(),
 				}
 			}
@@ -139,40 +129,9 @@ impl eframe::App for App {
 							response.response
 						});
 
-						ui.scope(|ui| {
-							ui.style_mut().spacing.item_spacing = self.spacing.default;
+						ui.set_width(res.inner.rect.width());
 
-							ComboBox::from_label("Brightness")
-								.selected_text(format! {"{}", {
-										let text: &'static str = self.selected_brightness.into();
-										text
-								}})
-								.show_ui(ui, |ui| {
-									for val in Brightness::iter() {
-										let text: &'static str = val.into();
-										update_lights |= ui.selectable_value(&mut self.selected_brightness, val, text).changed();
-									}
-								});
-
-							ui.scope(|ui| {
-								ui.set_enabled(self.profile.effect.takes_direction());
-
-								ComboBox::from_label("Direction")
-									.selected_text(format! {"{}", {
-											let text: &'static str = self.profile.direction.into();
-											text
-									}})
-									.show_ui(ui, |ui| {
-										for val in Direction::iter() {
-											let text: &'static str = val.into();
-											update_lights |= ui.selectable_value(&mut self.profile.direction, val, text).changed();
-										}
-									});
-							});
-
-							let range = if self.profile.effect.is_built_in() { 1..=3 } else { 1..=10 };
-							update_lights |= ui.add_enabled(self.profile.effect.takes_speed(), Slider::new(&mut self.profile.speed, range)).changed();
-						});
+						self.effect_options.show(ui, &mut self.profile, &mut update_lights, &self.spacing);
 
 						ui.scope(|ui| {
 							ui.style_mut().spacing.item_spacing = self.spacing.default;
@@ -189,7 +148,6 @@ impl eframe::App for App {
 								..Frame::default()
 							}
 							.show(ui, |ui| {
-								ui.set_width(res.inner.rect.width());
 								ui.set_height(ui.available_height());
 
 								ui.centered_and_justified(|ui| ui.label("No profiles added"));
@@ -222,11 +180,6 @@ impl eframe::App for App {
 			});
 
 		if update_lights {
-			self.profile.brightness = match self.selected_brightness {
-				Brightness::Low => 1,
-				Brightness::High => 2,
-			};
-
 			self.manager.set_profile(self.profile);
 		}
 	}
