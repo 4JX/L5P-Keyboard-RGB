@@ -35,6 +35,10 @@ struct Cli {
 	/// Start the GUI
 	#[arg(short, long, default_value_t = false)]
 	gui: bool,
+
+	/// Do not show the window when launching
+	#[arg(short, long, default_value_t = false)]
+	hide_window: bool,
 }
 
 #[derive(Subcommand)]
@@ -106,7 +110,7 @@ fn parse_colors(arg: &str) -> std::result::Result<[u8; 12], String> {
 
 pub struct CliOutput {
 	/// Indicates if the user wants to start the GUI
-	pub start_gui: bool,
+	pub start_gui_maybe_hidden: Option<bool>,
 
 	/// What instruction was received through the CLI
 	pub output: CliOutputType,
@@ -168,7 +172,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 					}
 
 					Ok(CliOutput {
-						start_gui: cli.gui,
+						start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
 						output: CliOutputType::Profile(profile),
 					})
 				}
@@ -179,7 +183,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 					}
 
 					Ok(CliOutput {
-						start_gui: false,
+						start_gui_maybe_hidden: None,
 						output: CliOutputType::Exit,
 					})
 				}
@@ -188,7 +192,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 					let profile = Profile::load_profile(path).change_context(CliError)?;
 
 					Ok(CliOutput {
-						start_gui: cli.gui,
+						start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
 						output: CliOutputType::Profile(profile),
 					})
 				}
@@ -197,7 +201,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 					let effect = CustomEffect::from_file(path).change_context(CliError)?;
 
 					Ok(CliOutput {
-						start_gui: cli.gui,
+						start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
 						output: CliOutputType::Custom(effect),
 					})
 				}
@@ -208,7 +212,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 			let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 			println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
 			Ok(CliOutput {
-				start_gui: true,
+				start_gui_maybe_hidden: Some(false),
 				output: CliOutputType::Profile(Profile::default()),
 			})
 		}

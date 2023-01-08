@@ -40,7 +40,7 @@ enum GuiMessage {
 }
 
 impl App {
-	pub fn new(cc: &CreationContext, manager: EffectManager, output: CliOutputType) -> Self {
+	pub fn new(manager: EffectManager, output: CliOutputType, hide_window: bool) -> Self {
 		//Create the tray icon
 		#[cfg(target_os = "linux")]
 		let tray_icon = load_tray_icon(include_bytes!("../../res/trayIcon.ico"));
@@ -53,7 +53,7 @@ impl App {
 
 		let mut app = match output {
 			CliOutputType::Profile(profile) => Self {
-				show_window: true,
+				show_window: !hide_window,
 				window_open_rx: None,
 				manager,
 				profile,
@@ -65,7 +65,7 @@ impl App {
 				// TODO: Handle custom effects
 				let _ = effect;
 				Self {
-					show_window: true,
+					show_window: !hide_window,
 					window_open_rx: None,
 					manager,
 					profile: Profile::default(),
@@ -91,9 +91,12 @@ impl App {
 			app.window_open_rx = Some(window_receiver);
 		}
 
-		app.configure_style(&cc.egui_ctx);
-
 		app
+	}
+
+	pub fn init(self, cc: &CreationContext<'_>) -> App {
+		self.configure_style(&cc.egui_ctx);
+		self
 	}
 }
 

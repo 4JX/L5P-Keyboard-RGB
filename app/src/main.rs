@@ -47,37 +47,42 @@ fn main() -> Result<()> {
 
 	let cli_output = cli::try_cli(is_unique).map_err(|err| eyre!("{:?}", err))?;
 
-	if cli_output.start_gui {
-		// TODO: Handle errors visually
-		let effect_manager = EffectManager::new(effects::OperationMode::Gui).unwrap();
+	match cli_output.start_gui_maybe_hidden {
+		Some(hide_window) => {
+			// TODO: Handle errors visually
+			let effect_manager = EffectManager::new(effects::OperationMode::Gui).unwrap();
 
-		let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
-		let native_options = eframe::NativeOptions {
-			initial_window_size: Some(WINDOW_SIZE),
-			min_window_size: Some(WINDOW_SIZE),
-			max_window_size: Some(WINDOW_SIZE),
-			icon_data: Some(app_icon),
-			..eframe::NativeOptions::default()
-		};
+			let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
+			let native_options = eframe::NativeOptions {
+				initial_window_size: Some(WINDOW_SIZE),
+				min_window_size: Some(WINDOW_SIZE),
+				max_window_size: Some(WINDOW_SIZE),
+				icon_data: Some(app_icon),
+				..eframe::NativeOptions::default()
+			};
 
-		eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(App::new(cc, effect_manager, cli_output.output))));
+			let app = App::new(effect_manager, cli_output.output, hide_window);
 
-		Ok(())
-	} else {
-		let mut effect_manager = EffectManager::new(effects::OperationMode::Cli).unwrap();
+			eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc))));
 
-		match cli_output.output {
-			cli::CliOutputType::Profile(profile) => {
-				effect_manager.set_profile(profile);
-				effect_manager.join_and_exit();
-				Ok(())
+			Ok(())
+		}
+		None => {
+			let mut effect_manager = EffectManager::new(effects::OperationMode::Cli).unwrap();
+
+			match cli_output.output {
+				cli::CliOutputType::Profile(profile) => {
+					effect_manager.set_profile(profile);
+					effect_manager.join_and_exit();
+					Ok(())
+				}
+				cli::CliOutputType::Custom(effect) => {
+					effect_manager.custom_effect(effect);
+					effect_manager.join_and_exit();
+					Ok(())
+				}
+				cli::CliOutputType::Exit => Ok(()),
 			}
-			cli::CliOutputType::Custom(effect) => {
-				effect_manager.custom_effect(effect);
-				effect_manager.join_and_exit();
-				Ok(())
-			}
-			cli::CliOutputType::Exit => Ok(()),
 		}
 	}
 }
