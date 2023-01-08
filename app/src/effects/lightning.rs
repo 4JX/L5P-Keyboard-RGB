@@ -7,7 +7,7 @@ use crate::profile::Profile;
 pub(super) struct Lightning;
 
 impl Lightning {
-	pub fn play(manager: &mut super::Inner, p: Profile, thread_rng: &mut ThreadRng) {
+	pub fn play(manager: &mut super::Inner, p: &Profile, thread_rng: &mut ThreadRng) {
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 			if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 				break;

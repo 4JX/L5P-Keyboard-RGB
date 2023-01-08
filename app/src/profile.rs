@@ -26,8 +26,9 @@ impl Default for KeyboardZone {
 
 type Zones = [KeyboardZone; 4];
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Profile {
+	pub name: String,
 	pub rgb_zones: Zones,
 	pub effect: Effects,
 	pub direction: Direction,
@@ -35,9 +36,22 @@ pub struct Profile {
 	pub brightness: u8,
 }
 
+// Primarily differentiated by name but the rest is left for fuckups
+impl PartialEq for Profile {
+	fn eq(&self, other: &Self) -> bool {
+		self.name == other.name
+			// && self.rgb_zones == other.rgb_zones
+			&& self.effect == other.effect
+			&& self.direction == other.direction
+			&& self.speed == other.speed
+			&& self.brightness == other.brightness
+	}
+}
+
 impl Default for Profile {
 	fn default() -> Self {
 		Self {
+			name: "Profile".to_string(),
 			rgb_zones: Default::default(),
 			effect: Default::default(),
 			direction: Default::default(),

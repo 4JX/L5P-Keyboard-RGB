@@ -7,7 +7,7 @@ use crate::profile::Profile;
 pub(super) struct Disco;
 
 impl Disco {
-	pub fn play(manager: &mut super::Inner, p: Profile, thread_rng: &mut rand::rngs::ThreadRng) {
+	pub fn play(manager: &mut super::Inner, p: &Profile, thread_rng: &mut rand::rngs::ThreadRng) {
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
 			let colors = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255]];
 			let colors_index = thread_rng.gen_range(0..6);

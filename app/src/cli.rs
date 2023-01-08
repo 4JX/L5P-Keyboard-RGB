@@ -160,6 +160,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 					};
 
 					let profile = Profile {
+						name: "Profile".to_string(),
 						rgb_zones: profile::arr_to_zones(rgb_array),
 						effect,
 						direction,

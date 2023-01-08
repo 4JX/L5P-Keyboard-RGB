@@ -10,18 +10,23 @@ use tray_item::{IconSource, TrayItem};
 
 use crate::{cli::CliOutputType, effects::EffectManager, enums::Effects, profile::Profile};
 
-use self::{effect_options::EffectOptions, style::SpacingStyle};
+use self::{effect_options::EffectOptions, profile_list::ProfileList, style::SpacingStyle};
 
 mod effect_options;
+mod profile_list;
 mod style;
 
 pub struct App {
 	show_window: bool,
 	window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
+
 	manager: EffectManager,
+
+	profile_list: ProfileList,
 	profile: Profile,
 	effect_options: EffectOptions,
 	global_rgb: [u8; 3],
+
 	spacing: SpacingStyle,
 }
 
@@ -46,6 +51,7 @@ impl App {
 				show_window: !hide_window,
 				window_open_rx: None,
 				manager,
+				profile_list: ProfileList::default(),
 				profile,
 				effect_options: EffectOptions::default(),
 				global_rgb: [0; 3],
@@ -58,6 +64,7 @@ impl App {
 					show_window: !hide_window,
 					window_open_rx: None,
 					manager,
+					profile_list: ProfileList::default(),
 					profile: Profile::default(),
 					effect_options: EffectOptions::default(),
 					global_rgb: [0; 3],
@@ -133,26 +140,7 @@ impl eframe::App for App {
 
 						self.effect_options.show(ui, &mut self.profile, &mut update_lights, &self.spacing);
 
-						ui.scope(|ui| {
-							ui.style_mut().spacing.item_spacing = self.spacing.default;
-
-							ui.horizontal(|ui| {
-								ui.heading("Profiles");
-								if ui.button("+").clicked() {}
-								if ui.button("-").clicked() {}
-							});
-
-							Frame {
-								rounding: Rounding::same(6.0),
-								fill: Color32::from_gray(20),
-								..Frame::default()
-							}
-							.show(ui, |ui| {
-								ui.set_height(ui.available_height());
-
-								ui.centered_and_justified(|ui| ui.label("No profiles added"));
-							});
-						});
+						self.profile_list.show(ctx, ui, &mut self.profile, &self.spacing);
 					});
 
 					Frame {
@@ -180,7 +168,7 @@ impl eframe::App for App {
 			});
 
 		if update_lights {
-			self.manager.set_profile(self.profile);
+			self.manager.set_profile(self.profile.clone());
 		}
 	}
 

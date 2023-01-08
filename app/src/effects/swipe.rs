@@ -5,7 +5,7 @@ use crate::{enums::Direction, profile::Profile};
 pub(super) struct Swipe;
 
 impl Swipe {
-	pub fn play(manager: &mut super::Inner, p: Profile) {
+	pub fn play(manager: &mut super::Inner, p: &Profile) {
 		let mut rgb_array = p.rgb_array();
 
 		while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {

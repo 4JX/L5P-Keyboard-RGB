@@ -11,7 +11,7 @@ use crate::profile::Profile;
 pub(super) struct Fade;
 
 impl Fade {
-	pub fn play(manager: &mut super::Inner, p: Profile) {
+	pub fn play(manager: &mut super::Inner, p: &Profile) {
 		let stop_signals = manager.stop_signals.clone();
 		thread::spawn(move || {
 			let device_state = DeviceState::new();

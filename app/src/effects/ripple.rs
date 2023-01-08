@@ -14,7 +14,7 @@ use crate::profile::Profile;
 pub(super) struct Ripple;
 
 impl Ripple {
-	pub fn play(manager: &mut super::Inner, p: Profile) {
+	pub fn play(manager: &mut super::Inner, p: &Profile) {
 		// Welcome to the definition of i-don't-know-what-im-doing
 		let keys_zone_1: [Keycode; 24] = [
 			Keycode::Escape,

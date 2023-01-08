@@ -104,7 +104,6 @@ impl EffectManager {
 								inner.refresh();
 							}
 							Message::Profile { profile } => {
-								inner.last_profile = profile;
 								inner.set_profile(profile);
 							}
 							Message::CustomEffect { effect } => {
@@ -148,10 +147,12 @@ impl EffectManager {
 
 impl Inner {
 	fn refresh(&mut self) {
-		self.set_profile(self.last_profile);
+		self.set_profile(self.last_profile.clone());
 	}
 
 	fn set_profile(&mut self, mut profile: Profile) {
+		self.last_profile = profile.clone();
+
 		self.stop_signals.store_false();
 		let mut thread_rng = thread_rng();
 
@@ -182,7 +183,7 @@ impl Inner {
 				}
 			},
 
-			Effects::Lightning => Lightning::play(self, profile, &mut thread_rng),
+			Effects::Lightning => Lightning::play(self, &profile, &mut thread_rng),
 			Effects::AmbientLight { mut fps } => {
 				fps = fps.clamp(1, 60);
 
@@ -190,14 +191,14 @@ impl Inner {
 			}
 			Effects::SmoothWave => {
 				profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
-				Swipe::play(self, profile)
+				Swipe::play(self, &profile)
 			}
-			Effects::Swipe => Swipe::play(self, profile),
-			Effects::Disco => Disco::play(self, profile, &mut thread_rng),
+			Effects::Swipe => Swipe::play(self, &profile),
+			Effects::Disco => Disco::play(self, &profile, &mut thread_rng),
 			Effects::Christmas => Christmas::play(self, &mut thread_rng),
-			Effects::Fade => Fade::play(self, profile),
+			Effects::Fade => Fade::play(self, &profile),
 			Effects::Temperature => Temperature::play(self),
-			Effects::Ripple => Ripple::play(self, profile),
+			Effects::Ripple => Ripple::play(self, &profile),
 		}
 		self.stop_signals.store_false();
 	}

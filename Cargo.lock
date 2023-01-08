@@ -1080,6 +1080,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui-modal"
+version = "0.1.8"
+source = "git+https://github.com/n00kii/egui-modal.git?rev=72ef5ca#72ef5caa44b630ba05323aae25d15002918a9b8c"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "egui-winit"
 version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2188,13 +2196,12 @@ dependencies = [
  "crossbeam-utils",
  "device_query",
  "eframe",
+ "egui-modal",
  "error-stack",
  "fast_image_resize",
  "image",
- "lazy_static",
  "legion-rgb-driver",
  "open",
- "parking_lot",
  "rand 0.8.5",
  "regex",
  "scrap",
