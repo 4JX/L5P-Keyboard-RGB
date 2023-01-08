@@ -49,9 +49,6 @@ fn main() -> Result<()> {
 
 	match cli_output.start_gui_maybe_hidden {
 		Some(hide_window) => {
-			// TODO: Handle errors visually
-			let effect_manager = EffectManager::new(effects::OperationMode::Gui).unwrap();
-
 			let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
 			let native_options = eframe::NativeOptions {
 				initial_window_size: Some(WINDOW_SIZE),
@@ -61,7 +58,7 @@ fn main() -> Result<()> {
 				..eframe::NativeOptions::default()
 			};
 
-			let app = App::new(effect_manager, cli_output.output, hide_window);
+			let app = App::new(cli_output.output, hide_window, is_unique);
 
 			eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc))));
 

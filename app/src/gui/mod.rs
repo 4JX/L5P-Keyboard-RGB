@@ -1,14 +1,22 @@
+use std::process;
+
 use eframe::{
 	egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style},
 	emath::Align,
 	epaint::{Color32, Rounding, Vec2},
 	CreationContext,
 };
+use egui_modal::Modal;
 use strum::IntoEnumIterator;
 
 use tray_item::{IconSource, TrayItem};
 
-use crate::{cli::CliOutputType, effects::EffectManager, enums::Effects, profile::Profile};
+use crate::{
+	cli::CliOutputType,
+	effects::{self, EffectManager},
+	enums::Effects,
+	profile::Profile,
+};
 
 use self::{effect_options::EffectOptions, profile_list::ProfileList, style::SpacingStyle};
 
@@ -17,10 +25,11 @@ mod profile_list;
 mod style;
 
 pub struct App {
+	unique_instance: bool,
 	show_window: bool,
 	window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
 
-	manager: EffectManager,
+	manager: Option<EffectManager>,
 
 	profile_list: ProfileList,
 	profile: Profile,
@@ -35,19 +44,13 @@ enum GuiMessage {
 }
 
 impl App {
-	pub fn new(manager: EffectManager, output: CliOutputType, hide_window: bool) -> Self {
-		//Create the tray icon
-		#[cfg(target_os = "linux")]
-		let tray_icon = load_tray_icon(include_bytes!("../../res/trayIcon.ico"));
-
-		#[cfg(target_os = "linux")]
-		let mut tray = TrayItem::new("Keyboard RGB", tray_icon).unwrap();
-
-		#[cfg(target_os = "windows")]
-		let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
+	pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool) -> Self {
+		// TODO: Handle errors visually
+		let manager = EffectManager::new(effects::OperationMode::Gui).ok();
 
 		let mut app = match output {
 			CliOutputType::Profile(profile) => Self {
+				unique_instance,
 				show_window: !hide_window,
 				window_open_rx: None,
 				manager,
@@ -61,6 +64,7 @@ impl App {
 				// TODO: Handle custom effects
 				let _ = effect;
 				Self {
+					unique_instance,
 					show_window: !hide_window,
 					window_open_rx: None,
 					manager,
@@ -73,6 +77,16 @@ impl App {
 			}
 			CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
 		};
+
+		//Create the tray icon
+		#[cfg(target_os = "linux")]
+		let tray_icon = load_tray_icon(include_bytes!("../../res/trayIcon.ico"));
+
+		#[cfg(target_os = "linux")]
+		let mut tray = TrayItem::new("Keyboard RGB", tray_icon).unwrap();
+
+		#[cfg(target_os = "windows")]
+		let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
 
 		let (window_sender, window_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
 
@@ -99,6 +113,50 @@ impl App {
 
 impl eframe::App for App {
 	fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+		if !self.unique_instance {
+			dbg!("not unique");
+			if self.manager.is_none() {
+				let modal = Modal::new(ctx, "unique_instance_error_modal");
+
+				modal.show(|ui| {
+					modal.title(ui, "Warning");
+					modal.frame(ui, |ui| {
+						modal.body(ui, "Another instance is already running, please close it and try again.");
+					});
+
+					modal.buttons(ui, |ui| {
+						if modal.caution_button(ui, "Exit").clicked() {
+							process::exit(0)
+						}
+					});
+				});
+
+				modal.open()
+			}
+		}
+
+		if self.manager.is_none() {
+			let modal = Modal::new(ctx, "manager_error_modal");
+
+			modal.show(|ui| {
+				modal.title(ui, "Warning");
+				modal.frame(ui, |ui| {
+					modal.body(ui, "Failed to find a valid keyboard.");
+					modal.body(ui, "Ensure that you have a supported model and that the application has access to it.");
+					modal.body(ui, "On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage");
+					modal.body(ui, "In certain cases, this may be due to a hardware error.");
+				});
+
+				modal.buttons(ui, |ui| {
+					if modal.caution_button(ui, "Exit").clicked() {
+						process::exit(0)
+					}
+				});
+			});
+
+			modal.open()
+		}
+
 		let mut update_lights = false;
 
 		frame.set_visible(self.show_window);
@@ -168,7 +226,9 @@ impl eframe::App for App {
 			});
 
 		if update_lights {
-			self.manager.set_profile(self.profile.clone());
+			if let Some(manager) = self.manager.as_mut() {
+				manager.set_profile(self.profile.clone());
+			}
 		}
 	}
 

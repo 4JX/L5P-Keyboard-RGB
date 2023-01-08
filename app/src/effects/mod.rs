@@ -73,17 +73,12 @@ impl EffectManager {
 			keyboard_stop_signal: Arc::new(AtomicBool::new(false)),
 		};
 
-		let mut keyboard_result = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())
+		let keyboard = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())
 			.into_report()
 			.change_context(AcquireKeyboardError)
-			.attach_printable("Ensure that you have a supported model and that the application has access to it.");
-
-		#[cfg(target_os = "linux")]
-		{
-			keyboard_result = keyboard_result.attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage");
-		}
-
-		let keyboard = keyboard_result.change_context(ManagerCreationError)?;
+			.attach_printable("Ensure that you have a supported model and that the application has access to it.")
+			.attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage")
+			.change_context(ManagerCreationError)?;
 
 		let (tx, rx) = crossbeam_channel::unbounded::<Message>();
 
