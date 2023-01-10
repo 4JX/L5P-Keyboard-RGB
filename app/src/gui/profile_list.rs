@@ -6,16 +6,24 @@ use egui_modal::Modal;
 
 use crate::profile::Profile;
 
-use super::style::SpacingStyle;
+use super::{style::SpacingStyle, CustomEffectState};
 
-#[derive(Default)]
 pub struct ProfileList {
-	profiles: Vec<Profile>,
+	pub profiles: Vec<Profile>,
 	new_profile_name: String,
 }
 
 impl ProfileList {
-	pub fn show(&mut self, ctx: &Context, ui: &mut Ui, current_profile: &mut Profile, spacing: &SpacingStyle) {
+	pub fn new(profiles: Vec<Profile>) -> Self {
+		Self {
+			profiles,
+			new_profile_name: String::default(),
+		}
+	}
+}
+
+impl ProfileList {
+	pub fn show(&mut self, ctx: &Context, ui: &mut Ui, current_profile: &mut Profile, spacing: &SpacingStyle, changed: &mut bool, custom_effect_state: &mut CustomEffectState) {
 		ui.scope(|ui| {
 			let modal = Modal::new(ctx, "profile_name_modal");
 
@@ -92,7 +100,10 @@ impl ProfileList {
 					ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| {
 						ui.horizontal_wrapped(|ui| {
 							for prof in &self.profiles {
-								if ui.selectable_value(current_profile, prof.clone(), &prof.name).clicked() {};
+								if ui.selectable_value(current_profile, prof.clone(), &prof.name).clicked() {
+									*changed = true;
+									*custom_effect_state = CustomEffectState::None;
+								};
 							}
 						});
 					});

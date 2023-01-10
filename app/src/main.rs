@@ -12,7 +12,7 @@ use eframe::{epaint::Vec2, IconData};
 use gui::App;
 use util::is_unique_instance;
 
-const WINDOW_SIZE: Vec2 = Vec2::new(500., 320.);
+const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
 
 fn main() -> Result<()> {
 	color_eyre::install()?;
@@ -88,7 +88,7 @@ fn main() -> Result<()> {
 fn load_icon_data(image_data: &[u8]) -> IconData {
 	let image = image::load_from_memory(image_data).unwrap();
 	let image_buffer = image.to_rgba8();
-	let pixels = image_buffer.as_raw().clone();
+	let pixels = image_buffer.into_flat_samples().samples;
 
 	IconData {
 		rgba: pixels,

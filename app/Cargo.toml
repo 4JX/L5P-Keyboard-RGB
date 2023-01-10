@@ -33,10 +33,13 @@ error-stack = "0.2.4"
 eframe = "0.20.1"
 # egui-modal = "0.1.8"
 egui-modal = { git = "https://github.com/n00kii/egui-modal.git", rev = "72ef5ca" }
+egui_file = "0.5.2"
+egui-notify = "0.5.1"
 
 # Dependabot alerts
 regex = "1.6.0"
 crossbeam-utils = "0.8.12"
+
 
 [build-dependencies]
 winres = "0.1.12"

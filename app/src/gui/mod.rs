@@ -1,7 +1,13 @@
-use std::process;
+use std::{
+	fs::{self, File},
+	io::Write,
+	mem,
+	path::Path,
+	process,
+};
 
 use eframe::{
-	egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style},
+	egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
 	emath::Align,
 	epaint::{Color32, Rounding, Vec2},
 	CreationContext,
@@ -13,14 +19,15 @@ use tray_item::{IconSource, TrayItem};
 
 use crate::{
 	cli::CliOutputType,
-	effects::{self, EffectManager},
+	effects::{self, custom_effect::CustomEffect, EffectManager},
 	enums::Effects,
 	profile::Profile,
 };
 
-use self::{effect_options::EffectOptions, profile_list::ProfileList, style::SpacingStyle};
+use self::{effect_options::EffectOptions, menu_bar::MenuBarState, profile_list::ProfileList, style::SpacingStyle};
 
 mod effect_options;
+mod menu_bar;
 mod profile_list;
 mod style;
 
@@ -30,51 +37,98 @@ pub struct App {
 	window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
 
 	manager: Option<EffectManager>,
-
-	profile_list: ProfileList,
 	profile: Profile,
+	custom_effect: CustomEffectState,
+
+	menu_bar: MenuBarState,
+	profile_list: ProfileList,
 	effect_options: EffectOptions,
 	global_rgb: [u8; 3],
-
 	spacing: SpacingStyle,
 }
 
 enum GuiMessage {
 	ShowWindow,
+	Quit,
+}
+
+#[derive(Default)]
+pub enum CustomEffectState {
+	#[default]
+	None,
+	Queued(CustomEffect),
+	Playing,
+}
+
+impl CustomEffectState {
+	fn is_none(&self) -> bool {
+		match self {
+			CustomEffectState::None => true,
+			CustomEffectState::Queued(_) => false,
+			CustomEffectState::Playing => false,
+		}
+	}
+
+	fn is_queued(&self) -> bool {
+		match self {
+			CustomEffectState::None => false,
+			CustomEffectState::Queued(_) => true,
+			CustomEffectState::Playing => false,
+		}
+	}
+
+	fn is_playing(&self) -> bool {
+		match self {
+			CustomEffectState::None => false,
+			CustomEffectState::Queued(_) => false,
+			CustomEffectState::Playing => true,
+		}
+	}
 }
 
 impl App {
 	pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool) -> Self {
-		// TODO: Handle errors visually
 		let manager = EffectManager::new(effects::OperationMode::Gui).ok();
+
+		let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
+
+		let mut profiles: Vec<Profile> = Vec::new();
+
+		if let Ok(string) = fs::read_to_string(Path::new("./profiles.json")) {
+			profiles = serde_json::from_str(&string).unwrap_or_default();
+		}
 
 		let mut app = match output {
 			CliOutputType::Profile(profile) => Self {
 				unique_instance,
 				show_window: !hide_window,
 				window_open_rx: None,
+
 				manager,
-				profile_list: ProfileList::default(),
 				profile,
+				custom_effect: CustomEffectState::default(),
+
+				menu_bar: MenuBarState::new(gui_sender.clone()),
+				profile_list: ProfileList::new(profiles),
 				effect_options: EffectOptions::default(),
 				global_rgb: [0; 3],
 				spacing: SpacingStyle::default(),
 			},
-			CliOutputType::Custom(effect) => {
-				// TODO: Handle custom effects
-				let _ = effect;
-				Self {
-					unique_instance,
-					show_window: !hide_window,
-					window_open_rx: None,
-					manager,
-					profile_list: ProfileList::default(),
-					profile: Profile::default(),
-					effect_options: EffectOptions::default(),
-					global_rgb: [0; 3],
-					spacing: SpacingStyle::default(),
-				}
-			}
+			CliOutputType::Custom(effect) => Self {
+				unique_instance,
+				show_window: !hide_window,
+				window_open_rx: None,
+
+				manager,
+				profile: Profile::default(),
+				custom_effect: CustomEffectState::Queued(effect),
+
+				menu_bar: MenuBarState::new(gui_sender.clone()),
+				profile_list: ProfileList::new(profiles),
+				effect_options: EffectOptions::default(),
+				global_rgb: [0; 3],
+				spacing: SpacingStyle::default(),
+			},
 			CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
 		};
 
@@ -88,18 +142,13 @@ impl App {
 		#[cfg(target_os = "windows")]
 		let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
 
-		let (window_sender, window_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
+		let show_sender = gui_sender.clone();
+		let mut tray_item_err = tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
 
-		let mut tray_item_err = tray.add_menu_item("Show", move || window_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
-
-		tray_item_err |= tray
-			.add_menu_item("Quit", || {
-				std::process::exit(0);
-			})
-			.is_err();
+		tray_item_err |= tray.add_menu_item("Quit", move || gui_sender.send(GuiMessage::Quit).unwrap()).is_err();
 
 		if !tray_item_err {
-			app.window_open_rx = Some(window_receiver);
+			app.window_open_rx = Some(gui_receiver);
 		}
 
 		app
@@ -113,9 +162,17 @@ impl App {
 
 impl eframe::App for App {
 	fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+		if let Some(rx) = &self.window_open_rx {
+			if let Some(message) = rx.try_recv().ok() {
+				match message {
+					GuiMessage::ShowWindow => self.show_window = true,
+					GuiMessage::Quit => self.exit_app(),
+				}
+			}
+		}
+
 		if !self.unique_instance {
-			dbg!("not unique");
-			if self.manager.is_none() {
+			if !self.unique_instance {
 				let modal = Modal::new(ctx, "unique_instance_error_modal");
 
 				modal.show(|ui| {
@@ -126,7 +183,7 @@ impl eframe::App for App {
 
 					modal.buttons(ui, |ui| {
 						if modal.caution_button(ui, "Exit").clicked() {
-							process::exit(0)
+							self.exit_app()
 						}
 					});
 				});
@@ -149,7 +206,7 @@ impl eframe::App for App {
 
 				modal.buttons(ui, |ui| {
 					if modal.caution_button(ui, "Exit").clicked() {
-						process::exit(0)
+						self.exit_app()
 					}
 				});
 			});
@@ -157,9 +214,13 @@ impl eframe::App for App {
 			modal.open()
 		}
 
-		let mut update_lights = false;
+		let mut changed = false;
 
 		frame.set_visible(self.show_window);
+
+		TopBottomPanel::top("top-panel").show(ctx, |ui| {
+			self.menu_bar.show(ctx, ui, &mut self.profile, &mut self.custom_effect, &mut changed);
+		});
 
 		CentralPanel::default()
 			.frame(Frame::none().inner_margin(self.spacing.large).fill(Color32::from_gray(26)))
@@ -169,15 +230,15 @@ impl eframe::App for App {
 				ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
 					ui.vertical(|ui| {
 						let res = ui.scope(|ui| {
-							ui.style_mut().spacing.item_spacing.y = self.spacing.medium;
+							ui.set_enabled(self.profile.effect.takes_color_array() && self.custom_effect.is_none());
 
-							ui.set_enabled(self.profile.effect.takes_color_array());
+							ui.style_mut().spacing.item_spacing.y = self.spacing.medium;
 
 							let response = ui.horizontal(|ui| {
 								ui.style_mut().spacing.interact_size = Vec2::splat(60.0);
 
 								for i in 0..4 {
-									update_lights |= ui.color_edit_button_srgb(&mut self.profile.rgb_zones[i].rgb).changed();
+									changed |= ui.color_edit_button_srgb(&mut self.profile.rgb_zones[i].rgb).changed();
 								}
 							});
 
@@ -188,7 +249,7 @@ impl eframe::App for App {
 									self.profile.rgb_zones[i].rgb = self.global_rgb;
 								}
 
-								update_lights = true;
+								changed = true;
 							};
 
 							response.response
@@ -196,38 +257,56 @@ impl eframe::App for App {
 
 						ui.set_width(res.inner.rect.width());
 
-						self.effect_options.show(ui, &mut self.profile, &mut update_lights, &self.spacing);
+						ui.scope(|ui| {
+							ui.set_enabled(self.custom_effect.is_none());
+							self.effect_options.show(ui, &mut self.profile, &mut changed, &self.spacing);
+						});
 
-						self.profile_list.show(ctx, ui, &mut self.profile, &self.spacing);
+						self.profile_list.show(ctx, ui, &mut self.profile, &self.spacing, &mut changed, &mut self.custom_effect);
 					});
 
-					Frame {
-						rounding: Rounding::same(6.0),
-						fill: Color32::from_gray(20),
-						..Frame::default()
-					}
-					.show(ui, |ui| {
-						ui.style_mut().spacing.item_spacing = self.spacing.default;
+					ui.vertical_centered_justified(|ui| {
+						if self.custom_effect.is_playing() {
+							if ui.button("Stop custom effect").clicked() {
+								self.custom_effect = CustomEffectState::None;
+								changed = true;
+							}
+						};
 
-						ScrollArea::vertical().show(ui, |ui| {
-							ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
-								ui.add_space(ui.visuals().clip_rect_margin);
+						Frame {
+							rounding: Rounding::same(6.0),
+							fill: Color32::from_gray(20),
+							..Frame::default()
+						}
+						.show(ui, |ui| {
+							ui.style_mut().spacing.item_spacing = self.spacing.default;
 
-								for val in Effects::iter() {
-									let text: &'static str = val.into();
-									update_lights |= ui.selectable_value(&mut self.profile.effect, val, text).changed();
-								}
-
-								ui.add_space(ui.visuals().clip_rect_margin);
+							ScrollArea::vertical().show(ui, |ui| {
+								ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
+									for val in Effects::iter() {
+										let text: &'static str = val.into();
+										if ui.selectable_value(&mut self.profile.effect, val, text).changed() {
+											changed = true;
+											self.custom_effect = CustomEffectState::None
+										};
+									}
+								});
 							});
 						});
 					});
 				});
 			});
 
-		if update_lights {
+		if changed {
 			if let Some(manager) = self.manager.as_mut() {
-				manager.set_profile(self.profile.clone());
+				if self.custom_effect.is_none() {
+					manager.set_profile(self.profile.clone());
+				} else if self.custom_effect.is_queued() {
+					let state = mem::replace(&mut self.custom_effect, CustomEffectState::Playing);
+					if let CustomEffectState::Queued(effect) = state {
+						manager.custom_effect(effect)
+					}
+				}
 			}
 		}
 	}
@@ -239,6 +318,14 @@ impl eframe::App for App {
 		} else {
 			true
 		}
+	}
+
+	fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+		if let Ok(ser) = serde_json::to_string(&self.profile_list.profiles) {
+			if let Ok(mut file) = File::create("./profiles.json") {
+				file.write_all(ser.as_bytes()).unwrap();
+			};
+		};
 	}
 }
 
@@ -261,13 +348,21 @@ impl App {
 		// ctx.set_fonts(text_utils::get_font_def());
 		ctx.set_style(style);
 	}
+
+	fn exit_app(&mut self) {
+		use eframe::App;
+
+		self.on_exit(None);
+
+		process::exit(0);
+	}
 }
 
 #[must_use]
 pub fn load_tray_icon(image_data: &[u8]) -> IconSource {
 	let image = image::load_from_memory(image_data).unwrap();
 	let image_buffer = image.to_rgba8();
-	let pixels = image_buffer.as_raw().clone();
+	let pixels = image_buffer.into_flat_samples().samples;
 
 	IconSource::Data {
 		data: pixels,

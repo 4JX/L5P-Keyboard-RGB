@@ -9,7 +9,7 @@ use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq)]
 pub struct KeyboardZone {
 	pub rgb: [u8; 3],
 	pub enabled: bool,
@@ -40,7 +40,7 @@ pub struct Profile {
 impl PartialEq for Profile {
 	fn eq(&self, other: &Self) -> bool {
 		self.name == other.name
-			// && self.rgb_zones == other.rgb_zones
+			&& self.rgb_zones == other.rgb_zones
 			&& self.effect == other.effect
 			&& self.direction == other.direction
 			&& self.speed == other.speed

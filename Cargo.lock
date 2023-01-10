@@ -1088,6 +1088,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui-notify"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3d8552204a0d12da822e54a1dbfdb5d78810b095773c139b6a7486e5a4ab8f6"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "egui-winit"
 version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1101,6 +1110,15 @@ dependencies = [
  "tracing",
  "webbrowser",
  "winit",
+]
+
+[[package]]
+name = "egui_file"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b0ccd5bbd9626d431f776091c525480f942094f22efc6468448a2628ef3ca98"
+dependencies = [
+ "egui",
 ]
 
 [[package]]
@@ -2197,6 +2215,8 @@ dependencies = [
  "device_query",
  "eframe",
  "egui-modal",
+ "egui-notify",
+ "egui_file",
  "error-stack",
  "fast_image_resize",
  "image",
