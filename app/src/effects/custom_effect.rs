@@ -10,7 +10,6 @@ use crate::util::StorageTrait;
 pub struct EffectStep {
 	pub rgb_array: [u8; 12],
 	pub step_type: EffectType,
-	pub speed: u8,
 	pub brightness: u8,
 	pub steps: u8,
 	pub delay_between_steps: u64,

@@ -61,8 +61,8 @@ The best way to add a new effect is to directly edit the source code, as it allo
 ```json
 {
  "effect_steps": [
-  {"rgb_array": [0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0], "step_type": "Set", "speed": 1, "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100},
-  {"rgb_array": [0, 100, 0, 0, 0, 200, 0, 0, 200, 200, 0, 0], "step_type": "Transition", "speed": 1, "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100}
+  {"rgb_array": [0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0], "step_type": "Set", "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100},
+  {"rgb_array": [0, 100, 0, 0, 0, 200, 0, 0, 200, 200, 0, 0], "step_type": "Transition", "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100}
  ],
  "should_loop": true
 }
@@ -78,7 +78,7 @@ The best way to add a new effect is to directly edit the source code, as it allo
   - **steps:** To smoothly transition between colours, the keyboard LEDs are set at small intervals until they reach the desired color. This controls the number of them.
   - **delay_between_steps:** How much time to wait between each interval (In ms).
   - **sleep:** The time to wait before going to the next `effect_step` (In ms).
-- **should_loop:** Whether the effect should start again once it reaches the last effect.
+- **should_loop:** Whether the effect should start again once it reaches the last step.
 
 ## Usage
 

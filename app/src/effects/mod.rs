@@ -203,7 +203,6 @@ impl Inner {
 
 		'outer: loop {
 			for step in custom_effect.effect_steps.clone() {
-				self.keyboard.set_speed(step.speed).unwrap();
 				self.keyboard.set_brightness(step.brightness).unwrap();
 				if let EffectType::Set = step.step_type {
 					self.keyboard.set_colors_to(&step.rgb_array).unwrap();
