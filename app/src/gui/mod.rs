@@ -358,6 +358,7 @@ impl App {
 	}
 }
 
+#[cfg(target_os = "linux")]
 #[must_use]
 pub fn load_tray_icon(image_data: &[u8]) -> IconSource {
 	let image = image::load_from_memory(image_data).unwrap();
