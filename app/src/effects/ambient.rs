@@ -38,7 +38,14 @@ impl AmbientLight {
 				Ok(frame) => {
 					// Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
 					// Read source image from file
-					let mut src_image = fr::Image::from_vec_u8(width, height, frame.to_vec(), fr::PixelType::U8x4).unwrap();
+
+					// HACK: Override opacity manually to ensure some kind of output because of jank elsewhere
+					let mut frame_vec = frame.to_vec();
+					for rgba in frame_vec.chunks_exact_mut(4) {
+						rgba[3] = 255;
+					}
+
+					let mut src_image = fr::Image::from_vec_u8(width, height, frame_vec, fr::PixelType::U8x4).unwrap();
 
 					// Create MulDiv instance
 					let alpha_mul_div: fr::MulDiv = fr::MulDiv::default();

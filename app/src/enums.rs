@@ -2,14 +2,17 @@ use crate::{effects::custom_effect::CustomEffect, profile::Profile};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr};
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, PartialEq, Eq, Debug, IntoStaticStr)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, Eq, Debug, IntoStaticStr, Default)]
 pub enum Effects {
+	#[default]
 	Static,
 	Breath,
 	Smooth,
 	Wave,
 	Lightning,
-	AmbientLight { fps: u8 },
+	AmbientLight {
+		fps: u8,
+	},
 	SmoothWave,
 	Swipe,
 	Disco,
@@ -19,9 +22,12 @@ pub enum Effects {
 	Ripple,
 }
 
-impl Default for Effects {
-	fn default() -> Self {
-		Self::Static
+impl PartialEq for Effects {
+	fn eq(&self, other: &Self) -> bool {
+		match (self, other) {
+			// (Self::AmbientLight { fps: l_fps }, Self::AmbientLight { fps: r_fps }) => l_fps == r_fps,
+			_ => core::mem::discriminant(self) == core::mem::discriminant(other),
+		}
 	}
 }
 
