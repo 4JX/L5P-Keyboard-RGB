@@ -46,7 +46,7 @@ winres = "0.1.12"
 
 [package.metadata.vcpkg]
 git = "https://github.com/microsoft/vcpkg"
-rev = "8e1f46d"
+rev = "c30de8e"
 
 [package.metadata.vcpkg.target]
 x86_64-unknown-linux-gnu = { dependencies = ["libvpx", "libyuv"] }
