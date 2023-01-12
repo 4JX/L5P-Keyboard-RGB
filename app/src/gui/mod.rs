@@ -6,6 +6,7 @@ use std::{
 	process,
 };
 
+use crossbeam_channel::{Receiver, Sender};
 use eframe::{
 	egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
 	emath::Align,
@@ -14,8 +15,6 @@ use eframe::{
 };
 use egui_modal::Modal;
 use strum::IntoEnumIterator;
-
-use tray_item::{IconSource, TrayItem};
 
 use crate::{
 	cli::CliOutputType,
@@ -47,7 +46,7 @@ pub struct App {
 	spacing: SpacingStyle,
 }
 
-enum GuiMessage {
+pub enum GuiMessage {
 	ShowWindow,
 	Quit,
 }
@@ -87,10 +86,8 @@ impl CustomEffectState {
 }
 
 impl App {
-	pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool) -> Self {
+	pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tray_active: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
 		let manager = EffectManager::new(effects::OperationMode::Gui).ok();
-
-		let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
 
 		let mut profiles: Vec<Profile> = Vec::new();
 
@@ -108,7 +105,7 @@ impl App {
 				profile,
 				custom_effect: CustomEffectState::default(),
 
-				menu_bar: MenuBarState::new(gui_sender.clone()),
+				menu_bar: MenuBarState::new(tx.clone()),
 				profile_list: ProfileList::new(profiles),
 				effect_options: EffectOptions::default(),
 				global_rgb: [0; 3],
@@ -123,7 +120,7 @@ impl App {
 				profile: Profile::default(),
 				custom_effect: CustomEffectState::Queued(effect),
 
-				menu_bar: MenuBarState::new(gui_sender.clone()),
+				menu_bar: MenuBarState::new(tx.clone()),
 				profile_list: ProfileList::new(profiles),
 				effect_options: EffectOptions::default(),
 				global_rgb: [0; 3],
@@ -132,23 +129,8 @@ impl App {
 			CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
 		};
 
-		//Create the tray icon
-		#[cfg(target_os = "linux")]
-		let tray_icon = load_tray_icon(include_bytes!("../../res/trayIcon.ico"));
-
-		#[cfg(target_os = "linux")]
-		let mut tray = TrayItem::new("Keyboard RGB", tray_icon).unwrap();
-
-		#[cfg(target_os = "windows")]
-		let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
-
-		let show_sender = gui_sender.clone();
-		let mut tray_item_err = tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
-
-		tray_item_err |= tray.add_menu_item("Quit", move || gui_sender.send(GuiMessage::Quit).unwrap()).is_err();
-
-		if !tray_item_err {
-			app.window_open_rx = Some(gui_receiver);
+		if tray_active {
+			app.window_open_rx = Some(rx);
 		}
 
 		app
@@ -355,19 +337,5 @@ impl App {
 		self.on_exit(None);
 
 		process::exit(0);
-	}
-}
-
-#[cfg(target_os = "linux")]
-#[must_use]
-pub fn load_tray_icon(image_data: &[u8]) -> IconSource {
-	let image = image::load_from_memory(image_data).unwrap();
-	let image_buffer = image.to_rgba8();
-	let pixels = image_buffer.into_flat_samples().samples;
-
-	IconSource::Data {
-		data: pixels,
-		width: image.width() as i32,
-		height: image.height() as i32,
 	}
 }
