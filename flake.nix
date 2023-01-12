@@ -43,8 +43,8 @@
         sharedDeps = with pkgs; [
           dbus
           xorg.libX11
-          libusb
           fontconfig
+          udev
         ];
 
         # Libraries needed at runtime
