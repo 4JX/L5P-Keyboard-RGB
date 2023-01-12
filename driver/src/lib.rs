@@ -11,12 +11,12 @@ use std::{
 
 pub mod error;
 
-const KNOWN_DEVICE_INFOS: [(u16, u16); 5] = [
-	(0x048d, 0xc975), // 2022
-	(0x048d, 0xc973), // 2022 Ideapad
-	(0x048d, 0xc965), // 2021
-	(0x048d, 0xc963), // 2021 Ideapad
-	(0x048d, 0xc955), // 2020
+const KNOWN_DEVICE_INFOS: [(u16, u16, u16, u16); 5] = [
+	(0x048d, 0xc975, 0xff89, 0x00cc), // 2022
+	(0x048d, 0xc973, 0xff89, 0x00cc), // 2022 Ideapad
+	(0x048d, 0xc965, 0xff89, 0x00cc), // 2021
+	(0x048d, 0xc963, 0xff89, 0x00cc), // 2021 Ideapad
+	(0x048d, 0xc955, 0xff89, 0x00cc), // 2020
 ];
 
 const SPEED_RANGE: std::ops::Range<u8> = 1..5;
@@ -194,7 +194,7 @@ pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard> {
 	let info = api
 		.device_list()
 		.find(|d| {
-			let info_tuple = (d.vendor_id(), d.product_id());
+			let info_tuple = (d.vendor_id(), d.product_id(), d.usage_page(), d.usage());
 			KNOWN_DEVICE_INFOS.iter().any(|known| known == &info_tuple)
 		})
 		.ok_or(error::Error::DeviceNotFound)?;
