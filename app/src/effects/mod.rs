@@ -5,7 +5,7 @@ use crate::{
 
 use crossbeam_channel::{Receiver, Sender};
 use error_stack::{IntoReport, Result, ResultExt};
-use legion_rgb_driver::{BaseEffects, Keyboard};
+use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use rand::thread_rng;
 use std::{
 	sync::atomic::{AtomicBool, Ordering},
@@ -153,7 +153,9 @@ impl Inner {
 
 		self.keyboard.set_effect(BaseEffects::Static).unwrap();
 		if profile.effect.is_built_in() {
-			self.keyboard.set_speed(profile.speed).unwrap();
+			let clamped_speed = profile.speed.clamp(SPEED_RANGE.min().unwrap(), SPEED_RANGE.max().unwrap());
+
+			self.keyboard.set_speed(clamped_speed).unwrap();
 		};
 		self.keyboard.set_brightness(profile.brightness).unwrap();
 
