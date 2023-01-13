@@ -37,7 +37,7 @@ struct Cli {
 	gui: bool,
 
 	/// Do not show the window when launching
-	#[arg(short, long, default_value_t = false)]
+	#[arg(short = 'w', long, default_value_t = false)]
 	hide_window: bool,
 }
 
@@ -213,7 +213,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 			let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
 			println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
 			Ok(CliOutput {
-				start_gui_maybe_hidden: Some(false),
+				start_gui_maybe_hidden: Some(cli.hide_window),
 				output: CliOutputType::Profile(Profile::default()),
 			})
 		}
