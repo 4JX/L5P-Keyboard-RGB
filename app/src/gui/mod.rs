@@ -315,7 +315,7 @@ impl App {
     fn configure_style(&self, ctx: &Context) {
         let style = Style {
             // text_styles: text_utils::default_text_styles(),
-            // visuals: THEME.visuals.clone(),
+            visuals: self.theme.visuals.clone(),
             debug: DebugOptions {
                 debug_on_hover: false,
                 show_expand_width: false,
