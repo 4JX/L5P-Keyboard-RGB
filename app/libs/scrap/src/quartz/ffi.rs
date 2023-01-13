@@ -164,13 +164,7 @@ extern "C" {
     pub static kCGDisplayStreamQueueDepth: CFStringRef;
 
     pub fn CGDisplayStreamCreateWithDispatchQueue(
-        display: u32,
-        output_width: usize,
-        output_height: usize,
-        pixel_format: PixelFormat,
-        properties: CFDictionaryRef,
-        queue: DispatchQueue,
-        handler: CGDisplayStreamFrameAvailableHandler,
+        display: u32, output_width: usize, output_height: usize, pixel_format: PixelFormat, properties: CFDictionaryRef, queue: DispatchQueue, handler: CGDisplayStreamFrameAvailableHandler,
     ) -> CGDisplayStreamRef;
 
     pub fn CGDisplayStreamStart(displayStream: CGDisplayStreamRef) -> CGError;
@@ -181,11 +175,7 @@ extern "C" {
     pub fn CGDisplayPixelsWide(display: u32) -> usize;
     pub fn CGDisplayPixelsHigh(display: u32) -> usize;
 
-    pub fn CGGetOnlineDisplayList(
-        max_displays: u32,
-        online_displays: *mut u32,
-        display_count: *mut u32,
-    ) -> CGError;
+    pub fn CGGetOnlineDisplayList(max_displays: u32, online_displays: *mut u32, display_count: *mut u32) -> CGError;
 
     pub fn CGDisplayIsBuiltin(display: u32) -> i32;
     pub fn CGDisplayIsMain(display: u32) -> i32;
@@ -220,18 +210,10 @@ extern "C" {
     pub static kCFBooleanTrue: CFBooleanRef;
     pub static kCFBooleanFalse: CFBooleanRef;
 
-    pub fn CFNumberCreate(
-        allocator: CFAllocatorRef,
-        theType: CFNumberType,
-        valuePtr: *const c_void,
-    ) -> CFNumberRef;
+    pub fn CFNumberCreate(allocator: CFAllocatorRef, theType: CFNumberType, valuePtr: *const c_void) -> CFNumberRef;
 
     pub fn CFDictionaryCreate(
-        allocator: CFAllocatorRef,
-        keys: *const *mut c_void,
-        values: *const *mut c_void,
-        numValues: i64,
-        keyCallBacks: *const CFDictionaryKeyCallBacks,
+        allocator: CFAllocatorRef, keys: *const *mut c_void, values: *const *mut c_void, numValues: i64, keyCallBacks: *const CFDictionaryKeyCallBacks,
         valueCallBacks: *const CFDictionaryValueCallBacks,
     ) -> CFDictionaryRef;
 

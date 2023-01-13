@@ -16,10 +16,7 @@ impl Frame {
 
         IOSurfaceLock(surface, SURFACE_LOCK_READ_ONLY, ptr::null_mut());
 
-        let inner = slice::from_raw_parts(
-            IOSurfaceGetBaseAddress(surface) as *const u8,
-            IOSurfaceGetAllocSize(surface),
-        );
+        let inner = slice::from_raw_parts(IOSurfaceGetBaseAddress(surface) as *const u8, IOSurfaceGetAllocSize(surface));
 
         Frame {
             surface,
@@ -40,15 +37,7 @@ impl Frame {
             let stride0 = IOSurfaceGetBytesPerRowOfPlane(self.surface, 0);
             let plane1 = IOSurfaceGetBaseAddressOfPlane(self.surface, 1);
             let stride1 = IOSurfaceGetBytesPerRowOfPlane(self.surface, 1);
-            crate::common::nv12_to_i420(
-                plane0 as _,
-                stride0 as _,
-                plane1 as _,
-                stride1 as _,
-                w,
-                h,
-                i420,
-            );
+            crate::common::nv12_to_i420(plane0 as _, stride0 as _, plane1 as _, stride1 as _, w, h, i420);
             self.i420 = i420.as_mut_ptr() as _;
             self.i420_len = i420.len();
         }

@@ -86,19 +86,9 @@ extern "C" {
 }
 pub type MagInitializeFunc = ::std::option::Option<unsafe extern "C" fn() -> BOOL>;
 pub type MagUninitializeFunc = ::std::option::Option<unsafe extern "C" fn() -> BOOL>;
-pub type MagSetWindowSourceFunc =
-    ::std::option::Option<unsafe extern "C" fn(hwnd: HWND, rect: RECT) -> BOOL>;
-pub type MagSetWindowFilterListFunc = ::std::option::Option<
-    unsafe extern "C" fn(
-        hwnd: HWND,
-        dwFilterMode: DWORD,
-        count: ::std::os::raw::c_int,
-        pHWND: *mut HWND,
-    ) -> BOOL,
->;
-pub type MagSetImageScalingCallbackFunc = ::std::option::Option<
-    unsafe extern "C" fn(hwnd: HWND, callback: MagImageScalingCallback) -> BOOL,
->;
+pub type MagSetWindowSourceFunc = ::std::option::Option<unsafe extern "C" fn(hwnd: HWND, rect: RECT) -> BOOL>;
+pub type MagSetWindowFilterListFunc = ::std::option::Option<unsafe extern "C" fn(hwnd: HWND, dwFilterMode: DWORD, count: ::std::os::raw::c_int, pHWND: *mut HWND) -> BOOL>;
+pub type MagSetImageScalingCallbackFunc = ::std::option::Option<unsafe extern "C" fn(hwnd: HWND, callback: MagImageScalingCallback) -> BOOL>;
 
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -130,68 +120,33 @@ impl MagInterface {
             if GetSystemMetrics(SM_CMONITORS) != 1 {
                 // Do not try to use the magnifier in multi-screen setup (where the API
                 // crashes sometimes).
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    "Magnifier capturer cannot work on multi-screen system.",
-                ));
+                return Err(Error::new(ErrorKind::Other, "Magnifier capturer cannot work on multi-screen system."));
             }
 
             // load lib
             let lib_file_name = "Magnification.dll";
             let lib_file_name_c = CString::new(lib_file_name).unwrap();
-            s.lib_handle = LoadLibraryExA(
-                lib_file_name_c.as_ptr() as _,
-                NULL,
-                LOAD_WITH_ALTERED_SEARCH_PATH,
-            );
+            s.lib_handle = LoadLibraryExA(lib_file_name_c.as_ptr() as _, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
             if s.lib_handle.is_null() {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!(
-                        "Failed to LoadLibraryExA {}, error: {}",
-                        lib_file_name,
-                        GetLastError()
-                    ),
-                ));
+                return Err(Error::new(ErrorKind::Other, format!("Failed to LoadLibraryExA {}, error: {}", lib_file_name, GetLastError())));
             };
 
             // load functions
-            s.mag_initialize_func = Some(std::mem::transmute(Self::load_func(
-                s.lib_handle,
-                "MagInitialize",
-            )?));
-            s.mag_uninitialize_func = Some(std::mem::transmute(Self::load_func(
-                s.lib_handle,
-                "MagUninitialize",
-            )?));
-            s.set_window_source_func = Some(std::mem::transmute(Self::load_func(
-                s.lib_handle,
-                "MagSetWindowSource",
-            )?));
-            s.set_window_filter_list_func = Some(std::mem::transmute(Self::load_func(
-                s.lib_handle,
-                "MagSetWindowFilterList",
-            )?));
-            s.set_image_scaling_callback_func = Some(std::mem::transmute(Self::load_func(
-                s.lib_handle,
-                "MagSetImageScalingCallback",
-            )?));
+            s.mag_initialize_func = Some(std::mem::transmute(Self::load_func(s.lib_handle, "MagInitialize")?));
+            s.mag_uninitialize_func = Some(std::mem::transmute(Self::load_func(s.lib_handle, "MagUninitialize")?));
+            s.set_window_source_func = Some(std::mem::transmute(Self::load_func(s.lib_handle, "MagSetWindowSource")?));
+            s.set_window_filter_list_func = Some(std::mem::transmute(Self::load_func(s.lib_handle, "MagSetWindowFilterList")?));
+            s.set_image_scaling_callback_func = Some(std::mem::transmute(Self::load_func(s.lib_handle, "MagSetImageScalingCallback")?));
 
             // MagInitialize
             if let Some(init_func) = s.mag_initialize_func {
                 if FALSE == init_func() {
-                    return Err(Error::new(
-                        ErrorKind::Other,
-                        format!("Failed to MagInitialize, error: {}", GetLastError()),
-                    ));
+                    return Err(Error::new(ErrorKind::Other, format!("Failed to MagInitialize, error: {}", GetLastError())));
                 } else {
                     s.init_succeeded = true;
                 }
             } else {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    "Unreachable, mag_initialize_func should not be none",
-                ));
+                return Err(Error::new(ErrorKind::Other, "Unreachable, mag_initialize_func should not be none"));
             }
         }
         Ok(s)
@@ -201,14 +156,7 @@ impl MagInterface {
         let func_name_c = CString::new(func_name).unwrap();
         let func = GetProcAddress(lib_module, func_name_c.as_ptr() as _);
         if func.is_null() {
-            return Err(Error::new(
-                ErrorKind::Other,
-                format!(
-                    "Failed to GetProcAddress {}, error: {}",
-                    func_name,
-                    GetLastError()
-                ),
-            ));
+            return Err(Error::new(ErrorKind::Other, format!("Failed to GetProcAddress {}, error: {}", func_name, GetLastError())));
         }
         Ok(func)
     }
@@ -271,22 +219,13 @@ impl CapturerMag {
         MagInterface::new().is_ok()
     }
 
-    pub(crate) fn new(
-        origin: (i32, i32),
-        width: usize,
-        height: usize,
-        use_yuv: bool,
-    ) -> Result<Self> {
+    pub(crate) fn new(origin: (i32, i32), width: usize, height: usize, use_yuv: bool) -> Result<Self> {
         unsafe {
             let x = GetSystemMetrics(SM_XVIRTUALSCREEN);
             let y = GetSystemMetrics(SM_YVIRTUALSCREEN);
             let w = GetSystemMetrics(SM_CXVIRTUALSCREEN);
             let h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-            if !(origin.0 == x as i32
-                && origin.1 == y as i32
-                && width == w as usize
-                && height == h as usize)
-            {
+            if !(origin.0 == x as i32 && origin.1 == y as i32 && width == w as usize && height == h as usize) {
                 return Err(Error::new(
                     ErrorKind::Other,
                     format!(
@@ -327,15 +266,11 @@ impl CapturerMag {
         unsafe {
             let mut instance = 0 as HMODULE;
             if 0 == GetModuleHandleExA(
-                GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
-                    | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                 DefWindowProcA as _,
                 &mut instance as _,
             ) {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!("Failed to GetModuleHandleExA, error: {}", GetLastError()),
-                ));
+                return Err(Error::new(ErrorKind::Other, format!("Failed to GetModuleHandleExA, error: {}", GetLastError())));
             }
 
             // Register the host window class. See the MSDN documentation of the
@@ -359,10 +294,7 @@ impl CapturerMag {
             if 0 == RegisterClassExA(&wcex) {
                 let code = GetLastError();
                 if code != ERROR_CLASS_ALREADY_EXISTS {
-                    return Err(Error::new(
-                        ErrorKind::Other,
-                        format!("Failed to RegisterClassExA, error: {}", code),
-                    ));
+                    return Err(Error::new(ErrorKind::Other, format!("Failed to RegisterClassExA, error: {}", code)));
                 }
             }
 
@@ -382,13 +314,7 @@ impl CapturerMag {
                 NULL,
             );
             if s.host_window.is_null() {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!(
-                        "Failed to CreateWindowExA host_window, error: {}",
-                        GetLastError()
-                    ),
-                ));
+                return Err(Error::new(ErrorKind::Other, format!("Failed to CreateWindowExA host_window, error: {}", GetLastError())));
             }
 
             // Create the magnifier control.
@@ -407,13 +333,7 @@ impl CapturerMag {
                 NULL,
             );
             if s.magnifier_window.is_null() {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    format!(
-                        "Failed CreateWindowA magnifier_window, error: {}",
-                        GetLastError()
-                    ),
-                ));
+                return Err(Error::new(ErrorKind::Other, format!("Failed CreateWindowA magnifier_window, error: {}", GetLastError())));
             }
 
             // Hide the host window.
@@ -421,25 +341,11 @@ impl CapturerMag {
 
             // Set the scaling callback to receive captured image.
             if let Some(set_callback_func) = s.mag_interface.set_image_scaling_callback_func {
-                if FALSE
-                    == set_callback_func(
-                        s.magnifier_window,
-                        Some(Self::on_gag_image_scaling_callback),
-                    )
-                {
-                    return Err(Error::new(
-                        ErrorKind::Other,
-                        format!(
-                            "Failed to MagSetImageScalingCallback, error: {}",
-                            GetLastError()
-                        ),
-                    ));
+                if FALSE == set_callback_func(s.magnifier_window, Some(Self::on_gag_image_scaling_callback)) {
+                    return Err(Error::new(ErrorKind::Other, format!("Failed to MagSetImageScalingCallback, error: {}", GetLastError())));
                 }
             } else {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    "Unreachable, set_image_scaling_callback_func should not be none",
-                ));
+                return Err(Error::new(ErrorKind::Other, "Unreachable, set_image_scaling_callback_func should not be none"));
             }
         }
 
@@ -464,32 +370,15 @@ impl CapturerMag {
                 return Ok(false);
             }
 
-            if let Some(set_window_filter_list_func) =
-                self.mag_interface.set_window_filter_list_func
-            {
-                if FALSE
-                    == set_window_filter_list_func(
-                        self.magnifier_window,
-                        MW_FILTERMODE_EXCLUDE,
-                        1,
-                        &mut hwnd,
-                    )
-                {
+            if let Some(set_window_filter_list_func) = self.mag_interface.set_window_filter_list_func {
+                if FALSE == set_window_filter_list_func(self.magnifier_window, MW_FILTERMODE_EXCLUDE, 1, &mut hwnd) {
                     return Err(Error::new(
                         ErrorKind::Other,
-                        format!(
-                            "Failed MagSetWindowFilterList for cls {} name {}, err: {}",
-                            cls,
-                            name,
-                            GetLastError()
-                        ),
+                        format!("Failed MagSetWindowFilterList for cls {} name {}, err: {}", cls, name, GetLastError()),
                     ));
                 }
             } else {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    "Unreachable, MagSetWindowFilterList should not be none",
-                ));
+                return Err(Error::new(ErrorKind::Other, "Unreachable, MagSetWindowFilterList should not be none"));
             }
         }
 
@@ -497,11 +386,7 @@ impl CapturerMag {
     }
 
     pub(crate) fn get_rect(&self) -> ((i32, i32), usize, usize) {
-        (
-            (self.rect.left as _, self.rect.top as _),
-            self.width as _,
-            self.height as _,
-        )
+        ((self.rect.left as _, self.rect.top as _), self.width as _, self.height as _)
     }
 
     fn clear_data() {
@@ -518,11 +403,7 @@ impl CapturerMag {
             let y = GetSystemMetrics(SM_YVIRTUALSCREEN);
             let w = GetSystemMetrics(SM_CXVIRTUALSCREEN);
             let h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-            if !(self.rect.left == x as i32
-                && self.rect.top == y as i32
-                && self.rect.right == (x + w) as i32
-                && self.rect.bottom == (y + h) as i32)
-            {
+            if !(self.rect.left == x as i32 && self.rect.top == y as i32 && self.rect.right == (x + w) as i32 && self.rect.bottom == (y + h) as i32) {
                 return Err(Error::new(
                     ErrorKind::Other,
                     format!(
@@ -539,17 +420,7 @@ impl CapturerMag {
                 ));
             }
 
-            if FALSE
-                == SetWindowPos(
-                    self.magnifier_window,
-                    HWND_TOP,
-                    self.rect.left,
-                    self.rect.top,
-                    self.rect.right,
-                    self.rect.bottom,
-                    0,
-                )
-            {
+            if FALSE == SetWindowPos(self.magnifier_window, HWND_TOP, self.rect.left, self.rect.top, self.rect.right, self.rect.bottom, 0) {
                 return Err(Error::new(
                     ErrorKind::Other,
                     format!(
@@ -567,25 +438,16 @@ impl CapturerMag {
             // frame before set_window_source_func_ returns.
             if let Some(set_window_source_func) = self.mag_interface.set_window_source_func {
                 if FALSE == set_window_source_func(self.magnifier_window, self.rect) {
-                    return Err(Error::new(
-                        ErrorKind::Other,
-                        format!("Failed to MagSetWindowSource, error: {}", GetLastError()),
-                    ));
+                    return Err(Error::new(ErrorKind::Other, format!("Failed to MagSetWindowSource, error: {}", GetLastError())));
                 }
             } else {
-                return Err(Error::new(
-                    ErrorKind::Other,
-                    "Unreachable, set_window_source_func should not be none",
-                ));
+                return Err(Error::new(ErrorKind::Other, "Unreachable, set_window_source_func should not be none"));
             }
         }
 
         let mut lock = MAG_BUFFER.lock().unwrap();
         if !lock.0 {
-            return Err(Error::new(
-                ErrorKind::Other,
-                "No data captured by magnifier",
-            ));
+            return Err(Error::new(ErrorKind::Other, "No data captured by magnifier"));
         }
 
         if self.use_yuv {
@@ -593,12 +455,7 @@ impl CapturerMag {
             unsafe {
                 std::ptr::copy_nonoverlapping(&mut lock.1[0], &mut self.data[0], self.data.len());
             }
-            crate::common::bgra_to_i420(
-                self.width as usize,
-                self.height as usize,
-                &self.data,
-                data,
-            );
+            crate::common::bgra_to_i420(self.width as usize, self.height as usize, &self.data, data);
         } else {
             data.resize(lock.1.len(), 0);
             unsafe {
@@ -632,13 +489,7 @@ impl CapturerMag {
     }
 
     unsafe extern "C" fn on_gag_image_scaling_callback(
-        _hwnd: HWND,
-        srcdata: *mut ::std::os::raw::c_void,
-        srcheader: MAGIMAGEHEADER,
-        _destdata: *mut ::std::os::raw::c_void,
-        _destheader: MAGIMAGEHEADER,
-        _unclipped: RECT,
-        _clipped: RECT,
+        _hwnd: HWND, srcdata: *mut ::std::os::raw::c_void, srcheader: MAGIMAGEHEADER, _destdata: *mut ::std::os::raw::c_void, _destheader: MAGIMAGEHEADER, _unclipped: RECT, _clipped: RECT,
         _dirty: HRGN,
     ) -> BOOL {
         Self::clear_data();

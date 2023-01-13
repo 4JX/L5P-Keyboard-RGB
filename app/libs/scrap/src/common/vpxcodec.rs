@@ -57,15 +57,7 @@ macro_rules! call_vpx {
         let result = unsafe { $x }; // original expression
         let result_int = unsafe { std::mem::transmute::<_, i32>(result) };
         if result_int != 0 {
-            return Err(Error::FailedCall(format!(
-                "errcode={} {}:{}:{}:{}",
-                result_int,
-                module_path!(),
-                file!(),
-                line!(),
-                column!()
-            ))
-            .into());
+            return Err(Error::FailedCall(format!("errcode={} {}:{}:{}:{}", result_int, module_path!(), file!(), line!(), column!())).into());
         }
         result
     }};
@@ -76,15 +68,7 @@ macro_rules! call_vpx_ptr {
         let result = unsafe { $x }; // original expression
         let result_int = unsafe { std::mem::transmute::<_, isize>(result) };
         if result_int == 0 {
-            return Err(Error::BadPtr(format!(
-                "errcode={} {}:{}:{}:{}",
-                result_int,
-                module_path!(),
-                file!(),
-                line!(),
-                column!()
-            ))
-            .into());
+            return Err(Error::BadPtr(format!("errcode={} {}:{}:{}:{}", result_int, module_path!(), file!(), line!(), column!())).into());
         }
         result
     }};
@@ -120,11 +104,7 @@ impl EncoderApi for VpxEncoder {
                 c.rc_target_bitrate = config.bitrate;
                 c.rc_undershoot_pct = 95;
                 c.rc_dropframe_thresh = 25;
-                c.g_threads = if config.num_threads == 0 {
-                    num_cpus::get() as _
-                } else {
-                    config.num_threads
-                };
+                c.g_threads = if config.num_threads == 0 { num_cpus::get() as _ } else { config.num_threads };
                 c.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT;
                 // https://developers.google.com/media/vp9/bitrate-modes/
                 // Constant Bitrate mode (CBR) is recommended for live streaming with VP9.
@@ -140,13 +120,7 @@ impl EncoderApi for VpxEncoder {
                 */
 
                 let mut ctx = Default::default();
-                call_vpx!(vpx_codec_enc_init_ver(
-                    &mut ctx,
-                    i,
-                    &c,
-                    0,
-                    VPX_ENCODER_ABI_VERSION as _
-                ));
+                call_vpx!(vpx_codec_enc_init_ver(&mut ctx, i, &c, 0, VPX_ENCODER_ABI_VERSION as _));
 
                 if config.codec == VpxVideoCodecId::VP9 {
                     // set encoder internal speed settings
@@ -176,17 +150,9 @@ impl EncoderApi for VpxEncoder {
                     rows). The total number of active threads will then be equal to
                     $tile_rows * $tile_columns
                     */
-                    call_vpx!(vpx_codec_control_(
-                        &mut ctx,
-                        VP9E_SET_ROW_MT as _,
-                        1 as c_int
-                    ));
+                    call_vpx!(vpx_codec_control_(&mut ctx, VP9E_SET_ROW_MT as _, 1 as c_int));
 
-                    call_vpx!(vpx_codec_control_(
-                        &mut ctx,
-                        VP9E_SET_TILE_COLUMNS as _,
-                        4 as c_int
-                    ));
+                    call_vpx!(vpx_codec_control_(&mut ctx, VP9E_SET_TILE_COLUMNS as _, 4 as c_int));
                 }
 
                 Ok(Self {
@@ -201,10 +167,7 @@ impl EncoderApi for VpxEncoder {
 
     fn encode_to_message(&mut self, frame: &[u8], ms: i64) -> ResultType<Message> {
         let mut frames = Vec::new();
-        for ref frame in self
-            .encode(ms, frame, STRIDE_ALIGN)
-            .with_context(|| "Failed to encode")?
-        {
+        for ref frame in self.encode(ms, frame, STRIDE_ALIGN).with_context(|| "Failed to encode")? {
             frames.push(VpxEncoder::create_frame(frame));
         }
         for ref frame in self.flush().with_context(|| "Failed to flush")? {
@@ -394,11 +357,7 @@ impl VpxDecoder {
         }
         let mut ctx = Default::default();
         let cfg = vpx_codec_dec_cfg_t {
-            threads: if config.num_threads == 0 {
-                num_cpus::get() as _
-            } else {
-                config.num_threads
-            },
+            threads: if config.num_threads == 0 { num_cpus::get() as _ } else { config.num_threads },
             w: 0,
             h: 0,
         };
@@ -407,13 +366,7 @@ impl VpxDecoder {
             println!("{}", vpx_codec_get_caps(i));
         }
         */
-        call_vpx!(vpx_codec_dec_init_ver(
-            &mut ctx,
-            i,
-            &cfg,
-            0,
-            VPX_DECODER_ABI_VERSION as _,
-        ));
+        call_vpx!(vpx_codec_dec_init_ver(&mut ctx, i, &cfg, 0, VPX_DECODER_ABI_VERSION as _,));
         Ok(Self { ctx })
     }
 
@@ -442,13 +395,7 @@ impl VpxDecoder {
     ///
     /// It matches a call to `vpx_codec_decode`.
     pub fn decode(&mut self, data: &[u8]) -> Result<DecodeFrames> {
-        call_vpx!(vpx_codec_decode(
-            &mut self.ctx,
-            data.as_ptr(),
-            data.len() as _,
-            ptr::null_mut(),
-            0,
-        ));
+        call_vpx!(vpx_codec_decode(&mut self.ctx, data.as_ptr(), data.len() as _, ptr::null_mut(), 0,));
 
         Ok(DecodeFrames {
             ctx: &mut self.ctx,
@@ -458,13 +405,7 @@ impl VpxDecoder {
 
     /// Notify the decoder to return any pending frame
     pub fn flush(&mut self) -> Result<DecodeFrames> {
-        call_vpx!(vpx_codec_decode(
-            &mut self.ctx,
-            ptr::null(),
-            0,
-            ptr::null_mut(),
-            0
-        ));
+        call_vpx!(vpx_codec_decode(&mut self.ctx, ptr::null(), 0, ptr::null_mut(), 0));
         Ok(DecodeFrames {
             ctx: &mut self.ctx,
             iter: ptr::null(),

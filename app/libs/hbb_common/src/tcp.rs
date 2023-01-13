@@ -20,12 +20,7 @@ use tokio_util::codec::Framed;
 pub trait TcpStreamTrait: AsyncRead + AsyncWrite + Unpin {}
 pub struct DynTcpStream(Box<dyn TcpStreamTrait + Send + Sync>);
 
-pub struct FramedStream(
-    Framed<DynTcpStream, BytesCodec>,
-    SocketAddr,
-    Option<(Key, u64, u64)>,
-    u64,
-);
+pub struct FramedStream(Framed<DynTcpStream, BytesCodec>, SocketAddr, Option<(Key, u64, u64)>, u64);
 
 impl Deref for FramedStream {
     type Target = Framed<DynTcpStream, BytesCodec>;
@@ -73,39 +68,19 @@ fn new_socket(addr: std::net::SocketAddr, reuse: bool) -> Result<TcpSocket, std:
 }
 
 impl FramedStream {
-    pub async fn new<T1: ToSocketAddrs, T2: ToSocketAddrs>(
-        remote_addr: T1,
-        local_addr: T2,
-        ms_timeout: u64,
-    ) -> ResultType<Self> {
+    pub async fn new<T1: ToSocketAddrs, T2: ToSocketAddrs>(remote_addr: T1, local_addr: T2, ms_timeout: u64) -> ResultType<Self> {
         for local_addr in lookup_host(&local_addr).await? {
             for remote_addr in lookup_host(&remote_addr).await? {
-                let stream = super::timeout(
-                    ms_timeout,
-                    new_socket(local_addr, true)?.connect(remote_addr),
-                )
-                .await??;
+                let stream = super::timeout(ms_timeout, new_socket(local_addr, true)?.connect(remote_addr)).await??;
                 stream.set_nodelay(true).ok();
                 let addr = stream.local_addr()?;
-                return Ok(Self(
-                    Framed::new(DynTcpStream(Box::new(stream)), BytesCodec::new()),
-                    addr,
-                    None,
-                    0,
-                ));
+                return Ok(Self(Framed::new(DynTcpStream(Box::new(stream)), BytesCodec::new()), addr, None, 0));
             }
         }
         bail!("could not resolve to any address");
     }
 
-    pub async fn connect<'a, 't, P, T1, T2>(
-        proxy: P,
-        target: T1,
-        local: T2,
-        username: &'a str,
-        password: &'a str,
-        ms_timeout: u64,
-    ) -> ResultType<Self>
+    pub async fn connect<'a, 't, P, T1, T2>(proxy: P, target: T1, local: T2, username: &'a str, password: &'a str, ms_timeout: u64) -> ResultType<Self>
     where
         P: ToProxyAddrs,
         T1: IntoTargetAddr<'t>,
@@ -113,31 +88,15 @@ impl FramedStream {
     {
         if let Some(local) = lookup_host(&local).await?.next() {
             if let Some(proxy) = proxy.to_proxy_addrs().next().await {
-                let stream =
-                    super::timeout(ms_timeout, new_socket(local, true)?.connect(proxy?)).await??;
+                let stream = super::timeout(ms_timeout, new_socket(local, true)?.connect(proxy?)).await??;
                 stream.set_nodelay(true).ok();
                 let stream = if username.trim().is_empty() {
-                    super::timeout(
-                        ms_timeout,
-                        Socks5Stream::connect_with_socket(stream, target),
-                    )
-                    .await??
+                    super::timeout(ms_timeout, Socks5Stream::connect_with_socket(stream, target)).await??
                 } else {
-                    super::timeout(
-                        ms_timeout,
-                        Socks5Stream::connect_with_password_and_socket(
-                            stream, target, username, password,
-                        ),
-                    )
-                    .await??
+                    super::timeout(ms_timeout, Socks5Stream::connect_with_password_and_socket(stream, target, username, password)).await??
                 };
                 let addr = stream.local_addr()?;
-                return Ok(Self(
-                    Framed::new(DynTcpStream(Box::new(stream)), BytesCodec::new()),
-                    addr,
-                    None,
-                    0,
-                ));
+                return Ok(Self(Framed::new(DynTcpStream(Box::new(stream)), BytesCodec::new()), addr, None, 0));
             };
         };
         bail!("could not resolve to any address");
@@ -152,12 +111,7 @@ impl FramedStream {
     }
 
     pub fn from(stream: impl TcpStreamTrait + Send + Sync + 'static, addr: SocketAddr) -> Self {
-        Self(
-            Framed::new(DynTcpStream(Box::new(stream)), BytesCodec::new()),
-            addr,
-            None,
-            0,
-        )
+        Self(Framed::new(DynTcpStream(Box::new(stream)), BytesCodec::new()), addr, None, 0)
     }
 
     pub fn set_raw(&mut self) {
@@ -255,21 +209,13 @@ pub async fn new_listener<T: ToSocketAddrs>(addr: T, reuse: bool) -> ResultType<
 impl Unpin for DynTcpStream {}
 
 impl AsyncRead for DynTcpStream {
-    fn poll_read(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<io::Result<()>> {
+    fn poll_read(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &mut ReadBuf<'_>) -> Poll<io::Result<()>> {
         AsyncRead::poll_read(Pin::new(&mut self.0), cx, buf)
     }
 }
 
 impl AsyncWrite for DynTcpStream {
-    fn poll_write(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &[u8],
-    ) -> Poll<io::Result<usize>> {
+    fn poll_write(mut self: Pin<&mut Self>, cx: &mut Context<'_>, buf: &[u8]) -> Poll<io::Result<usize>> {
         AsyncWrite::poll_write(Pin::new(&mut self.0), cx, buf)
     }
 

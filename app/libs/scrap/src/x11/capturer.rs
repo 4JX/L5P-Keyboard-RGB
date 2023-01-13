@@ -97,8 +97,7 @@ impl Capturer {
                 self.xcbid,
                 0,
             );
-            let response =
-                xcb_shm_get_image_reply(self.display.server().raw(), request, ptr::null_mut());
+            let response = xcb_shm_get_image_reply(self.display.server().raw(), request, ptr::null_mut());
             libc::free(response as *mut _);
         }
     }

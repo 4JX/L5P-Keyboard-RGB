@@ -141,13 +141,8 @@ impl PipeWireRecorder {
 
         pipeline.add_many(&[&src, &sink])?;
         src.link(&sink)?;
-        let appsink = sink
-            .dynamic_cast::<AppSink>()
-            .map_err(|_| GStreamerError("Sink element is expected to be an appsink!".into()))?;
-        appsink.set_caps(Some(&gst::Caps::new_simple(
-            "video/x-raw",
-            &[("format", &"BGRx")],
-        )));
+        let appsink = sink.dynamic_cast::<AppSink>().map_err(|_| GStreamerError("Sink element is expected to be an appsink!".into()))?;
+        appsink.set_caps(Some(&gst::Caps::new_simple("video/x-raw", &[("format", &"BGRx")])));
 
         pipeline.set_state(gst::State::Playing)?;
         Ok(Self {
@@ -164,32 +159,19 @@ impl PipeWireRecorder {
 
 impl Recorder for PipeWireRecorder {
     fn capture(&mut self, timeout_ms: u64) -> Result<PixelProvider, Box<dyn Error>> {
-        if let Some(sample) = self
-            .appsink
-            .try_pull_sample(gst::ClockTime::from_mseconds(timeout_ms))
-        {
-            let cap = sample
-                .get_caps()
-                .ok_or("Failed get caps")?
-                .get_structure(0)
-                .ok_or("Failed to get structure")?;
+        if let Some(sample) = self.appsink.try_pull_sample(gst::ClockTime::from_mseconds(timeout_ms)) {
+            let cap = sample.get_caps().ok_or("Failed get caps")?.get_structure(0).ok_or("Failed to get structure")?;
             let w: i32 = cap.get_value("width")?.get_some()?;
             let h: i32 = cap.get_value("height")?.get_some()?;
             let w = w as usize;
             let h = h as usize;
-            let buf = sample
-                .get_buffer_owned()
-                .ok_or_else(|| GStreamerError("Failed to get owned buffer.".into()))?;
-            let mut crop = buf
-                .get_meta::<gstreamer_video::VideoCropMeta>()
-                .map(|m| m.get_rect());
+            let buf = sample.get_buffer_owned().ok_or_else(|| GStreamerError("Failed to get owned buffer.".into()))?;
+            let mut crop = buf.get_meta::<gstreamer_video::VideoCropMeta>().map(|m| m.get_rect());
             // only crop if necessary
             if Some((0, 0, w as u32, h as u32)) == crop {
                 crop = None;
             }
-            let buf = buf
-                .into_mapped_buffer_readable()
-                .map_err(|_| GStreamerError("Failed to map buffer.".into()))?;
+            let buf = buf.into_mapped_buffer_readable().map_err(|_| GStreamerError("Failed to map buffer.".into()))?;
             let buf_size = buf.get_size();
             // BGRx is 4 bytes per pixel
             if buf_size != (w * h * 4) {
@@ -254,21 +236,9 @@ impl Drop for PipeWireRecorder {
     }
 }
 
-fn handle_response<F>(
-    conn: &SyncConnection,
-    path: dbus::Path<'static>,
-    mut f: F,
-    failure_out: Arc<AtomicBool>,
-) -> Result<dbus::channel::Token, dbus::Error>
+fn handle_response<F>(conn: &SyncConnection, path: dbus::Path<'static>, mut f: F, failure_out: Arc<AtomicBool>) -> Result<dbus::channel::Token, dbus::Error>
 where
-    F: FnMut(
-            OrgFreedesktopPortalRequestResponse,
-            &SyncConnection,
-            &Message,
-        ) -> Result<(), Box<dyn Error>>
-        + Send
-        + Sync
-        + 'static,
+    F: FnMut(OrgFreedesktopPortalRequestResponse, &SyncConnection, &Message) -> Result<(), Box<dyn Error>> + Send + Sync + 'static,
 {
     let mut m = MatchRule::new();
     m.path = Some(path);
@@ -299,11 +269,7 @@ where
 }
 
 fn get_portal(conn: &SyncConnection) -> Proxy<&SyncConnection> {
-    conn.with_proxy(
-        "org.freedesktop.portal.Desktop",
-        "/org/freedesktop/portal/desktop",
-        Duration::from_millis(1000),
-    )
+    conn.with_proxy("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop", Duration::from_millis(1000))
 }
 
 fn streams_from_response(response: OrgFreedesktopPortalRequestResponse) -> Vec<PwStreamInfo> {
@@ -318,39 +284,22 @@ fn streams_from_response(response: OrgFreedesktopPortalRequestResponse) -> Vec<P
                 .filter_map(|stream| {
                     let mut itr = stream.as_iter()?;
                     let path = itr.next()?.as_u64()?;
-                    let (keys, values): (Vec<(usize, &dyn RefArg)>, Vec<(usize, &dyn RefArg)>) =
-                        itr.next()?
-                            .as_iter()?
-                            .enumerate()
-                            .partition(|(i, _)| i % 2 == 0);
+                    let (keys, values): (Vec<(usize, &dyn RefArg)>, Vec<(usize, &dyn RefArg)>) = itr.next()?.as_iter()?.enumerate().partition(|(i, _)| i % 2 == 0);
                     let attributes = keys
                         .iter()
                         .filter_map(|(_, key)| Some(key.as_str()?.to_owned()))
-                        .zip(
-                            values
-                                .iter()
-                                .map(|(_, arg)| *arg)
-                                .collect::<Vec<&dyn RefArg>>(),
-                        )
+                        .zip(values.iter().map(|(_, arg)| *arg).collect::<Vec<&dyn RefArg>>())
                         .collect::<HashMap<String, &dyn RefArg>>();
                     let mut info = PwStreamInfo {
                         path,
-                        source_type: attributes
-                            .get("source_type")
-                            .map_or(Some(0), |v| v.as_u64())?,
+                        source_type: attributes.get("source_type").map_or(Some(0), |v| v.as_u64())?,
                         position: (0, 0),
                         size: (0, 0),
                     };
                     let v = attributes
                         .get("size")?
                         .as_iter()?
-                        .filter_map(|v| {
-                            Some(
-                                v.as_iter()?
-                                    .map(|x| x.as_i64().unwrap_or(0))
-                                    .collect::<Vec<i64>>(),
-                            )
-                        })
+                        .filter_map(|v| Some(v.as_iter()?.map(|x| x.as_i64().unwrap_or(0)).collect::<Vec<i64>>()))
                         .next();
                     if let Some(v) = v {
                         if v.len() == 2 {
@@ -361,13 +310,7 @@ fn streams_from_response(response: OrgFreedesktopPortalRequestResponse) -> Vec<P
                     let v = attributes
                         .get("position")?
                         .as_iter()?
-                        .filter_map(|v| {
-                            Some(
-                                v.as_iter()?
-                                    .map(|x| x.as_i64().unwrap_or(0))
-                                    .collect::<Vec<i64>>(),
-                            )
-                        })
+                        .filter_map(|v| Some(v.as_iter()?.map(|x| x.as_i64().unwrap_or(0)).collect::<Vec<i64>>()))
                         .next();
                     if let Some(v) = v {
                         if v.len() == 2 {
@@ -386,9 +329,7 @@ fn streams_from_response(response: OrgFreedesktopPortalRequestResponse) -> Vec<P
 static mut INIT: bool = false;
 
 // mostly inspired by https://gitlab.gnome.org/snippets/19
-fn request_screen_cast(
-    capture_cursor: bool,
-) -> Result<(SyncConnection, OwnedFd, Vec<PwStreamInfo>), Box<dyn Error>> {
+fn request_screen_cast(capture_cursor: bool) -> Result<(SyncConnection, OwnedFd, Vec<PwStreamInfo>), Box<dyn Error>> {
     unsafe {
         if !INIT {
             gstreamer::init()?;
@@ -404,14 +345,8 @@ fn request_screen_cast(
     let streams_res = streams.clone();
     let failure = Arc::new(AtomicBool::new(false));
     let failure_res = failure.clone();
-    args.insert(
-        "session_handle_token".to_string(),
-        Variant(Box::new("u1".to_string())),
-    );
-    args.insert(
-        "handle_token".to_string(),
-        Variant(Box::new("u1".to_string())),
-    );
+    args.insert("session_handle_token".to_string(), Variant(Box::new("u1".to_string())));
+    args.insert("handle_token".to_string(), Variant(Box::new("u1".to_string())));
     let path = portal.create_session(args)?;
     handle_response(
         &conn,
@@ -419,10 +354,7 @@ fn request_screen_cast(
         move |r: OrgFreedesktopPortalRequestResponse, c, _| {
             let portal = get_portal(c);
             let mut args: PropMap = HashMap::new();
-            args.insert(
-                "handle_token".to_string(),
-                Variant(Box::new("u2".to_string())),
-            );
+            args.insert("handle_token".to_string(), Variant(Box::new("u2".to_string())));
             // https://flatpak.github.io/xdg-desktop-portal/portal-docs.html#gdbus-method-org-freedesktop-portal-ScreenCast.SelectSources
             args.insert("multiple".into(), Variant(Box::new(true)));
             args.insert("types".into(), Variant(Box::new(1u32))); //| 2u32)));
@@ -433,20 +365,17 @@ fn request_screen_cast(
                 // Warn the user if capturing the cursor is tried on kde as this can crash
                 // kwin_wayland and tear down the plasma desktop, see:
                 // https://bugs.kde.org/show_bug.cgi?id=435042
-                warn!("You are attempting to capture the cursor under KDE Plasma, this may crash your \
+                warn!(
+                    "You are attempting to capture the cursor under KDE Plasma, this may crash your \
                     desktop, see https://bugs.kde.org/show_bug.cgi?id=435042 for details! \
-                    You have been warned.");
+                    You have been warned."
+                );
             }
             args.insert("cursor_mode".into(), Variant(Box::new(cursor_mode)));
             let session: dbus::Path = r
                 .results
                 .get("session_handle")
-                .ok_or_else(|| {
-                    DBusError(format!(
-                        "Failed to obtain session_handle from response: {:?}",
-                        r
-                    ))
-                })?
+                .ok_or_else(|| DBusError(format!("Failed to obtain session_handle from response: {:?}", r)))?
                 .as_str()
                 .ok_or_else(|| DBusError("Failed to convert session_handle to string.".into()))?
                 .to_string()
@@ -462,10 +391,7 @@ fn request_screen_cast(
                 move |_: OrgFreedesktopPortalRequestResponse, c, _| {
                     let portal = get_portal(c);
                     let mut args: PropMap = HashMap::new();
-                    args.insert(
-                        "handle_token".to_string(),
-                        Variant(Box::new("u3".to_string())),
-                    );
+                    args.insert("handle_token".to_string(), Variant(Box::new("u3".to_string())));
                     let path = portal.start(session.clone(), "", args)?;
                     let session = session.clone();
                     let fd = fd.clone();
@@ -476,15 +402,9 @@ fn request_screen_cast(
                         c,
                         path,
                         move |r: OrgFreedesktopPortalRequestResponse, c, _| {
-                            streams
-                                .clone()
-                                .lock()
-                                .unwrap()
-                                .append(&mut streams_from_response(r));
+                            streams.clone().lock().unwrap().append(&mut streams_from_response(r));
                             let portal = get_portal(c);
-                            fd.clone().lock().unwrap().replace(
-                                portal.open_pipe_wire_remote(session.clone(), HashMap::new())?,
-                            );
+                            fd.clone().lock().unwrap().replace(portal.open_pipe_wire_remote(session.clone(), HashMap::new())?);
                             Ok(())
                         },
                         failure_out,
@@ -514,17 +434,12 @@ fn request_screen_cast(
     if fd_res.is_some() && !streams_res.is_empty() {
         Ok((conn, fd_res.clone().unwrap(), streams_res.clone()))
     } else {
-        Err(Box::new(DBusError(
-            "Failed to obtain screen capture.".into(),
-        )))
+        Err(Box::new(DBusError("Failed to obtain screen capture.".into())))
     }
 }
 
 pub fn get_capturables(capture_cursor: bool) -> Result<Vec<PipeWireCapturable>, Box<dyn Error>> {
     let (conn, fd, streams) = request_screen_cast(capture_cursor)?;
     let conn = Arc::new(conn);
-    Ok(streams
-        .into_iter()
-        .map(|s| PipeWireCapturable::new(conn.clone(), fd.clone(), s))
-        .collect())
+    Ok(streams.into_iter().map(|s| PipeWireCapturable::new(conn.clone(), fd.clone(), s)).collect())
 }

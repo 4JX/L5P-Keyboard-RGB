@@ -52,13 +52,7 @@ impl RecorderContext {
                 std::fs::create_dir_all(&dir)?;
             }
         }
-        let file = self.id.clone()
-            + &chrono::Local::now().format("_%Y%m%d%H%M%S").to_string()
-            + if self.codec_id == RecordCodecID::VP9 {
-                ".webm"
-            } else {
-                ".mp4"
-            };
+        let file = self.id.clone() + &chrono::Local::now().format("_%Y%m%d%H%M%S").to_string() + if self.codec_id == RecordCodecID::VP9 { ".webm" } else { ".mp4" };
         self.filename = PathBuf::from(&dir).join(file).to_string_lossy().to_string();
         log::info!("video save to:{}", self.filename);
         Ok(())
@@ -186,12 +180,7 @@ struct WebmRecorder {
 
 impl RecorderApi for WebmRecorder {
     fn new(ctx: RecorderContext) -> ResultType<Self> {
-        let out = match {
-            OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(&ctx.filename)
-        } {
+        let out = match { OpenOptions::new().write(true).create_new(true).open(&ctx.filename) } {
             Ok(file) => file,
             Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => File::create(&ctx.filename)?,
             Err(e) => return Err(e.into()),
@@ -200,12 +189,7 @@ impl RecorderApi for WebmRecorder {
             Some(v) => v,
             None => bail!("Failed to create webm mux"),
         };
-        let vt = webm.add_video_track(
-            ctx.width as _,
-            ctx.height as _,
-            None,
-            mux::VideoCodecId::VP9,
-        );
+        let vt = webm.add_video_track(ctx.width as _, ctx.height as _, None, mux::VideoCodecId::VP9);
         Ok(WebmRecorder {
             vt,
             webm: Some(webm),
@@ -221,9 +205,7 @@ impl RecorderApi for WebmRecorder {
             self.key = true;
         }
         if self.key {
-            let ok = self
-                .vt
-                .add_frame(&frame.data, frame.pts as u64 * 1_000_000, frame.key);
+            let ok = self.vt.add_frame(&frame.data, frame.pts as u64 * 1_000_000, frame.key);
             if ok {
                 self.written = true;
             }

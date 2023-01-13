@@ -15,7 +15,7 @@ fn link_vcpkg(mut path: PathBuf, name: &str) -> PathBuf {
     let mut target = if target_os == "macos" {
         if target_arch == "x64" {
             "x64-osx".to_owned()
-        } else if target_arch == "arm64"{
+        } else if target_arch == "arm64" {
             "arm64-osx".to_owned()
         } else {
             format!("{}-{}", target_arch, target_os)
@@ -31,20 +31,8 @@ fn link_vcpkg(mut path: PathBuf, name: &str) -> PathBuf {
     println!("cargo:info={}", target);
     path.push("installed");
     path.push(target);
-    println!(
-        "{}",
-        format!(
-            "cargo:rustc-link-lib=static={}",
-            name.trim_start_matches("lib")
-        )
-    );
-    println!(
-        "{}",
-        format!(
-            "cargo:rustc-link-search={}",
-            path.join("lib").to_str().unwrap()
-        )
-    );
+    println!("{}", format!("cargo:rustc-link-lib=static={}", name.trim_start_matches("lib")));
+    println!("{}", format!("cargo:rustc-link-search={}", path.join("lib").to_str().unwrap()));
     let include = path.join("include");
     println!("{}", format!("cargo:include={}", include.to_str().unwrap()));
     include
@@ -62,39 +50,19 @@ fn link_homebrew_m1(name: &str) -> PathBuf {
     let entries = if let Ok(dir) = std::fs::read_dir(&path) {
         dir
     } else {
-        panic!("Could not find package in {}. Make sure your homebrew and package {} are all installed.", path.to_str().unwrap(),&name);
+        panic!("Could not find package in {}. Make sure your homebrew and package {} are all installed.", path.to_str().unwrap(), &name);
     };
-    let mut directories = entries
-        .into_iter()
-        .filter(|x| x.is_ok())
-        .map(|x| x.unwrap().path())
-        .filter(|x| x.is_dir())
-        .collect::<Vec<_>>();
+    let mut directories = entries.into_iter().filter(|x| x.is_ok()).map(|x| x.unwrap().path()).filter(|x| x.is_dir()).collect::<Vec<_>>();
     // Find the newest version.
     directories.sort_unstable();
     if directories.is_empty() {
-        panic!(
-            "There's no installed version of {} in /opt/homebrew/Cellar",
-            name
-        );
+        panic!("There's no installed version of {} in /opt/homebrew/Cellar", name);
     }
     path.push(directories.pop().unwrap());
     // Link the library.
-    println!(
-        "{}",
-        format!(
-            "cargo:rustc-link-lib=static={}",
-            name.trim_start_matches("lib")
-        )
-    );
+    println!("{}", format!("cargo:rustc-link-lib=static={}", name.trim_start_matches("lib")));
     // Add the library path.
-    println!(
-        "{}",
-        format!(
-            "cargo:rustc-link-search={}",
-            path.join("lib").to_str().unwrap()
-        )
-    );
+    println!("{}", format!("cargo:rustc-link-search={}", path.join("lib").to_str().unwrap()));
     // Add the include path.
     let include = path.join("include");
     println!("{}", format!("cargo:include={}", include.to_str().unwrap()));
@@ -111,12 +79,7 @@ fn find_package(name: &str) -> Vec<PathBuf> {
     }
 }
 
-fn generate_bindings(
-    ffi_header: &Path,
-    include_paths: &[PathBuf],
-    ffi_rs: &Path,
-    exact_file: &Path,
-) {
+fn generate_bindings(ffi_header: &Path, include_paths: &[PathBuf], ffi_rs: &Path, exact_file: &Path) {
     let mut b = bindgen::builder()
         .header(ffi_header.to_str().unwrap())
         .allowlist_type("^[vV].*")

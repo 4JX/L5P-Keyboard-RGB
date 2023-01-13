@@ -55,14 +55,7 @@ pub async fn sleep(sec: f32) {
 macro_rules! allow_err {
     ($e:expr) => {
         if let Err(err) = $e {
-            log::debug!(
-                "{:?}, {}:{}:{}:{}",
-                err,
-                module_path!(),
-                file!(),
-                line!(),
-                column!()
-            );
+            log::debug!("{:?}, {}:{}:{}:{}", err, module_path!(), file!(), line!(), column!());
         } else {
         }
     };
@@ -84,10 +77,7 @@ impl AddrMangle {
     pub fn encode(addr: SocketAddr) -> Vec<u8> {
         match addr {
             SocketAddr::V4(addr_v4) => {
-                let tm = (SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_micros() as u32) as u128;
+                let tm = (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_micros() as u32) as u128;
                 let ip = u32::from_le_bytes(addr_v4.ip().octets()) as u128;
                 let port = addr.port() as u128;
                 let v = ((ip + tm) << 49) | (tm << 17) | (port + (tm & 0xFFFF));
@@ -115,39 +105,18 @@ impl AddrMangle {
         let tm = (number >> 17) & (u32::max_value() as u128);
         let ip = (((number >> 49) - tm) as u32).to_le_bytes();
         let port = (number & 0xFFFFFF) - (tm & 0xFFFF);
-        SocketAddr::V4(SocketAddrV4::new(
-            Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]),
-            port as u16,
-        ))
+        SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(ip[0], ip[1], ip[2], ip[3]), port as u16))
     }
 }
 
 pub fn get_version_from_url(url: &str) -> String {
     let n = url.chars().count();
-    let a = url
-        .chars()
-        .rev()
-        .enumerate()
-        .filter(|(_, x)| x == &'-')
-        .next()
-        .map(|(i, _)| i);
+    let a = url.chars().rev().enumerate().filter(|(_, x)| x == &'-').next().map(|(i, _)| i);
     if let Some(a) = a {
-        let b = url
-            .chars()
-            .rev()
-            .enumerate()
-            .filter(|(_, x)| x == &'.')
-            .next()
-            .map(|(i, _)| i);
+        let b = url.chars().rev().enumerate().filter(|(_, x)| x == &'.').next().map(|(i, _)| i);
         if let Some(b) = b {
             if a > b {
-                if url
-                    .chars()
-                    .skip(n - b)
-                    .collect::<String>()
-                    .parse::<i32>()
-                    .is_ok()
-                {
+                if url.chars().skip(n - b).collect::<String>().parse::<i32>().is_ok() {
                     return url.chars().skip(n - a).collect();
                 } else {
                     return url.chars().skip(n - a).take(a - b - 1).collect();
@@ -167,8 +136,7 @@ pub fn gen_version() {
             let ab: Vec<&str> = line.split("=").map(|x| x.trim()).collect();
             if ab.len() == 2 && ab[0] == "version" {
                 use std::io::prelude::*;
-                file.write_all(format!("pub const VERSION: &str = {};", ab[1]).as_bytes())
-                    .ok();
+                file.write_all(format!("pub const VERSION: &str = {};", ab[1]).as_bytes()).ok();
                 file.sync_all().ok();
                 break;
             }
@@ -185,9 +153,7 @@ where
 }
 
 pub fn is_valid_custom_id(id: &str) -> bool {
-    regex::Regex::new(r"^[a-zA-Z]\w{5,15}$")
-        .unwrap()
-        .is_match(id)
+    regex::Regex::new(r"^[a-zA-Z]\w{5,15}$").unwrap().is_match(id)
 }
 
 pub fn get_version_number(v: &str) -> i64 {
@@ -199,15 +165,11 @@ pub fn get_version_number(v: &str) -> i64 {
 }
 
 pub fn get_modified_time(path: &std::path::Path) -> SystemTime {
-    std::fs::metadata(&path)
-        .map(|m| m.modified().unwrap_or(UNIX_EPOCH))
-        .unwrap_or(UNIX_EPOCH)
+    std::fs::metadata(&path).map(|m| m.modified().unwrap_or(UNIX_EPOCH)).unwrap_or(UNIX_EPOCH)
 }
 
 pub fn get_created_time(path: &std::path::Path) -> SystemTime {
-    std::fs::metadata(&path)
-        .map(|m| m.created().unwrap_or(UNIX_EPOCH))
-        .unwrap_or(UNIX_EPOCH)
+    std::fs::metadata(&path).map(|m| m.created().unwrap_or(UNIX_EPOCH)).unwrap_or(UNIX_EPOCH)
 }
 
 pub fn get_exe_time() -> SystemTime {
@@ -232,10 +194,7 @@ pub fn get_uuid() -> Vec<u8> {
 
 #[inline]
 pub fn get_time() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis())
-        .unwrap_or(0) as _
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0) as _
 }
 
 #[cfg(test)]

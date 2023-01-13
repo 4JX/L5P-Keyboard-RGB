@@ -63,13 +63,7 @@ fn record(i: usize) {
         // Save the image.
 
         let name = format!("screenshot{}_1.png", i);
-        repng::encode(
-            File::create(name.clone()).unwrap(),
-            w as u32,
-            h as u32,
-            &bitflipped,
-        )
-        .unwrap();
+        repng::encode(File::create(name.clone()).unwrap(), w as u32, h as u32, &bitflipped).unwrap();
 
         println!("Image saved to `{}`.", name);
         break;
@@ -110,13 +104,7 @@ fn record(i: usize) {
             }
         }
         let name = format!("screenshot{}_2.png", i);
-        repng::encode(
-            File::create(name.clone()).unwrap(),
-            w as u32,
-            h as u32,
-            &bitflipped,
-        )
-        .unwrap();
+        repng::encode(File::create(name.clone()).unwrap(), w as u32, h as u32, &bitflipped).unwrap();
 
         println!("Image saved to `{}`.", name);
         break;

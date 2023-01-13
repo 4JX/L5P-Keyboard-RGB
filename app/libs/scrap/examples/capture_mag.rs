@@ -3,9 +3,9 @@ extern crate scrap;
 
 use std::fs::File;
 
+use scrap::{i420_to_rgb, Display};
 #[cfg(windows)]
 use scrap::{CapturerMag, TraitCapturer};
-use scrap::{i420_to_rgb, Display};
 
 fn main() {
     let n = Display::all().unwrap().len();
@@ -31,9 +31,7 @@ fn record(i: usize) {
     let (w, h) = (display.width(), display.height());
 
     {
-        let mut capture_mag =
-            CapturerMag::new(display.origin(), display.width(), display.height(), false)
-                .expect("Couldn't begin capture.");
+        let mut capture_mag = CapturerMag::new(display.origin(), display.width(), display.height(), false).expect("Couldn't begin capture.");
         let wnd_cls = "";
         let wnd_name = "RustDeskPrivacyWindow";
         if false == capture_mag.exclude(wnd_cls, wnd_name).unwrap() {
@@ -56,20 +54,12 @@ fn record(i: usize) {
         }
         // Save the image.
         let name = format!("capture_mag_{}_1.png", i);
-        repng::encode(
-            File::create(name.clone()).unwrap(),
-            w as u32,
-            h as u32,
-            &bitflipped,
-        )
-        .unwrap();
+        repng::encode(File::create(name.clone()).unwrap(), w as u32, h as u32, &bitflipped).unwrap();
         println!("Image saved to `{}`.", name);
     }
 
     {
-        let mut capture_mag =
-            CapturerMag::new(display.origin(), display.width(), display.height(), true)
-                .expect("Couldn't begin capture.");
+        let mut capture_mag = CapturerMag::new(display.origin(), display.width(), display.height(), true).expect("Couldn't begin capture.");
         let wnd_cls = "";
         let wnd_title = "RustDeskPrivacyWindow";
         if false == capture_mag.exclude(wnd_cls, wnd_title).unwrap() {
@@ -94,13 +84,7 @@ fn record(i: usize) {
             }
         }
         let name = format!("capture_mag_{}_2.png", i);
-        repng::encode(
-            File::create(name.clone()).unwrap(),
-            w as u32,
-            h as u32,
-            &bitflipped,
-        )
-        .unwrap();
+        repng::encode(File::create(name.clone()).unwrap(), w as u32, h as u32, &bitflipped).unwrap();
 
         println!("Image saved to `{}`.", name);
     }

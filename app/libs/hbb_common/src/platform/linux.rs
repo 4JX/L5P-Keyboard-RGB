@@ -16,12 +16,11 @@ impl Disto {
             .trim()
             .trim_matches('"')
             .to_string();
-        let version_id =
-            run_cmds("awk -F'=' '/^VERSION_ID=/ {print $2}' /etc/os-release".to_owned())
-                .unwrap_or_default()
-                .trim()
-                .trim_matches('"')
-                .to_string();
+        let version_id = run_cmds("awk -F'=' '/^VERSION_ID=/ {print $2}' /etc/os-release".to_owned())
+            .unwrap_or_default()
+            .trim()
+            .trim_matches('"')
+            .to_string();
         Self { name, version_id }
     }
 }
@@ -46,19 +45,13 @@ fn get_display_server_of_session(session: &str) -> String {
     if let Ok(output) = run_loginctl(Some(vec!["show-session", "-p", "Type", session]))
     // Check session type of the session
     {
-        let display_server = String::from_utf8_lossy(&output.stdout)
-            .replace("Type=", "")
-            .trim_end()
-            .into();
+        let display_server = String::from_utf8_lossy(&output.stdout).replace("Type=", "").trim_end().into();
         if display_server == "tty" {
             // If the type is tty...
             if let Ok(output) = run_loginctl(Some(vec!["show-session", "-p", "TTY", session]))
             // Get the tty number
             {
-                let tty: String = String::from_utf8_lossy(&output.stdout)
-                    .replace("TTY=", "")
-                    .trim_end()
-                    .into();
+                let tty: String = String::from_utf8_lossy(&output.stdout).replace("TTY=", "").trim_end().into();
                 if let Ok(xorg_results) = run_cmds(format!("ps -e | grep \"{}.\\\\+Xorg\"", tty))
                 // And check if Xorg is running on that tty
                 {
@@ -94,10 +87,7 @@ pub fn get_values_of_seat0(indices: Vec<usize>) -> Vec<String> {
             if line.contains("seat0") {
                 if let Some(sid) = line.split_whitespace().nth(0) {
                     if is_active(sid) {
-                        return indices
-                            .into_iter()
-                            .map(|idx| line.split_whitespace().nth(idx).unwrap_or("").to_owned())
-                            .collect::<Vec<String>>();
+                        return indices.into_iter().map(|idx| line.split_whitespace().nth(idx).unwrap_or("").to_owned()).collect::<Vec<String>>();
                     }
                 }
             }
@@ -110,24 +100,17 @@ pub fn get_values_of_seat0(indices: Vec<usize>) -> Vec<String> {
             if let Some(sid) = line.split_whitespace().nth(0) {
                 let d = get_display_server_of_session(sid);
                 if is_active(sid) && d != "tty" {
-                    return indices
-                        .into_iter()
-                        .map(|idx| line.split_whitespace().nth(idx).unwrap_or("").to_owned())
-                        .collect::<Vec<String>>();
+                    return indices.into_iter().map(|idx| line.split_whitespace().nth(idx).unwrap_or("").to_owned()).collect::<Vec<String>>();
                 }
             }
         }
     }
 
-    return indices
-        .iter()
-        .map(|_x| "".to_owned())
-        .collect::<Vec<String>>();
+    return indices.iter().map(|_x| "".to_owned()).collect::<Vec<String>>();
 }
 
 fn is_active(sid: &str) -> bool {
-    if let Ok(output) = run_loginctl(Some(vec!["show-session", "-p", "State", sid]))
-    {
+    if let Ok(output) = run_loginctl(Some(vec!["show-session", "-p", "State", sid])) {
         String::from_utf8_lossy(&output.stdout).contains("active")
     } else {
         false
@@ -135,9 +118,7 @@ fn is_active(sid: &str) -> bool {
 }
 
 pub fn run_cmds(cmds: String) -> ResultType<String> {
-    let output = std::process::Command::new("sh")
-        .args(vec!["-c", &cmds])
-        .output()?;
+    let output = std::process::Command::new("sh").args(vec!["-c", &cmds]).output()?;
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
@@ -156,7 +137,5 @@ fn run_loginctl(args: Option<Vec<&str>>) -> std::io::Result<std::process::Output
     if let Some(a) = args {
         l_args = format!("{} {}", l_args, a.join(" "));
     }
-    std::process::Command::new("flatpak-spawn")
-        .args(vec![String::from("--host"), l_args])
-        .output()
+    std::process::Command::new("flatpak-spawn").args(vec![String::from("--host"), l_args]).output()
 }

@@ -68,16 +68,9 @@ impl MediaCodecDecoder {
         return match self.dequeue_output_buffer(Duration::from_millis(100))? {
             Some(output_buffer) => {
                 let res_format = self.output_format();
-                let w = res_format
-                    .i32("width")
-                    .ok_or(Error::msg("Failed to dequeue_output_buffer, width is None"))?
-                    as usize;
-                let h = res_format.i32("height").ok_or(Error::msg(
-                    "Failed to dequeue_output_buffer, height is None",
-                ))? as usize;
-                let stride = res_format.i32("stride").ok_or(Error::msg(
-                    "Failed to dequeue_output_buffer, stride is None",
-                ))?;
+                let w = res_format.i32("width").ok_or(Error::msg("Failed to dequeue_output_buffer, width is None"))? as usize;
+                let h = res_format.i32("height").ok_or(Error::msg("Failed to dequeue_output_buffer, height is None"))? as usize;
+                let stride = res_format.i32("stride").ok_or(Error::msg("Failed to dequeue_output_buffer, stride is None"))?;
                 let buf = output_buffer.buffer();
                 let bps = 4;
                 let u = buf.len() * 2 / 3;
@@ -87,18 +80,7 @@ impl MediaCodecDecoder {
                 let u_ptr = buf[u..].as_ptr();
                 let v_ptr = buf[v..].as_ptr();
                 unsafe {
-                    I420ToARGB(
-                        y_ptr,
-                        stride,
-                        u_ptr,
-                        stride / 2,
-                        v_ptr,
-                        stride / 2,
-                        rgb.as_mut_ptr(),
-                        (w * bps) as _,
-                        w as _,
-                        h as _,
-                    );
+                    I420ToARGB(y_ptr, stride, u_ptr, stride / 2, v_ptr, stride / 2, rgb.as_mut_ptr(), (w * bps) as _, w as _, h as _);
                 }
                 self.release_output_buffer(output_buffer, false)?;
                 Ok(true)

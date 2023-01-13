@@ -20,18 +20,8 @@ pub struct Rect {
 }
 
 impl Display {
-    pub unsafe fn new(
-        server: Rc<Server>,
-        default: bool,
-        rect: Rect,
-        root: xcb_window_t,
-    ) -> Display {
-        Display {
-            server,
-            default,
-            rect,
-            root,
-        }
+    pub unsafe fn new(server: Rc<Server>, default: bool, rect: Rect, root: xcb_window_t) -> Display {
+        Display { server, default, rect, root }
     }
 
     pub fn server(&self) -> &Rc<Server> {

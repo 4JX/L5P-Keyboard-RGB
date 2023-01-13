@@ -19,11 +19,7 @@ impl Capturer {
         let width = display.width();
         let height = display.height();
         let inner = dxgi::Capturer::new(display.0, yuv)?;
-        Ok(Capturer {
-            inner,
-            width,
-            height,
-        })
+        Ok(Capturer { inner, width, height })
     }
 
     pub fn cancel_gdi(&mut self) {
@@ -82,10 +78,7 @@ impl Display {
         let tmp = Self::all_().unwrap_or(Default::default());
         if tmp.is_empty() {
             println!("Display got from gdi");
-            return Ok(dxgi::Displays::get_from_gdi()
-                .drain(..)
-                .map(Display)
-                .collect::<Vec<_>>());
+            return Ok(dxgi::Displays::get_from_gdi().drain(..).map(Display).collect::<Vec<_>>());
         }
         Ok(tmp)
     }
@@ -105,9 +98,7 @@ impl Display {
     pub fn name(&self) -> String {
         use std::ffi::OsString;
         use std::os::windows::prelude::*;
-        OsString::from_wide(self.0.name())
-            .to_string_lossy()
-            .to_string()
+        OsString::from_wide(self.0.name()).to_string_lossy().to_string()
     }
 
     pub fn is_online(&self) -> bool {

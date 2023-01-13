@@ -20,11 +20,7 @@ impl Capturer {
             display.0,
             display.width(),
             display.height(),
-            if use_yuv {
-                quartz::PixelFormat::YCbCr420Video
-            } else {
-                quartz::PixelFormat::Argb8888
-            },
+            if use_yuv { quartz::PixelFormat::YCbCr420Video } else { quartz::PixelFormat::Argb8888 },
             Default::default(),
             move |inner| {
                 if let Ok(mut f) = f.lock() {
@@ -100,11 +96,7 @@ impl Display {
     }
 
     pub fn all() -> io::Result<Vec<Display>> {
-        Ok(quartz::Display::online()
-            .map_err(|_| io::Error::from(io::ErrorKind::Other))?
-            .into_iter()
-            .map(Display)
-            .collect())
+        Ok(quartz::Display::online().map_err(|_| io::Error::from(io::ErrorKind::Other))?.into_iter().map(Display).collect())
     }
 
     pub fn width(&self) -> usize {

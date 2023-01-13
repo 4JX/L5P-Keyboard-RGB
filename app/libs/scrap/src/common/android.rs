@@ -75,12 +75,7 @@ impl Display {
         }
         Ok(Display {
             default: true,
-            rect: Rect {
-                x: 0,
-                y: 0,
-                w: size.0,
-                h: size.1,
-            },
+            rect: Rect { x: 0, y: 0, w: size.0, h: size.1 },
         })
     }
 
@@ -134,9 +129,7 @@ impl Display {
 fn get_size() -> Option<(u16, u16, u16)> {
     let res = call_main_service_get_by_name("screen_size").ok()?;
     if let Ok(json) = serde_json::from_str::<HashMap<String, Value>>(&res) {
-        if let (Some(Value::Number(w)), Some(Value::Number(h)), Some(Value::Number(scale))) =
-            (json.get("width"), json.get("height"), json.get("scale"))
-        {
+        if let (Some(Value::Number(w)), Some(Value::Number(h)), Some(Value::Number(scale))) = (json.get("width"), json.get("height"), json.get("scale")) {
             let w = w.as_i64()? as _;
             let h = h.as_i64()? as _;
             let scale = scale.as_i64()? as _;

@@ -6,10 +6,10 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 #[allow(clippy::enum_variant_names)]
 pub enum Error {
-	#[error("IoError: {}", .0)]
-	IoError(#[from] IoError),
-	#[error("SerdeError: {}",.0)]
-	SerdeError(#[from] SerdeError),
-	#[error("{}",.0)]
-	DriverError(#[from] DriverError),
+    #[error("IoError: {}", .0)]
+    IoError(#[from] IoError),
+    #[error("SerdeError: {}",.0)]
+    SerdeError(#[from] SerdeError),
+    #[error("{}",.0)]
+    DriverError(#[from] DriverError),
 }

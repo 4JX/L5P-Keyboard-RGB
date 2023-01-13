@@ -14,10 +14,7 @@ use winapi::{
         winerror::*,
         // dxgiformat::{DXGI_FORMAT, DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_420_OPAQUE},
     },
-    um::{
-        d3d11::*, d3dcommon::D3D_DRIVER_TYPE_UNKNOWN, unknwnbase::IUnknown, wingdi::*,
-        winnt::HRESULT, winuser::*,
-    },
+    um::{d3d11::*, d3dcommon::D3D_DRIVER_TYPE_UNKNOWN, unknwnbase::IUnknown, wingdi::*, winnt::HRESULT, winuser::*},
 };
 
 pub struct ComPtr<T>(*mut T);
@@ -198,10 +195,7 @@ impl Capturer {
     // copy from GPU memory to system memory
     unsafe fn ohgodwhat(&mut self, frame: *mut IDXGIResource) -> io::Result<*mut IDXGISurface> {
         let mut texture: *mut ID3D11Texture2D = ptr::null_mut();
-        (*frame).QueryInterface(
-            &IID_ID3D11Texture2D,
-            &mut texture as *mut *mut _ as *mut *mut _,
-        );
+        (*frame).QueryInterface(&IID_ID3D11Texture2D, &mut texture as *mut *mut _ as *mut *mut _);
         let texture = ComPtr(texture);
 
         let mut texture_desc = mem::MaybeUninit::uninit().assume_init();
@@ -213,19 +207,12 @@ impl Capturer {
         texture_desc.MiscFlags = 0;
 
         let mut readable = ptr::null_mut();
-        wrap_hresult((*self.device.0).CreateTexture2D(
-            &mut texture_desc,
-            ptr::null(),
-            &mut readable,
-        ))?;
+        wrap_hresult((*self.device.0).CreateTexture2D(&mut texture_desc, ptr::null(), &mut readable))?;
         (*readable).SetEvictionPriority(DXGI_RESOURCE_PRIORITY_MAXIMUM);
         let readable = ComPtr(readable);
 
         let mut surface = ptr::null_mut();
-        (*readable.0).QueryInterface(
-            &IID_IDXGISurface,
-            &mut surface as *mut *mut _ as *mut *mut _,
-        );
+        (*readable.0).QueryInterface(&IID_IDXGISurface, &mut surface as *mut *mut _ as *mut *mut _);
 
         (*self.context.0).CopyResource(readable.0 as *mut _, texture.0 as *mut _);
 
@@ -241,10 +228,7 @@ impl Capturer {
                 if let Some(gdi_capturer) = &self.gdi_capturer {
                     match gdi_capturer.frame(&mut self.gdi_buffer) {
                         Ok(_) => {
-                            crate::would_block_if_equal(
-                                &mut self.saved_raw_data,
-                                &self.gdi_buffer,
-                            )?;
+                            crate::would_block_if_equal(&mut self.saved_raw_data, &self.gdi_buffer)?;
                             &self.gdi_buffer
                         }
                         Err(err) => {
@@ -260,10 +244,7 @@ impl Capturer {
                         DXGI_MODE_ROTATION_ROTATE180 => 180,
                         DXGI_MODE_ROTATION_ROTATE270 => 270,
                         _ => {
-                            return Err(io::Error::new(
-                                io::ErrorKind::Other,
-                                "Unknown roration".to_string(),
-                            ));
+                            return Err(io::Error::new(io::ErrorKind::Other, "Unknown roration".to_string()));
                         }
                     };
                     if rotate == 0 {
@@ -275,16 +256,8 @@ impl Capturer {
                             r.1,
                             self.rotated.as_mut_ptr(),
                             4 * self.width as i32,
-                            if rotate == 180 {
-                                self.width
-                            } else {
-                                self.height
-                            } as _,
-                            if rotate != 180 {
-                                self.width
-                            } else {
-                                self.height
-                            } as _,
+                            if rotate == 180 { self.width } else { self.height } as _,
+                            if rotate != 180 { self.width } else { self.height } as _,
                             rotate,
                         );
                         &self.rotated[..]
@@ -293,12 +266,7 @@ impl Capturer {
             };
             Ok({
                 if self.use_yuv {
-                    crate::common::bgra_to_i420(
-                        self.width as usize,
-                        self.height as usize,
-                        &result,
-                        &mut self.yuv,
-                    );
+                    crate::common::bgra_to_i420(self.width as usize, self.height as usize, &result, &mut self.yuv);
                     &self.yuv[..]
                 } else {
                     result
@@ -369,9 +337,7 @@ impl Displays {
                 break;
             }
             i += 1;
-            if 0 == (d.StateFlags & DISPLAY_DEVICE_ACTIVE)
-                || (d.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER) > 0
-            {
+            if 0 == (d.StateFlags & DISPLAY_DEVICE_ACTIVE) || (d.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER) > 0 {
                 continue;
             }
             // let is_primary = (d.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE) > 0;
@@ -385,23 +351,14 @@ impl Displays {
             let mut m: DEVMODEW = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
             m.dmSize = std::mem::size_of::<DEVMODEW>() as _;
             m.dmDriverExtra = 0;
-            let ok = unsafe {
-                EnumDisplaySettingsExW(
-                    disp.desc.DeviceName.as_ptr(),
-                    ENUM_CURRENT_SETTINGS,
-                    &mut m as _,
-                    0,
-                )
-            };
+            let ok = unsafe { EnumDisplaySettingsExW(disp.desc.DeviceName.as_ptr(), ENUM_CURRENT_SETTINGS, &mut m as _, 0) };
             if ok == FALSE {
                 continue;
             }
             disp.desc.DesktopCoordinates.left = unsafe { m.u1.s2().dmPosition.x };
             disp.desc.DesktopCoordinates.top = unsafe { m.u1.s2().dmPosition.y };
-            disp.desc.DesktopCoordinates.right =
-                disp.desc.DesktopCoordinates.left + m.dmPelsWidth as i32;
-            disp.desc.DesktopCoordinates.bottom =
-                disp.desc.DesktopCoordinates.top + m.dmPelsHeight as i32;
+            disp.desc.DesktopCoordinates.right = disp.desc.DesktopCoordinates.left + m.dmPelsWidth as i32;
+            disp.desc.DesktopCoordinates.bottom = disp.desc.DesktopCoordinates.top + m.dmPelsHeight as i32;
             disp.desc.AttachedToDesktop = 1;
             all.push(disp);
         }
@@ -553,10 +510,7 @@ impl Display {
     }
 
     pub fn origin(&self) -> (LONG, LONG) {
-        (
-            self.desc.DesktopCoordinates.left,
-            self.desc.DesktopCoordinates.top,
-        )
+        (self.desc.DesktopCoordinates.left, self.desc.DesktopCoordinates.top)
     }
 }
 

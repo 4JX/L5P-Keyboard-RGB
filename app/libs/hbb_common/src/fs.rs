@@ -23,10 +23,7 @@ pub fn read_dir(path: &PathBuf, include_hidden: bool) -> ResultType<FileDirector
         let drives = unsafe { winapi::um::fileapi::GetLogicalDrives() };
         for i in 0..32 {
             if drives & (1 << i) != 0 {
-                let name = format!(
-                    "{}:",
-                    std::char::from_u32('A' as u32 + i as u32).unwrap_or('A')
-                );
+                let name = format!("{}:", std::char::from_u32('A' as u32 + i as u32).unwrap_or('A'));
                 dir.entries.push(FileEntry {
                     name,
                     entry_type: FileType::DirDrive.into(),
@@ -39,11 +36,7 @@ pub fn read_dir(path: &PathBuf, include_hidden: bool) -> ResultType<FileDirector
     for entry in path.read_dir()? {
         if let Ok(entry) = entry {
             let p = entry.path();
-            let name = p
-                .file_name()
-                .map(|p| p.to_str().unwrap_or(""))
-                .unwrap_or("")
-                .to_owned();
+            let name = p.file_name().map(|p| p.to_str().unwrap_or("")).unwrap_or("").to_owned();
             if name.is_empty() {
                 continue;
             }
@@ -83,11 +76,7 @@ pub fn read_dir(path: &PathBuf, include_hidden: bool) -> ResultType<FileDirector
             };
             let modified_time = meta
                 .modified()
-                .map(|x| {
-                    x.duration_since(std::time::SystemTime::UNIX_EPOCH)
-                        .map(|x| x.as_secs())
-                        .unwrap_or(0)
-                })
+                .map(|x| x.duration_since(std::time::SystemTime::UNIX_EPOCH).map(|x| x.as_secs()).unwrap_or(0))
                 .unwrap_or(0) as u64;
             dir.entries.push(FileEntry {
                 name: get_file_name(&p),
@@ -104,10 +93,7 @@ pub fn read_dir(path: &PathBuf, include_hidden: bool) -> ResultType<FileDirector
 
 #[inline]
 pub fn get_file_name(p: &PathBuf) -> String {
-    p.file_name()
-        .map(|p| p.to_str().unwrap_or(""))
-        .unwrap_or("")
-        .to_owned()
+    p.file_name().map(|p| p.to_str().unwrap_or("")).unwrap_or("").to_owned()
 }
 
 #[inline]
@@ -125,11 +111,7 @@ pub fn get_home_as_string() -> String {
     get_string(&Config::get_home())
 }
 
-fn read_dir_recursive(
-    path: &PathBuf,
-    prefix: &PathBuf,
-    include_hidden: bool,
-) -> ResultType<Vec<FileEntry>> {
+fn read_dir_recursive(path: &PathBuf, prefix: &PathBuf, include_hidden: bool) -> ResultType<Vec<FileEntry>> {
     let mut files = Vec::new();
     if path.is_dir() {
         // to-do: symbol link handling, cp the link rather than the content
@@ -143,11 +125,7 @@ fn read_dir_recursive(
                     files.push(entry);
                 }
                 Ok(FileType::Dir) => {
-                    if let Ok(mut tmp) = read_dir_recursive(
-                        &path.join(&entry.name),
-                        &prefix.join(&entry.name),
-                        include_hidden,
-                    ) {
+                    if let Ok(mut tmp) = read_dir_recursive(&path.join(&entry.name), &prefix.join(&entry.name), include_hidden) {
                         for entry in tmp.drain(0..) {
                             files.push(entry);
                         }
@@ -162,11 +140,7 @@ fn read_dir_recursive(
             (
                 meta.len(),
                 meta.modified()
-                    .map(|x| {
-                        x.duration_since(std::time::SystemTime::UNIX_EPOCH)
-                            .map(|x| x.as_secs())
-                            .unwrap_or(0)
-                    })
+                    .map(|x| x.duration_since(std::time::SystemTime::UNIX_EPOCH).map(|x| x.as_secs()).unwrap_or(0))
                     .unwrap_or(0) as u64,
             )
         } else {
@@ -256,28 +230,11 @@ fn get_ext(name: &str) -> &str {
 #[inline]
 fn is_compressed_file(name: &str) -> bool {
     let ext = get_ext(name);
-    ext == "xz"
-        || ext == "gz"
-        || ext == "zip"
-        || ext == "7z"
-        || ext == "rar"
-        || ext == "bz2"
-        || ext == "tgz"
-        || ext == "png"
-        || ext == "jpg"
+    ext == "xz" || ext == "gz" || ext == "zip" || ext == "7z" || ext == "rar" || ext == "bz2" || ext == "tgz" || ext == "png" || ext == "jpg"
 }
 
 impl TransferJob {
-    pub fn new_write(
-        id: i32,
-        remote: String,
-        path: String,
-        file_num: i32,
-        show_hidden: bool,
-        is_remote: bool,
-        files: Vec<FileEntry>,
-        enable_overwrite_detection: bool,
-    ) -> Self {
+    pub fn new_write(id: i32, remote: String, path: String, file_num: i32, show_hidden: bool, is_remote: bool, files: Vec<FileEntry>, enable_overwrite_detection: bool) -> Self {
         log::info!("new write {}", path);
         let total_size = files.iter().map(|x| x.size as u64).sum();
         Self {
@@ -294,15 +251,7 @@ impl TransferJob {
         }
     }
 
-    pub fn new_read(
-        id: i32,
-        remote: String,
-        path: String,
-        file_num: i32,
-        show_hidden: bool,
-        is_remote: bool,
-        enable_overwrite_detection: bool,
-    ) -> ResultType<Self> {
+    pub fn new_read(id: i32, remote: String, path: String, file_num: i32, show_hidden: bool, is_remote: bool, enable_overwrite_detection: bool) -> ResultType<Self> {
         log::info!("new read {}", path);
         let files = get_recursive_files(&path, show_hidden)?;
         let total_size = files.iter().map(|x| x.size as u64).sum();
@@ -362,11 +311,7 @@ impl TransferJob {
             let path = self.join(&entry.name);
             let download_path = format!("{}.download", get_string(&path));
             std::fs::rename(&download_path, &path).ok();
-            filetime::set_file_mtime(
-                &path,
-                filetime::FileTime::from_unix_time(entry.modified_time as _, 0),
-            )
-            .ok();
+            filetime::set_file_mtime(&path, filetime::FileTime::from_unix_time(entry.modified_time as _, 0)).ok();
         }
     }
 
@@ -508,10 +453,7 @@ impl TransferJob {
         let mut msg = Message::new();
         let mut resp = FileResponse::new();
         let meta = self.file.as_ref().unwrap().metadata().await?;
-        let last_modified = meta
-            .modified()?
-            .duration_since(SystemTime::UNIX_EPOCH)?
-            .as_secs();
+        let last_modified = meta.modified()?.duration_since(SystemTime::UNIX_EPOCH)?.as_secs();
         resp.set_digest(FileTransferDigest {
             id: self.id,
             file_num: self.file_num,
@@ -521,12 +463,7 @@ impl TransferJob {
         });
         msg.set_file_response(resp);
         stream.send(&msg).await?;
-        log::info!(
-            "id: {}, file_num:{}, digest message is sent. waiting for confirm. msg: {:?}",
-            self.id,
-            self.file_num,
-            msg
-        );
+        log::info!("id: {}, file_num:{}, digest message is sent. waiting for confirm. msg: {:?}", self.id, self.file_num, msg);
         Ok(())
     }
 
@@ -678,11 +615,7 @@ pub fn new_send(id: i32, path: String, file_num: i32, include_hidden: bool) -> M
 #[inline]
 pub fn new_done(id: i32, file_num: i32) -> Message {
     let mut resp = FileResponse::new();
-    resp.set_done(FileTransferDone {
-        id,
-        file_num,
-        ..Default::default()
-    });
+    resp.set_done(FileTransferDone { id, file_num, ..Default::default() });
     let mut msg_out = Message::new();
     msg_out.set_file_response(resp);
     msg_out
@@ -698,10 +631,7 @@ pub fn get_job(id: i32, jobs: &mut Vec<TransferJob>) -> Option<&mut TransferJob>
     jobs.iter_mut().filter(|x| x.id() == id).next()
 }
 
-pub async fn handle_read_jobs(
-    jobs: &mut Vec<TransferJob>,
-    stream: &mut crate::Stream,
-) -> ResultType<()> {
+pub async fn handle_read_jobs(jobs: &mut Vec<TransferJob>, stream: &mut crate::Stream) -> ResultType<()> {
     let mut finished = Vec::new();
     for job in jobs.iter_mut() {
         if job.is_last_job {
@@ -709,16 +639,13 @@ pub async fn handle_read_jobs(
         }
         match job.read(stream).await {
             Err(err) => {
-                stream
-                    .send(&new_error(job.id(), err, job.file_num()))
-                    .await?;
+                stream.send(&new_error(job.id(), err, job.file_num())).await?;
             }
             Ok(Some(block)) => {
                 stream.send(&new_block(block)).await?;
             }
             Ok(None) => {
-                if !job.enable_overwrite_detection || (!job.file_confirmed && !job.file_is_waiting)
-                {
+                if !job.enable_overwrite_detection || (!job.file_confirmed && !job.file_is_waiting) {
                     finished.push(job.id());
                     stream.send(&new_done(job.id(), job.file_num())).await?;
                 } else {
@@ -776,10 +703,7 @@ pub enum DigestCheckResult {
 }
 
 #[inline]
-pub fn is_write_need_confirmation(
-    file_path: &str,
-    digest: &FileTransferDigest,
-) -> ResultType<DigestCheckResult> {
+pub fn is_write_need_confirmation(file_path: &str, digest: &FileTransferDigest) -> ResultType<DigestCheckResult> {
     let path = Path::new(file_path);
     if path.exists() && path.is_file() {
         let metadata = std::fs::metadata(path)?;

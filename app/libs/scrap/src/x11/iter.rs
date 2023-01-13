@@ -18,17 +18,10 @@ impl DisplayIter {
     pub unsafe fn new(server: Rc<Server>) -> DisplayIter {
         let mut outer = xcb_setup_roots_iterator(server.setup());
         let inner = Self::next_screen(&mut outer, &server);
-        DisplayIter {
-            outer,
-            inner,
-            server,
-        }
+        DisplayIter { outer, inner, server }
     }
 
-    fn next_screen(
-        outer: &mut xcb_screen_iterator_t,
-        server: &Server,
-    ) -> Option<(xcb_randr_monitor_info_iterator_t, xcb_window_t)> {
+    fn next_screen(outer: &mut xcb_screen_iterator_t, server: &Server) -> Option<(xcb_randr_monitor_info_iterator_t, xcb_window_t)> {
         if outer.rem == 0 {
             return None;
         }

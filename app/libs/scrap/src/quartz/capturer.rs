@@ -21,14 +21,7 @@ pub struct Capturer {
 }
 
 impl Capturer {
-    pub fn new<F: Fn(Frame) + 'static>(
-        display: Display,
-        width: usize,
-        height: usize,
-        format: PixelFormat,
-        config: Config,
-        handler: F,
-    ) -> Result<Capturer, CGError> {
+    pub fn new<F: Fn(Frame) + 'static>(display: Display, width: usize, height: usize, format: PixelFormat, config: Config, handler: F) -> Result<Capturer, CGError> {
         let stopped = Arc::new(Mutex::new(false));
         let cloned_stopped = stopped.clone();
         let handler: FrameAvailableHandler = ConcreteBlock::new(move |status, _, surface, _| {
@@ -44,24 +37,11 @@ impl Capturer {
         })
         .copy();
 
-        let queue = unsafe {
-            dispatch_queue_create(
-                b"quadrupleslap.scrap\0".as_ptr() as *const i8,
-                ptr::null_mut(),
-            )
-        };
+        let queue = unsafe { dispatch_queue_create(b"quadrupleslap.scrap\0".as_ptr() as *const i8, ptr::null_mut()) };
 
         let stream = unsafe {
             let config = config.build();
-            let stream = CGDisplayStreamCreateWithDispatchQueue(
-                display.id(),
-                width,
-                height,
-                format,
-                config,
-                queue,
-                &*handler as *const Block<_, _> as *const c_void,
-            );
+            let stream = CGDisplayStreamCreateWithDispatchQueue(display.id(), width, height, format, config, queue, &*handler as *const Block<_, _> as *const c_void);
             CFRelease(config);
             stream
         };

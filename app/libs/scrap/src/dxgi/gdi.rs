@@ -77,13 +77,7 @@ impl CapturerGDI {
                 DeleteObject(bmp as _);
                 return Err("Can't select Windows buffer".into());
             }
-            Ok(Self {
-                screen_dc,
-                dc,
-                bmp,
-                width,
-                height,
-            })
+            Ok(Self { screen_dc, dc, bmp, width, height })
         }
     }
 
@@ -133,35 +127,12 @@ impl CapturerGDI {
             };
 
             // copy bits into Vec
-            let res = GetDIBits(
-                self.dc,
-                self.bmp,
-                0,
-                self.height as _,
-                &mut data[0] as *mut u8 as _,
-                &mut bmi as _,
-                DIB_RGB_COLORS,
-            );
+            let res = GetDIBits(self.dc, self.bmp, 0, self.height as _, &mut data[0] as *mut u8 as _, &mut bmi as _, DIB_RGB_COLORS);
             if res == 0 {
                 return Err("GetDIBits failed".into());
             }
-            crate::common::ARGBMirror(
-                data.as_ptr(),
-                stride,
-                data1.as_mut_ptr(),
-                stride,
-                self.width,
-                self.height,
-            );
-            crate::common::ARGBRotate(
-                data1.as_ptr(),
-                stride,
-                data.as_mut_ptr(),
-                stride,
-                self.width,
-                self.height,
-                180,
-            );
+            crate::common::ARGBMirror(data.as_ptr(), stride, data1.as_mut_ptr(), stride, self.width, self.height);
+            crate::common::ARGBRotate(data1.as_ptr(), stride, data.as_mut_ptr(), stride, self.width, self.height, 180);
             Ok(())
         }
     }
@@ -197,13 +168,7 @@ mod tests {
                         bitflipped.extend_from_slice(&[data[i + 2], data[i + 1], data[i], 255]);
                     }
                 }
-                repng::encode(
-                    std::fs::File::create("gdi_screen.png").unwrap(),
-                    d.width() as u32,
-                    d.height() as u32,
-                    &bitflipped,
-                )
-                .unwrap();
+                repng::encode(std::fs::File::create("gdi_screen.png").unwrap(), d.width() as u32, d.height() as u32, &bitflipped).unwrap();
             }
             _ => {
                 assert!(false);

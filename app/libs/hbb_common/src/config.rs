@@ -14,10 +14,7 @@ use sodiumoxide::crypto::sign;
 
 use crate::{
     log,
-    password_security::{
-        decrypt_str_or_original, decrypt_vec_or_original, encrypt_str_or_original,
-        encrypt_vec_or_original,
-    },
+    password_security::{decrypt_str_or_original, decrypt_vec_or_original, encrypt_str_or_original, encrypt_vec_or_original},
 };
 
 pub const RENDEZVOUS_TIMEOUT: u64 = 12_000;
@@ -66,15 +63,10 @@ lazy_static::lazy_static! {
 }
 
 const CHARS: &'static [char] = &[
-    '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
-    'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-pub const RENDEZVOUS_SERVERS: &'static [&'static str] = &[
-    "rs-ny.rustdesk.com",
-    "rs-sg.rustdesk.com",
-    "rs-cn.rustdesk.com",
-];
+pub const RENDEZVOUS_SERVERS: &'static [&'static str] = &["rs-ny.rustdesk.com", "rs-sg.rustdesk.com", "rs-cn.rustdesk.com"];
 pub const RS_PUB_KEY: &'static str = "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=";
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
@@ -199,22 +191,14 @@ pub struct TransferSerde {
 fn patch(path: PathBuf) -> PathBuf {
     if let Some(_tmp) = path.to_str() {
         #[cfg(windows)]
-        return _tmp
-            .replace(
-                "system32\\config\\systemprofile",
-                "ServiceProfiles\\LocalService",
-            )
-            .into();
+        return _tmp.replace("system32\\config\\systemprofile", "ServiceProfiles\\LocalService").into();
         #[cfg(target_os = "macos")]
         return _tmp.replace("Application Support", "Preferences").into();
         #[cfg(target_os = "linux")]
         {
             if _tmp == "/root" {
                 if let Ok(output) = std::process::Command::new("whoami").output() {
-                    let user = String::from_utf8_lossy(&output.stdout)
-                        .to_string()
-                        .trim()
-                        .to_owned();
+                    let user = String::from_utf8_lossy(&output.stdout).to_string().trim().to_owned();
                     if user != "root" {
                         return format!("/home/{}", user).into();
                     }
@@ -229,8 +213,7 @@ impl Config2 {
     fn load() -> Config2 {
         let mut config = Config::load_::<Config2>("2");
         if let Some(mut socks) = config.socks {
-            let (password, _, store) =
-                decrypt_str_or_original(&socks.password, PASSWORD_ENC_VERSION);
+            let (password, _, store) = decrypt_str_or_original(&socks.password, PASSWORD_ENC_VERSION);
             socks.password = password;
             config.socks = Some(socks);
             if store {
@@ -268,9 +251,7 @@ impl Config2 {
     }
 }
 
-pub fn load_path<T: serde::Serialize + serde::de::DeserializeOwned + Default + std::fmt::Debug>(
-    file: PathBuf,
-) -> T {
+pub fn load_path<T: serde::Serialize + serde::de::DeserializeOwned + Default + std::fmt::Debug>(file: PathBuf) -> T {
     let cfg = match confy::load_path(&file) {
         Ok(config) => config,
         Err(err) => {
@@ -287,9 +268,7 @@ pub fn store_path<T: serde::Serialize>(path: PathBuf, cfg: T) -> crate::ResultTy
 }
 
 impl Config {
-    fn load_<T: serde::Serialize + serde::de::DeserializeOwned + Default + std::fmt::Debug>(
-        suffix: &str,
-    ) -> T {
+    fn load_<T: serde::Serialize + serde::de::DeserializeOwned + Default + std::fmt::Debug>(suffix: &str) -> T {
         let file = Self::file_(suffix);
         log::debug!("Configuration path: {}", file.display());
         let cfg = load_path(file);
@@ -324,10 +303,7 @@ impl Config {
                 .unwrap_or(crate::get_exe_time())
                 < crate::get_exe_time()
             {
-                if !config.id.is_empty()
-                    && config.enc_id.is_empty()
-                    && !decrypt_str_or_original(&config.id, PASSWORD_ENC_VERSION).1
-                {
+                if !config.id.is_empty() && config.enc_id.is_empty() && !decrypt_str_or_original(&config.id, PASSWORD_ENC_VERSION).1 {
                     id_valid = true;
                     store = true;
                 }
@@ -439,18 +415,13 @@ impl Config {
             // \\ServerName\pipe\PipeName
             // where ServerName is either the name of a remote computer or a period, to specify the local computer.
             // https://docs.microsoft.com/en-us/windows/win32/ipc/pipe-names
-            format!(
-                "\\\\.\\pipe\\{}\\query{}",
-                *APP_NAME.read().unwrap(),
-                postfix
-            )
+            format!("\\\\.\\pipe\\{}\\query{}", *APP_NAME.read().unwrap(), postfix)
         }
         #[cfg(not(windows))]
         {
             use std::os::unix::fs::PermissionsExt;
             #[cfg(target_os = "android")]
-            let mut path: PathBuf =
-                format!("{}/{}", *APP_DIR.read().unwrap(), *APP_NAME.read().unwrap()).into();
+            let mut path: PathBuf = format!("{}/{}", *APP_DIR.read().unwrap(), *APP_NAME.read().unwrap()).into();
             #[cfg(not(target_os = "android"))]
             let mut path: PathBuf = format!("/tmp/{}", *APP_NAME.read().unwrap()).into();
             fs::create_dir(&path).ok();
@@ -482,10 +453,7 @@ impl Config {
             rendezvous_server = CONFIG2.read().unwrap().rendezvous_server.clone();
         }
         if rendezvous_server.is_empty() {
-            rendezvous_server = Self::get_rendezvous_servers()
-                .drain(..)
-                .next()
-                .unwrap_or("".to_owned());
+            rendezvous_server = Self::get_rendezvous_servers().drain(..).next().unwrap_or("".to_owned());
         }
         if !rendezvous_server.contains(":") {
             rendezvous_server = format!("{}:{}", rendezvous_server, RENDEZVOUS_PORT);
@@ -504,11 +472,7 @@ impl Config {
         }
         let serial_obsolute = CONFIG2.read().unwrap().serial > SERIAL;
         if serial_obsolute {
-            let ss: Vec<String> = Self::get_option("rendezvous-servers")
-                .split(",")
-                .filter(|x| x.contains("."))
-                .map(|x| x.to_owned())
-                .collect();
+            let ss: Vec<String> = Self::get_option("rendezvous-servers").split(",").filter(|x| x.contains(".")).map(|x| x.to_owned()).collect();
             if !ss.is_empty() {
                 return ss;
             }
@@ -579,11 +543,7 @@ impl Config {
     fn get_auto_id() -> Option<String> {
         #[cfg(any(target_os = "android", target_os = "ios"))]
         {
-            return Some(
-                rand::thread_rng()
-                    .gen_range(1_000_000_000..2_000_000_000)
-                    .to_string(),
-            );
+            return Some(rand::thread_rng().gen_range(1_000_000_000..2_000_000_000).to_string());
         }
 
         #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -603,9 +563,7 @@ impl Config {
 
     pub fn get_auto_password(length: usize) -> String {
         let mut rng = rand::thread_rng();
-        (0..length)
-            .map(|_| CHARS[rng.gen::<usize>() % CHARS.len()])
-            .collect()
+        (0..length).map(|_| CHARS[rng.gen::<usize>() % CHARS.len()]).collect()
     }
 
     pub fn get_key_confirmed() -> bool {
@@ -811,8 +769,7 @@ impl PeerConfig {
             Ok(config) => {
                 let mut config: PeerConfig = config;
                 let mut store = false;
-                let (password, _, store2) =
-                    decrypt_vec_or_original(&config.password, PASSWORD_ENC_VERSION);
+                let (password, _, store2) = decrypt_vec_or_original(&config.password, PASSWORD_ENC_VERSION);
                 config.password = password;
                 store = store || store2;
                 config.options.get_mut("rdp_password").map(|v| {
@@ -841,14 +798,8 @@ impl PeerConfig {
         let _lock = CONFIG.read().unwrap();
         let mut config = self.clone();
         config.password = encrypt_vec_or_original(&config.password, PASSWORD_ENC_VERSION);
-        config
-            .options
-            .get_mut("rdp_password")
-            .map(|v| *v = encrypt_str_or_original(v, PASSWORD_ENC_VERSION));
-        config
-            .options
-            .get_mut("os-password")
-            .map(|v| *v = encrypt_str_or_original(v, PASSWORD_ENC_VERSION));
+        config.options.get_mut("rdp_password").map(|v| *v = encrypt_str_or_original(v, PASSWORD_ENC_VERSION));
+        config.options.get_mut("os-password").map(|v| *v = encrypt_str_or_original(v, PASSWORD_ENC_VERSION));
         if let Err(err) = store_path(Self::path(id), config) {
             log::error!("Failed to store config: {}", err);
         }
@@ -865,23 +816,13 @@ impl PeerConfig {
 
     pub fn peers() -> Vec<(String, SystemTime, PeerConfig)> {
         if let Ok(peers) = Config::path(PEERS).read_dir() {
-            if let Ok(peers) = peers
-                .map(|res| res.map(|e| e.path()))
-                .collect::<Result<Vec<_>, _>>()
-            {
+            if let Ok(peers) = peers.map(|res| res.map(|e| e.path())).collect::<Result<Vec<_>, _>>() {
                 let mut peers: Vec<_> = peers
                     .iter()
-                    .filter(|p| {
-                        p.is_file()
-                            && p.extension().map(|p| p.to_str().unwrap_or("")) == Some("toml")
-                    })
+                    .filter(|p| p.is_file() && p.extension().map(|p| p.to_str().unwrap_or("")) == Some("toml"))
                     .map(|p| {
                         let t = crate::get_modified_time(&p);
-                        let id = p
-                            .file_stem()
-                            .map(|p| p.to_str().unwrap_or(""))
-                            .unwrap_or("")
-                            .to_owned();
+                        let id = p.file_stem().map(|p| p.to_str().unwrap_or("")).unwrap_or("").to_owned();
                         let c = PeerConfig::load(&id);
                         if c.info.platform.is_empty() {
                             fs::remove_file(&p).ok();
@@ -1045,9 +986,7 @@ impl LanPeers {
     }
 
     pub fn store(peers: &Vec<DiscoveryPeer>) {
-        let f = LanPeers {
-            peers: peers.clone(),
-        };
+        let f = LanPeers { peers: peers.clone() };
         if let Err(err) = store_path(Config::file_("_lan_peers"), f) {
             log::error!("Failed to store lan peers: {}", err);
         }
@@ -1055,10 +994,7 @@ impl LanPeers {
 
     pub fn modify_time() -> crate::ResultType<u64> {
         let p = Config::file_("_lan_peers");
-        Ok(fs::metadata(p)?
-            .modified()?
-            .duration_since(SystemTime::UNIX_EPOCH)?
-            .as_millis() as _)
+        Ok(fs::metadata(p)?.modified()?.duration_since(SystemTime::UNIX_EPOCH)?.as_millis() as _)
     }
 }
 

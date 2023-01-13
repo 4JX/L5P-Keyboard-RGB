@@ -20,49 +20,21 @@ extern "C" {
 
     pub fn xcb_generate_id(c: *mut xcb_connection_t) -> u32;
 
-    pub fn xcb_shm_attach(
-        c: *mut xcb_connection_t,
-        shmseg: xcb_shm_seg_t,
-        shmid: u32,
-        read_only: u8,
-    ) -> xcb_void_cookie_t;
+    pub fn xcb_shm_attach(c: *mut xcb_connection_t, shmseg: xcb_shm_seg_t, shmid: u32, read_only: u8) -> xcb_void_cookie_t;
 
     pub fn xcb_shm_detach(c: *mut xcb_connection_t, shmseg: xcb_shm_seg_t) -> xcb_void_cookie_t;
 
     pub fn xcb_shm_get_image_unchecked(
-        c: *mut xcb_connection_t,
-        drawable: xcb_drawable_t,
-        x: i16,
-        y: i16,
-        width: u16,
-        height: u16,
-        plane_mask: u32,
-        format: u8,
-        shmseg: xcb_shm_seg_t,
-        offset: u32,
+        c: *mut xcb_connection_t, drawable: xcb_drawable_t, x: i16, y: i16, width: u16, height: u16, plane_mask: u32, format: u8, shmseg: xcb_shm_seg_t, offset: u32,
     ) -> xcb_shm_get_image_cookie_t;
 
-    pub fn xcb_shm_get_image_reply(
-        c: *mut xcb_connection_t,
-        cookie: xcb_shm_get_image_cookie_t,
-        e: *mut *mut xcb_generic_error_t,
-    ) -> *mut xcb_shm_get_image_reply_t;
+    pub fn xcb_shm_get_image_reply(c: *mut xcb_connection_t, cookie: xcb_shm_get_image_cookie_t, e: *mut *mut xcb_generic_error_t) -> *mut xcb_shm_get_image_reply_t;
 
-    pub fn xcb_randr_get_monitors_unchecked(
-        c: *mut xcb_connection_t,
-        window: xcb_window_t,
-        get_active: u8,
-    ) -> xcb_randr_get_monitors_cookie_t;
+    pub fn xcb_randr_get_monitors_unchecked(c: *mut xcb_connection_t, window: xcb_window_t, get_active: u8) -> xcb_randr_get_monitors_cookie_t;
 
-    pub fn xcb_randr_get_monitors_reply(
-        c: *mut xcb_connection_t,
-        cookie: xcb_randr_get_monitors_cookie_t,
-        e: *mut *mut xcb_generic_error_t,
-    ) -> *mut xcb_randr_get_monitors_reply_t;
+    pub fn xcb_randr_get_monitors_reply(c: *mut xcb_connection_t, cookie: xcb_randr_get_monitors_cookie_t, e: *mut *mut xcb_generic_error_t) -> *mut xcb_randr_get_monitors_reply_t;
 
-    pub fn xcb_randr_get_monitors_monitors_iterator(
-        r: *const xcb_randr_get_monitors_reply_t,
-    ) -> xcb_randr_monitor_info_iterator_t;
+    pub fn xcb_randr_get_monitors_monitors_iterator(r: *const xcb_randr_get_monitors_reply_t) -> xcb_randr_monitor_info_iterator_t;
 
     pub fn xcb_randr_monitor_info_next(i: *mut xcb_randr_monitor_info_iterator_t);
 }

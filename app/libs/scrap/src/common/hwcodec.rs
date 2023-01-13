@@ -61,12 +61,7 @@ impl EncoderApi for HwEncoder {
                 };
                 let format = match Encoder::format_from_name(config.codec_name.clone()) {
                     Ok(format) => format,
-                    Err(_) => {
-                        return Err(anyhow!(format!(
-                            "failed to get format from name:{}",
-                            config.codec_name
-                        )))
-                    }
+                    Err(_) => return Err(anyhow!(format!("failed to get format from name:{}", config.codec_name))),
                 };
                 match Encoder::new(ctx.clone()) {
                     Ok(encoder) => Ok(HwEncoder {
@@ -82,11 +77,7 @@ impl EncoderApi for HwEncoder {
         }
     }
 
-    fn encode_to_message(
-        &mut self,
-        frame: &[u8],
-        _ms: i64,
-    ) -> ResultType<hbb_common::message_proto::Message> {
+    fn encode_to_message(&mut self, frame: &[u8], _ms: i64) -> ResultType<hbb_common::message_proto::Message> {
         let mut msg_out = Message::new();
         let mut vf = VideoFrame::new();
         let mut frames = Vec::new();
@@ -94,7 +85,7 @@ impl EncoderApi for HwEncoder {
             frames.push(EncodedVideoFrame {
                 data: Bytes::from(frame.data),
                 pts: frame.pts as _,
-                key:frame.key == 1,
+                key: frame.key == 1,
                 ..Default::default()
             });
         }
@@ -127,10 +118,7 @@ impl EncoderApi for HwEncoder {
 
 impl HwEncoder {
     pub fn best() -> CodecInfos {
-        get_config(CFG_KEY_ENCODER).unwrap_or(CodecInfos {
-            h264: None,
-            h265: None,
-        })
+        get_config(CFG_KEY_ENCODER).unwrap_or(CodecInfos { h264: None, h265: None })
     }
 
     pub fn current_name() -> Arc<Mutex<Option<String>>> {
@@ -182,10 +170,7 @@ pub struct HwDecoders {
 
 impl HwDecoder {
     pub fn best() -> CodecInfos {
-        get_config(CFG_KEY_DECODER).unwrap_or(CodecInfos {
-            h264: None,
-            h265: None,
-        })
+        get_config(CFG_KEY_DECODER).unwrap_or(CodecInfos { h264: None, h265: None })
     }
 
     pub fn new_decoders() -> HwDecoders {
@@ -268,11 +253,7 @@ impl HwDecoderImage<'_> {
 }
 
 fn get_config(k: &str) -> ResultType<CodecInfos> {
-    let v = HwCodecConfig::get()
-        .options
-        .get(k)
-        .unwrap_or(&"".to_owned())
-        .to_owned();
+    let v = HwCodecConfig::get().options.get(k).unwrap_or(&"".to_owned()).to_owned();
     match CodecInfos::deserialize(&v) {
         Ok(v) => Ok(v),
         Err(_) => Err(anyhow!("Failed to get config:{}", k)),
@@ -321,10 +302,7 @@ pub fn check_config_process(force_reset: bool) {
     }
     if let Ok(exe) = std::env::current_exe() {
         std::thread::spawn(move || {
-            std::process::Command::new(exe)
-                .arg("--check-hwcodec-config")
-                .status()
-                .ok();
+            std::process::Command::new(exe).arg("--check-hwcodec-config").status().ok();
             HwCodecConfig::refresh();
         });
     };

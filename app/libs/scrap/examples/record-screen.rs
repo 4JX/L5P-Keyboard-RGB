@@ -18,7 +18,7 @@ use webm::mux;
 use webm::mux::Track;
 
 use scrap::vpxcodec as vpx_encode;
-use scrap::{TraitCapturer, Capturer, Display, STRIDE_ALIGN};
+use scrap::{Capturer, Display, TraitCapturer, STRIDE_ALIGN};
 
 const USAGE: &'static str = "
 Simple WebM screen capture.
@@ -53,9 +53,7 @@ enum Codec {
 }
 
 fn main() -> io::Result<()> {
-    let args: Args = Docopt::new(USAGE)
-        .and_then(|d| d.deserialize())
-        .unwrap_or_else(|e| e.exit());
+    let args: Args = Docopt::new(USAGE).and_then(|d| d.deserialize()).unwrap_or_else(|e| e.exit());
 
     let duration = args.flag_time.map(Duration::from_secs);
 
@@ -64,12 +62,7 @@ fn main() -> io::Result<()> {
 
     // Setup the multiplexer.
 
-    let out = match {
-        OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&args.arg_path)
-    } {
+    let out = match { OpenOptions::new().write(true).create_new(true).open(&args.arg_path) } {
         Ok(file) => file,
         Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => {
             if loop {
@@ -86,8 +79,7 @@ fn main() -> io::Result<()> {
         Err(e) => return Err(e.into()),
     };
 
-    let mut webm =
-        mux::Segment::new(mux::Writer::new(out)).expect("Could not initialize the multiplexer.");
+    let mut webm = mux::Segment::new(mux::Writer::new(out)).expect("Could not initialize the multiplexer.");
 
     let (vpx_codec, mux_codec) = match args.flag_codec {
         Codec::Vp8 => (vpx_encode::VpxVideoCodecId::VP8, mux::VideoCodecId::VP8),

@@ -12,17 +12,7 @@ fn main() {
     let (w, h) = (d.width(), d.height());
 
     let child = Command::new("ffplay")
-        .args(&[
-            "-f",
-            "rawvideo",
-            "-pixel_format",
-            "bgr0",
-            "-video_size",
-            &format!("{}x{}", w, h),
-            "-framerate",
-            "60",
-            "-",
-        ])
+        .args(&["-f", "rawvideo", "-pixel_format", "bgr0", "-video_size", &format!("{}x{}", w, h), "-framerate", "60", "-"])
         .stdin(Stdio::piped())
         .spawn()
         .expect("This example requires ffplay.");

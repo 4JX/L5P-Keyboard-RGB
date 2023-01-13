@@ -93,34 +93,21 @@ pub fn get_audio_raw<'a>() -> Option<&'a [u8]> {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_onVideoFrameUpdate(
-    env: JNIEnv,
-    _class: JClass,
-    buffer: JObject,
-) {
+pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_onVideoFrameUpdate(env: JNIEnv, _class: JClass, buffer: JObject) {
     let jb = JByteBuffer::from(buffer);
     let slice = env.get_direct_buffer_address(jb).unwrap();
     VIDEO_RAW.lock().unwrap().update(slice);
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_onAudioFrameUpdate(
-    env: JNIEnv,
-    _class: JClass,
-    buffer: JObject,
-) {
+pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_onAudioFrameUpdate(env: JNIEnv, _class: JClass, buffer: JObject) {
     let jb = JByteBuffer::from(buffer);
     let slice = env.get_direct_buffer_address(jb).unwrap();
     AUDIO_RAW.lock().unwrap().update(slice);
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_setFrameRawEnable(
-    env: JNIEnv,
-    _class: JClass,
-    name: JString,
-    value: jboolean,
-) {
+pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_setFrameRawEnable(env: JNIEnv, _class: JClass, name: JString, value: jboolean) {
     if let Ok(name) = env.get_string(name) {
         let name: String = name.into();
         let value = value.eq(&1);
@@ -133,11 +120,7 @@ pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_setFrameRawEnab
 }
 
 #[no_mangle]
-pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_init(
-    env: JNIEnv,
-    _class: JClass,
-    ctx: JObject,
-) {
+pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_init(env: JNIEnv, _class: JClass, ctx: JObject) {
     log::debug!("MainService init from java");
     let jvm = env.get_java_vm().unwrap();
 
@@ -148,17 +131,9 @@ pub extern "system" fn Java_com_carriez_flutter_1hbb_MainService_init(
 }
 
 pub fn call_main_service_mouse_input(mask: i32, x: i32, y: i32) -> JniResult<()> {
-    if let (Some(jvm), Some(ctx)) = (
-        JVM.read().unwrap().as_ref(),
-        MAIN_SERVICE_CTX.read().unwrap().as_ref(),
-    ) {
+    if let (Some(jvm), Some(ctx)) = (JVM.read().unwrap().as_ref(), MAIN_SERVICE_CTX.read().unwrap().as_ref()) {
         let env = jvm.attach_current_thread_as_daemon()?;
-        env.call_method(
-            ctx,
-            "rustMouseInput",
-            "(III)V",
-            &[JValue::Int(mask), JValue::Int(x), JValue::Int(y)],
-        )?;
+        env.call_method(ctx, "rustMouseInput", "(III)V", &[JValue::Int(mask), JValue::Int(x), JValue::Int(y)])?;
         return Ok(());
     } else {
         return Err(JniError::ThrowFailed(-1));
@@ -166,20 +141,10 @@ pub fn call_main_service_mouse_input(mask: i32, x: i32, y: i32) -> JniResult<()>
 }
 
 pub fn call_main_service_get_by_name(name: &str) -> JniResult<String> {
-    if let (Some(jvm), Some(ctx)) = (
-        JVM.read().unwrap().as_ref(),
-        MAIN_SERVICE_CTX.read().unwrap().as_ref(),
-    ) {
+    if let (Some(jvm), Some(ctx)) = (JVM.read().unwrap().as_ref(), MAIN_SERVICE_CTX.read().unwrap().as_ref()) {
         let env = jvm.attach_current_thread_as_daemon()?;
         let name = env.new_string(name)?;
-        let res = env
-            .call_method(
-                ctx,
-                "rustGetByName",
-                "(Ljava/lang/String;)Ljava/lang/String;",
-                &[JValue::Object(name.into())],
-            )?
-            .l()?;
+        let res = env.call_method(ctx, "rustGetByName", "(Ljava/lang/String;)Ljava/lang/String;", &[JValue::Object(name.into())])?.l()?;
         let res = env.get_string(res.into())?;
         let res = res.to_string_lossy().to_string();
         return Ok(res);
@@ -188,15 +153,8 @@ pub fn call_main_service_get_by_name(name: &str) -> JniResult<String> {
     }
 }
 
-pub fn call_main_service_set_by_name(
-    name: &str,
-    arg1: Option<&str>,
-    arg2: Option<&str>,
-) -> JniResult<()> {
-    if let (Some(jvm), Some(ctx)) = (
-        JVM.read().unwrap().as_ref(),
-        MAIN_SERVICE_CTX.read().unwrap().as_ref(),
-    ) {
+pub fn call_main_service_set_by_name(name: &str, arg1: Option<&str>, arg2: Option<&str>) -> JniResult<()> {
+    if let (Some(jvm), Some(ctx)) = (JVM.read().unwrap().as_ref(), MAIN_SERVICE_CTX.read().unwrap().as_ref()) {
         let env = jvm.attach_current_thread_as_daemon()?;
         let name = env.new_string(name)?;
         let arg1 = env.new_string(arg1.unwrap_or(""))?;
@@ -206,11 +164,7 @@ pub fn call_main_service_set_by_name(
             ctx,
             "rustSetByName",
             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
-            &[
-                JValue::Object(name.into()),
-                JValue::Object(arg1.into()),
-                JValue::Object(arg2.into()),
-            ],
+            &[JValue::Object(name.into()), JValue::Object(arg1.into()), JValue::Object(arg2.into())],
         )?;
         return Ok(());
     } else {

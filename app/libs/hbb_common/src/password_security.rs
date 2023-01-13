@@ -54,8 +54,7 @@ pub fn permanent_enabled() -> bool {
 }
 
 pub fn has_valid_password() -> bool {
-    temporary_enabled() && !temporary_password().is_empty()
-        || permanent_enabled() && !Config::get_permanent_password().is_empty()
+    temporary_enabled() && !temporary_password().is_empty() || permanent_enabled() && !Config::get_permanent_password().is_empty()
 }
 
 const VERSION_LEN: usize = 2;
@@ -81,11 +80,7 @@ pub fn decrypt_str_or_original(s: &str, current_version: &str) -> (String, bool,
         let version = &s[..VERSION_LEN];
         if version == "00" {
             if let Ok(v) = decrypt(&s[VERSION_LEN..].as_bytes()) {
-                return (
-                    String::from_utf8_lossy(&v).to_string(),
-                    true,
-                    version != current_version,
-                );
+                return (String::from_utf8_lossy(&v).to_string(), true, version != current_version);
             }
         }
     }

@@ -69,11 +69,7 @@ impl Server {
                 Err(Error::from(error))
             } else {
                 let setup = xcb_get_setup(raw);
-                Ok(Server {
-                    raw,
-                    screenp,
-                    setup,
-                })
+                Ok(Server { raw, screenp, setup })
             }
         }
     }

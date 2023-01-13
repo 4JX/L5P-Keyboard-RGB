@@ -22,16 +22,8 @@ impl Config {
     /// Don't forget to CFRelease this!
     pub fn build(self) -> CFDictionaryRef {
         unsafe {
-            let throttle = CFNumberCreate(
-                ptr::null_mut(),
-                CFNumberType::Float64,
-                &self.throttle as *const _ as *const c_void,
-            );
-            let queue_length = CFNumberCreate(
-                ptr::null_mut(),
-                CFNumberType::SInt8,
-                &self.queue_length as *const _ as *const c_void,
-            );
+            let throttle = CFNumberCreate(ptr::null_mut(), CFNumberType::Float64, &self.throttle as *const _ as *const c_void);
+            let queue_length = CFNumberCreate(ptr::null_mut(), CFNumberType::SInt8, &self.queue_length as *const _ as *const c_void);
 
             let keys: [CFStringRef; 4] = [
                 kCGDisplayStreamShowCursor,
@@ -39,21 +31,9 @@ impl Config {
                 kCGDisplayStreamMinimumFrameTime,
                 kCGDisplayStreamQueueDepth,
             ];
-            let values: [*mut c_void; 4] = [
-                cfbool(self.cursor),
-                cfbool(self.letterbox),
-                throttle,
-                queue_length,
-            ];
+            let values: [*mut c_void; 4] = [cfbool(self.cursor), cfbool(self.letterbox), throttle, queue_length];
 
-            let res = CFDictionaryCreate(
-                ptr::null_mut(),
-                keys.as_ptr(),
-                values.as_ptr(),
-                4,
-                &kCFTypeDictionaryKeyCallBacks,
-                &kCFTypeDictionaryValueCallBacks,
-            );
+            let res = CFDictionaryCreate(ptr::null_mut(), keys.as_ptr(), values.as_ptr(), 4, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 
             CFRelease(throttle);
             CFRelease(queue_length);
