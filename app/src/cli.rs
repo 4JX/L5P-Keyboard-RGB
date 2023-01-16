@@ -36,7 +36,7 @@ struct Cli {
     #[arg(short, long, default_value_t = false)]
     gui: bool,
 
-    /// Do not show the window when launching
+    /// Do not show the window when launching (use along the --gui flag)
     #[arg(short = 'w', long, default_value_t = false)]
     hide_window: bool,
 }
