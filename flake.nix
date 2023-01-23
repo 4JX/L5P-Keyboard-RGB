@@ -45,6 +45,9 @@
           xorg.libX11
           fontconfig
           udev
+          glib
+          gst_all_1.gstreamer
+          gst_all_1.gst-plugins-base
         ];
 
         # Libraries needed at runtime
@@ -104,7 +107,6 @@
           RUSTFLAGS = "-Clink-arg=-fuse-ld=${MOLD_PATH} -Clinker=clang";
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           VCPKG_ROOT = "${vcpkg.out}";
-          LD_LIBRARY_PATH = nixLib.makeLibraryPath runtimeDeps;
         };
 
         # Allow a few more files to be included in the build workspace
@@ -130,7 +132,7 @@
 
             doCheck = false;
 
-            cargoBuildCommand = "cargo build";
+            # cargoBuildCommand = "cargo build";
 
             buildInputs = with pkgs;
               [

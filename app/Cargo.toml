@@ -12,8 +12,9 @@ license = "GPL-3.0"
 legion-rgb-driver = { path = "../driver" }
 
 rand = "0.8.5"
-# https://github.com/rustdesk/rustdesk/tree/master/libs/scrap
-scrap = { path = "libs/scrap" }
+scrap = { git = "https://github.com/4JX/rustdesk.git", rev = "f591f56", features = [
+    "wayland",
+] }
 fast_image_resize = "2.0.0"
 tray-item = { version = "0.5.0-alpha", git = "https://github.com/njust/tray-item-rs" }
 clap = { version = "4.0.15", features = ["color", "cargo", "derive"] }
