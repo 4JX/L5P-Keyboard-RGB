@@ -28,7 +28,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.65.0";
+        rustVersion = "1.66.1";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [
@@ -129,6 +129,8 @@
               };
 
             doCheck = false;
+
+            cargoBuildCommand = "cargo build";
 
             buildInputs = with pkgs;
               [

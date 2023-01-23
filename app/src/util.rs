@@ -19,11 +19,11 @@ where
     for<'de> Self: Deserialize<'de> + 'a,
 {
     fn load(path: PathBuf) -> Result<Self, LoadFileError> {
-        let file = std::fs::File::open(&path).into_report().change_context(LoadFileError)?;
+        let file = std::fs::File::open(path).into_report().change_context(LoadFileError)?;
 
         let reader = std::io::BufReader::new(file);
 
-        Ok(serde_json::de::from_reader(reader).into_report().change_context(LoadFileError)?)
+        serde_json::de::from_reader(reader).into_report().change_context(LoadFileError)
     }
 
     fn save(&self, path: PathBuf) -> Result<(), SaveFileError> {

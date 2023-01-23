@@ -30,10 +30,10 @@ impl EffectOptions {
 
             ComboBox::from_label("Brightness")
                 .width(COMBOBOX_WIDTH)
-                .selected_text(format! {"{}", {
-                        let text: &'static str = self.selected_brightness.into();
-                        text
-                }})
+                .selected_text({
+                    let text: &'static str = self.selected_brightness.into();
+                    text
+                })
                 .show_ui(ui, |ui| {
                     for val in Brightness::iter() {
                         let text: &'static str = val.into();
@@ -46,10 +46,10 @@ impl EffectOptions {
 
                 ComboBox::from_label("Direction")
                     .width(COMBOBOX_WIDTH)
-                    .selected_text(format! {"{}", {
-                            let text: &'static str = profile.direction.into();
-                            text
-                    }})
+                    .selected_text({
+                        let text: &'static str = profile.direction.into();
+                        text
+                    })
                     .show_ui(ui, |ui| {
                         for val in Direction::iter() {
                             let text: &'static str = val.into();

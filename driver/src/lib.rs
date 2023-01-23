@@ -77,9 +77,7 @@ impl Keyboard {
         payload[4] = keyboard_state.brightness;
 
         if let BaseEffects::Static | BaseEffects::Breath = keyboard_state.effect_type {
-            for i in 0..12 {
-                payload[i + 5] = keyboard_state.rgb_values[i];
-            }
+            payload[5..(12 + 5)].copy_from_slice(&keyboard_state.rgb_values[..12]);
         };
 
         Ok(payload)
@@ -180,7 +178,7 @@ impl Keyboard {
                     self.refresh()?;
                     thread::sleep(Duration::from_millis(delay_between_steps));
                 }
-                self.set_colors_to(&target_colors)?;
+                self.set_colors_to(target_colors)?;
             }
         }
 

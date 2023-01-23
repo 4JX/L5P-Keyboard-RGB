@@ -1,7 +1,6 @@
 mod cli;
 mod effects;
 mod enums;
-mod error;
 mod gui;
 mod profile;
 mod util;

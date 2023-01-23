@@ -24,10 +24,7 @@ pub enum Effects {
 
 impl PartialEq for Effects {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            // (Self::AmbientLight { fps: l_fps }, Self::AmbientLight { fps: r_fps }) => l_fps == r_fps,
-            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
-        }
+        core::mem::discriminant(self) == core::mem::discriminant(other)
     }
 }
 
@@ -53,16 +50,11 @@ impl Effects {
     }
 }
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Debug, EnumIter, IntoStaticStr, PartialEq)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Debug, EnumIter, IntoStaticStr, PartialEq, Default)]
 pub enum Direction {
+    #[default]
     Left,
     Right,
-}
-
-impl Default for Direction {
-    fn default() -> Self {
-        Self::Left
-    }
 }
 
 #[derive(Debug)]

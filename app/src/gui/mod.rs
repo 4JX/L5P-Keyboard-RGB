@@ -105,7 +105,7 @@ impl App {
                 profile,
                 custom_effect: CustomEffectState::default(),
 
-                menu_bar: MenuBarState::new(tx.clone()),
+                menu_bar: MenuBarState::new(tx),
                 profile_list: ProfileList::new(profiles),
                 effect_options: EffectOptions::default(),
                 global_rgb: [0; 3],
@@ -120,7 +120,7 @@ impl App {
                 profile: Profile::default(),
                 custom_effect: CustomEffectState::Queued(effect),
 
-                menu_bar: MenuBarState::new(tx.clone()),
+                menu_bar: MenuBarState::new(tx),
                 profile_list: ProfileList::new(profiles),
                 effect_options: EffectOptions::default(),
                 global_rgb: [0; 3],
@@ -145,7 +145,7 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
         if let Some(rx) = &self.window_open_rx {
-            if let Some(message) = rx.try_recv().ok() {
+            if let Ok(message) = rx.try_recv() {
                 match message {
                     GuiMessage::ShowWindow => self.show_window = true,
                     GuiMessage::Quit => self.exit_app(),
@@ -154,24 +154,22 @@ impl eframe::App for App {
         }
 
         if !self.unique_instance {
-            if !self.unique_instance {
-                let modal = Modal::new(ctx, "unique_instance_error_modal");
+            let modal = Modal::new(ctx, "unique_instance_error_modal");
 
-                modal.show(|ui| {
-                    modal.title(ui, "Warning");
-                    modal.frame(ui, |ui| {
-                        modal.body(ui, "Another instance is already running, please close it and try again.");
-                    });
-
-                    modal.buttons(ui, |ui| {
-                        if modal.caution_button(ui, "Exit").clicked() {
-                            self.exit_app()
-                        }
-                    });
+            modal.show(|ui| {
+                modal.title(ui, "Warning");
+                modal.frame(ui, |ui| {
+                    modal.body(ui, "Another instance is already running, please close it and try again.");
                 });
 
-                modal.open()
-            }
+                modal.buttons(ui, |ui| {
+                    if modal.caution_button(ui, "Exit").clicked() {
+                        self.exit_app()
+                    }
+                });
+            });
+
+            modal.open()
         }
 
         if self.manager.is_none() {
@@ -248,11 +246,9 @@ impl eframe::App for App {
                     });
 
                     ui.vertical_centered_justified(|ui| {
-                        if self.custom_effect.is_playing() {
-                            if ui.button("Stop custom effect").clicked() {
-                                self.custom_effect = CustomEffectState::None;
-                                changed = true;
-                            }
+                        if self.custom_effect.is_playing() && ui.button("Stop custom effect").clicked() {
+                            self.custom_effect = CustomEffectState::None;
+                            changed = true;
                         };
 
                         Frame {

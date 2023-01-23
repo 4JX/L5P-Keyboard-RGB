@@ -13,7 +13,7 @@ pub struct MenuBarState {
     gui_sender: Sender<GuiMessage>,
     opened_file: Option<PathBuf>,
     open_file_dialog: Option<FileDialog>,
-    file_kind: Option<FileKind>,
+    file_kind: Option<FileOperation>,
     toasts: Toasts,
 }
 
@@ -29,7 +29,7 @@ impl MenuBarState {
     }
 }
 
-enum FileKind {
+enum FileOperation {
     LoadProfile,
     LoadEffect,
     SaveProfile,
@@ -47,7 +47,7 @@ impl MenuBarState {
                     self.opened_file = Some(path.clone());
                     if let Some(kind) = &self.file_kind {
                         match kind {
-                            FileKind::LoadProfile => match Profile::load_profile(path) {
+                            FileOperation::LoadProfile => match Profile::load_profile(path) {
                                 Ok(profile) => {
                                     *current_profile = profile;
                                     *changed = true;
@@ -56,7 +56,7 @@ impl MenuBarState {
                                     self.toasts.error("Could not load profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
                                 }
                             },
-                            FileKind::LoadEffect => match CustomEffect::from_file(path) {
+                            FileOperation::LoadEffect => match CustomEffect::from_file(path) {
                                 Ok(effect) => {
                                     *current_effect = CustomEffectState::Queued(effect);
                                     *changed = true;
@@ -65,7 +65,7 @@ impl MenuBarState {
                                     self.toasts.error("Could not load custom effect.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
                                 }
                             },
-                            FileKind::SaveProfile => {
+                            FileOperation::SaveProfile => {
                                 if current_profile.save_profile(path).is_err() {
                                     self.toasts.error("Could not save profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
                                 };
@@ -86,13 +86,13 @@ impl MenuBarState {
             ui.menu_button("Profile", |ui| {
                 if ui.button("Open").clicked() {
                     let mut dialog = self.new_open_dialog();
-                    self.file_kind = Some(FileKind::LoadProfile);
+                    self.file_kind = Some(FileOperation::LoadProfile);
                     dialog.open();
                     self.open_file_dialog = Some(dialog);
                 }
                 if ui.button("Save").clicked() {
                     let mut dialog = self.new_save_dialog();
-                    self.file_kind = Some(FileKind::SaveProfile);
+                    self.file_kind = Some(FileOperation::SaveProfile);
                     dialog.open();
                     self.open_file_dialog = Some(dialog);
                 }
@@ -101,7 +101,7 @@ impl MenuBarState {
             ui.menu_button("Effect", |ui| {
                 if ui.button("Open").clicked() {
                     let mut dialog = self.new_open_dialog();
-                    self.file_kind = Some(FileKind::LoadEffect);
+                    self.file_kind = Some(FileOperation::LoadEffect);
                     dialog.open();
                     self.open_file_dialog = Some(dialog);
                 }
