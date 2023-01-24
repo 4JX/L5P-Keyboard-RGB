@@ -10,8 +10,6 @@ use fast_image_resize as fr;
 use fr::Resizer;
 use scrap::{Capturer, Display, Frame, TraitCapturer};
 
-use crate::enums::Message;
-
 #[derive(Clone, Copy)]
 struct ScreenDimensions {
     src: (NonZeroU32, NonZeroU32),
@@ -22,47 +20,63 @@ pub(super) struct AmbientLight;
 
 impl AmbientLight {
     pub fn play(manager: &mut super::Inner, fps: u8) {
-        //Display setup
-        let display = Display::all().unwrap().remove(0);
-
-        let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
-
-        let dimensions = ScreenDimensions {
-            src: (NonZeroU32::new(capturer.width() as u32).unwrap(), NonZeroU32::new(capturer.height() as u32).unwrap()),
-            dest: (NonZeroU32::new(4).unwrap(), NonZeroU32::new(1).unwrap()),
-        };
-
-        let seconds_per_frame = Duration::from_nanos(1_000_000_000 / fps as u64);
-        let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Box));
-
         while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-            if manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-                break;
-            }
+            //Display setup
+            let display = Display::all().unwrap().remove(0);
 
-            let now = Instant::now();
-            match capturer.frame(seconds_per_frame) {
-                Ok(frame) => {
-                    let rgb = process_frame(frame, dimensions, &mut resizer);
+            let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
 
-                    manager.keyboard.set_colors_to(&rgb).unwrap();
+            let dimensions = ScreenDimensions {
+                src: (NonZeroU32::new(capturer.width() as u32).unwrap(), NonZeroU32::new(capturer.height() as u32).unwrap()),
+                dest: (NonZeroU32::new(4).unwrap(), NonZeroU32::new(1).unwrap()),
+            };
+
+            let seconds_per_frame = Duration::from_nanos(1_000_000_000 / fps as u64);
+            let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Box));
+
+            #[cfg(target_os = "windows")]
+            let mut try_gdi = 1;
+
+             while !manager.stop_signals.keyboard_stop_signal.load(Ordering::SeqCst) {
+                let now = Instant::now();
+
+                match capturer.frame(seconds_per_frame) {
+                    Ok(frame) => {
+                        let rgb = process_frame(frame, dimensions, &mut resizer);
+
+                        manager.keyboard.set_colors_to(&rgb).unwrap();
+                        #[cfg(target_os = "windows")]
+                        {
+                            try_gdi = 0;
+                        }
+                    }
+                    Err(error) => match error.kind() {
+                        std::io::ErrorKind::WouldBlock =>
+                        {
+                            #[cfg(target_os = "windows")]
+                            if try_gdi > 0 && !capturer.is_gdi() {
+                                if try_gdi > 3 {
+                                    capturer.set_gdi();
+                                    try_gdi = 0;
+                                }
+                                try_gdi += 1;
+                            }
+                        }
+                        _ =>
+                        {
+                            #[cfg(windows)]
+                            if !capturer.is_gdi() {
+                                capturer.set_gdi();
+                                continue;
+                            }
+                        }
+                    },
                 }
-                Err(error) => match error.kind() {
-                    std::io::ErrorKind::WouldBlock => {
-                        // A
-                    }
-                    std::io::ErrorKind::InvalidData => {
-                        manager.stop_signals.store_true();
-                        manager.tx.send(Message::Refresh).unwrap();
-                    }
 
-                    _ => {}
-                },
-            }
-
-            let elapsed_time = now.elapsed();
-            if elapsed_time < seconds_per_frame {
-                thread::sleep(seconds_per_frame - elapsed_time);
+                let elapsed_time = now.elapsed();
+                if elapsed_time < seconds_per_frame {
+                    thread::sleep(seconds_per_frame - elapsed_time);
+                }
             }
         }
     }

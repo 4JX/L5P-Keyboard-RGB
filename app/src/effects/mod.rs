@@ -55,7 +55,6 @@ pub struct EffectManager {
 /// Controls the keyboard lighting logic
 struct Inner {
     keyboard: Keyboard,
-    tx: Sender<Message>,
     rx: Receiver<Message>,
     stop_signals: StopSignals,
     last_profile: Profile,
@@ -85,7 +84,6 @@ impl EffectManager {
         let mut inner = Inner {
             keyboard,
             rx,
-            tx: tx.clone(),
             stop_signals: stop_signals.clone(),
             last_profile: Profile::default(),
         };
@@ -95,9 +93,6 @@ impl EffectManager {
                 thread::spawn(move || loop {
                     match $e {
                         Some(message) => match message {
-                            Message::Refresh => {
-                                inner.refresh();
-                            }
                             Message::Profile { profile } => {
                                 inner.set_profile(profile);
                             }
@@ -141,10 +136,6 @@ impl EffectManager {
 }
 
 impl Inner {
-    fn refresh(&mut self) {
-        self.set_profile(self.last_profile.clone());
-    }
-
     fn set_profile(&mut self, mut profile: Profile) {
         self.last_profile = profile.clone();
 

@@ -60,7 +60,6 @@ pub enum Direction {
 #[derive(Debug)]
 pub enum Message {
     CustomEffect { effect: CustomEffect },
-    Refresh,
     Profile { profile: Profile },
     Exit,
 }

@@ -46,7 +46,7 @@ jobs:
       - name: Download dependencies
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
-           sudo apt-get update && sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev
+           sudo apt-get update && sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev
            vcpkg update && vcpkg install libvpx libyuv
           elif [ "$RUNNER_OS" == "macOS" ]; then
            brew install nasm ninja
