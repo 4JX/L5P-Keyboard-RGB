@@ -2,6 +2,7 @@ mod cli;
 mod effects;
 mod enums;
 mod gui;
+mod persist;
 mod profile;
 mod util;
 

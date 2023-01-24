@@ -1,11 +1,10 @@
 use crossbeam_channel::Sender;
 use eframe::egui::{self, Context};
 use egui_file::FileDialog;
-use egui_modal::Modal;
 use egui_notify::Toasts;
 use std::{path::PathBuf, time::Duration};
 
-use crate::{effects::custom_effect::CustomEffect, profile::Profile};
+use crate::{effects::custom_effect::CustomEffect, gui::modals, profile::Profile};
 
 use super::{CustomEffectState, GuiMessage};
 
@@ -107,26 +106,7 @@ impl MenuBarState {
                 }
             });
 
-            let about_modal = Modal::new(ctx, "about_modal");
-
-            about_modal.show(|ui| {
-                about_modal.title(ui, "About");
-                about_modal.frame(ui, |ui| {
-                    about_modal.body(ui, "A program made by 4JX.");
-                    ui.horizontal(|ui| {
-                        about_modal.body(ui, "Something's not working?:");
-                        let url = "https://github.com/4JX/L5P-Keyboard-RGB";
-                        if ui.link(url).clicked() {
-                            open::that(url).unwrap();
-                        }
-                    });
-
-                    about_modal.body(ui, format!("Current version: {}", env!("CARGO_PKG_VERSION")));
-                });
-
-                about_modal.buttons(ui, |ui| about_modal.button(ui, "Close"));
-            });
-
+            let about_modal = modals::about(ctx);
             if ui.button("About").clicked() {
                 about_modal.open()
             }

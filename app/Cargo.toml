@@ -11,31 +11,37 @@ license = "GPL-3.0"
 [dependencies]
 legion-rgb-driver = { path = "../driver" }
 
-rand = "0.8.5"
-scrap = { git = "https://github.com/4JX/rustdesk.git", rev = "f591f56", features = [
+scrap = { git = "https://github.com/rustdesk/rustdesk.git", rev = "154b0e1", features = [
     "wayland",
 ] }
-fast_image_resize = "2.0.0"
+rand = "0.8.5"
+fast_image_resize = "2.4.0"
 tray-item = { version = "0.5.0-alpha", git = "https://github.com/njust/tray-item-rs" }
-clap = { version = "4.0.15", features = ["color", "cargo", "derive"] }
+clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
-serde = { version = "1.0.145", features = ["derive"] }
-serde_json = "1.0.86"
+serde = { version = "1.0.152", features = ["derive"] }
+serde_json = "1.0.91"
 color-eyre = "0.6.2"
-device_query = "1.1.1"
-sysinfo = "0.26.4"
+device_query = "1.1.2"
+sysinfo = "0.27.7"
 crossbeam-channel = "0.5.6"
-thiserror = "1.0.37"
+thiserror = "1.0.38"
 single-instance = "0.3.3"
-image = "0.24.4"
-open = "3.0.3"
+image = "0.24.5"
+open = "3.2.0"
 error-stack = "0.2.4"
 eframe = "0.20.1"
 # egui-modal = "0.1.8"
 egui-modal = { git = "https://github.com/n00kii/egui-modal.git", rev = "72ef5ca" }
-egui_file = "0.5.2"
+egui_file = "0.5.4"
 egui-notify = "0.5.1"
+reqwest = { version = "0.11.14", default-features = false, features = [
+    "rustls-tls",
+    "blocking",
+    "json",
+] }
+chrono = { version = "0.4.23", features = ["serde"] }
 
 # Dependabot alerts
 regex = "1.6.0"

@@ -1,11 +1,6 @@
-use std::{
-    fs::{self, File},
-    io::Write,
-    mem,
-    path::Path,
-    process,
-};
+use std::{mem, path::PathBuf, process};
 
+use chrono::{Duration, Utc};
 use crossbeam_channel::{Receiver, Sender};
 use eframe::{
     egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
@@ -13,20 +8,24 @@ use eframe::{
     epaint::{Color32, Rounding, Vec2},
     CreationContext,
 };
-use egui_modal::Modal;
+
+use serde_json::Value;
 use strum::IntoEnumIterator;
 
 use crate::{
     cli::CliOutputType,
     effects::{self, custom_effect::CustomEffect, EffectManager},
     enums::Effects,
+    persist::{Persist, UpdateData},
     profile::Profile,
+    util::StorageTrait,
 };
 
 use self::{effect_options::EffectOptions, menu_bar::MenuBarState, profile_list::ProfileList, style::Theme};
 
 mod effect_options;
 mod menu_bar;
+mod modals;
 mod profile_list;
 mod style;
 
@@ -34,6 +33,8 @@ pub struct App {
     unique_instance: bool,
     show_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
+    update_data: UpdateData,
+    show_update_modal: bool,
 
     manager: Option<EffectManager>,
     profile: Profile,
@@ -89,24 +90,22 @@ impl App {
     pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tray_active: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
         let manager = EffectManager::new(effects::OperationMode::Gui).ok();
 
-        let mut profiles: Vec<Profile> = Vec::new();
-
-        if let Ok(string) = fs::read_to_string(Path::new("./profiles.json")) {
-            profiles = serde_json::from_str(&string).unwrap_or_default();
-        }
+        let persist: Persist = Self::load_persist();
 
         let mut app = match output {
             CliOutputType::Profile(profile) => Self {
                 unique_instance,
                 show_window: !hide_window,
                 window_open_rx: None,
+                update_data: persist.data.updates.clone(),
+                show_update_modal: true,
 
                 manager,
                 profile,
                 custom_effect: CustomEffectState::default(),
 
                 menu_bar: MenuBarState::new(tx),
-                profile_list: ProfileList::new(profiles),
+                profile_list: ProfileList::new(persist.data.profiles),
                 effect_options: EffectOptions::default(),
                 global_rgb: [0; 3],
                 theme: Theme::default(),
@@ -115,13 +114,15 @@ impl App {
                 unique_instance,
                 show_window: !hide_window,
                 window_open_rx: None,
+                update_data: persist.data.updates.clone(),
+                show_update_modal: true,
 
                 manager,
                 profile: Profile::default(),
                 custom_effect: CustomEffectState::Queued(effect),
 
                 menu_bar: MenuBarState::new(tx),
-                profile_list: ProfileList::new(profiles),
+                profile_list: ProfileList::new(persist.data.profiles),
                 effect_options: EffectOptions::default(),
                 global_rgb: [0; 3],
                 theme: Theme::default(),
@@ -153,45 +154,22 @@ impl eframe::App for App {
             }
         }
 
+        if !self.update_data.skip_version && self.show_update_modal {
+            if let Some(update_name) = self.update_data.version_name.as_ref() {
+                modals::update_available(ctx, update_name, &mut self.update_data.skip_version, &mut self.show_update_modal);
+            }
+        }
+
         if !self.unique_instance {
-            let modal = Modal::new(ctx, "unique_instance_error_modal");
-
-            modal.show(|ui| {
-                modal.title(ui, "Warning");
-                modal.frame(ui, |ui| {
-                    modal.body(ui, "Another instance is already running, please close it and try again.");
-                });
-
-                modal.buttons(ui, |ui| {
-                    if modal.caution_button(ui, "Exit").clicked() {
-                        self.exit_app()
-                    }
-                });
-            });
-
-            modal.open()
+            if modals::unique_instance(ctx) {
+                self.exit_app();
+            };
         }
 
         if self.manager.is_none() {
-            let modal = Modal::new(ctx, "manager_error_modal");
-
-            modal.show(|ui| {
-                modal.title(ui, "Warning");
-                modal.frame(ui, |ui| {
-                    modal.body(ui, "Failed to find a valid keyboard.");
-                    modal.body(ui, "Ensure that you have a supported model and that the application has access to it.");
-                    modal.body(ui, "On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage");
-                    modal.body(ui, "In certain cases, this may be due to a hardware error.");
-                });
-
-                modal.buttons(ui, |ui| {
-                    if modal.caution_button(ui, "Exit").clicked() {
-                        self.exit_app()
-                    }
-                });
-            });
-
-            modal.open()
+            if modals::manager_error(ctx) {
+                self.exit_app();
+            }
         }
 
         let mut changed = false;
@@ -299,11 +277,15 @@ impl eframe::App for App {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        if let Ok(ser) = serde_json::to_string(&self.profile_list.profiles) {
-            if let Ok(mut file) = File::create("./profiles.json") {
-                file.write_all(ser.as_bytes()).unwrap();
-            };
-        };
+        let path = PathBuf::from("./settings.json");
+
+        let mut persist = Persist::load_or_default(&path);
+
+        persist.data.profiles = std::mem::take(&mut self.profile_list.profiles);
+
+        persist.data.updates = std::mem::take(&mut self.update_data);
+
+        persist.save(path).unwrap();
     }
 }
 
@@ -325,6 +307,57 @@ impl App {
 
         // ctx.set_fonts(text_utils::get_font_def());
         ctx.set_style(style);
+    }
+
+    fn load_persist() -> Persist {
+        let mut persist = Persist::load_or_default(&PathBuf::from("./settings.json"));
+
+        let version_name = &mut persist.data.updates.version_name;
+
+        let time_since_last_check = Utc::now() - persist.data.updates.last_checked;
+
+        if persist.settings.check_for_updates && time_since_last_check > Duration::days(1) {
+            let client = reqwest::blocking::Client::builder()
+                .user_agent(format! {"4JX/L5P-Keyboard-RGB, Ver {}", env!("CARGO_PKG_VERSION")})
+                .build()
+                .unwrap();
+
+            if let Ok(res) = client.get("https://api.github.com/repos/4JX/L5P-Keyboard-RGB/tags").send() {
+                let json: Value = res.json().unwrap();
+
+                if let Some(entry) = json.pointer("/0/name") {
+                    let mut name = entry.to_string().replace("\"", "");
+
+                    match version_name {
+                        Some(current_name) => {
+                            if persist.data.updates.skip_version && current_name != name.as_mut() {
+                                *current_name = name;
+                                persist.data.updates.skip_version = false;
+                            } else {
+                                *current_name = name;
+                                persist.data.updates.skip_version = false;
+                            }
+                        }
+                        None => {
+                            *version_name = Some(name);
+                            persist.data.updates.skip_version = false;
+                        }
+                    }
+                }
+            };
+
+            persist.data.updates.last_checked = Utc::now();
+        }
+
+        if version_name.is_some() {
+            let n = version_name.as_ref().unwrap();
+
+            if n.is_empty() || n == concat!("va", env!("CARGO_PKG_VERSION")) {
+                *version_name = None;
+            }
+        }
+
+        persist
     }
 
     fn exit_app(&mut self) {
