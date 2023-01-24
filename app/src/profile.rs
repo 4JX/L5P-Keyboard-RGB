@@ -9,7 +9,7 @@ use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct KeyboardZone {
     pub rgb: [u8; 3],
     pub enabled: bool,
@@ -52,9 +52,9 @@ impl Default for Profile {
     fn default() -> Self {
         Self {
             name: "Profile".to_string(),
-            rgb_zones: Default::default(),
-            effect: Default::default(),
-            direction: Default::default(),
+            rgb_zones: Zones::default(),
+            effect: Effects::default(),
+            direction: Direction::default(),
             speed: 1,
             brightness: 1,
         }

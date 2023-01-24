@@ -49,28 +49,25 @@ fn main() -> Result<()> {
 
     let cli_output = cli::try_cli(is_unique).map_err(|err| eyre!("{:?}", err))?;
 
-    match cli_output.start_gui_maybe_hidden {
-        Some(hide_window) => {
-            start_ui(cli_output, is_unique, hide_window);
+    if let Some(hide_window) = cli_output.start_gui_maybe_hidden {
+        start_ui(cli_output, is_unique, hide_window);
 
-            Ok(())
-        }
-        None => {
-            let mut effect_manager = EffectManager::new(effects::OperationMode::Cli).unwrap();
+        Ok(())
+    } else {
+        let mut effect_manager = EffectManager::new(effects::OperationMode::Cli).unwrap();
 
-            match cli_output.output {
-                cli::CliOutputType::Profile(profile) => {
-                    effect_manager.set_profile(profile);
-                    effect_manager.join_and_exit();
-                    Ok(())
-                }
-                cli::CliOutputType::Custom(effect) => {
-                    effect_manager.custom_effect(effect);
-                    effect_manager.join_and_exit();
-                    Ok(())
-                }
-                cli::CliOutputType::Exit => Ok(()),
+        match cli_output.output {
+            cli::CliOutputType::Profile(profile) => {
+                effect_manager.set_profile(profile);
+                effect_manager.join_and_exit();
+                Ok(())
             }
+            cli::CliOutputType::Custom(effect) => {
+                effect_manager.custom_effect(effect);
+                effect_manager.join_and_exit();
+                Ok(())
+            }
+            cli::CliOutputType::Exit => Ok(()),
         }
     }
 }

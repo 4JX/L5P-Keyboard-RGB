@@ -60,6 +60,7 @@ struct Inner {
     last_profile: Profile,
 }
 
+#[derive(Clone, Copy)]
 pub enum OperationMode {
     Cli,
     Gui,
@@ -97,7 +98,7 @@ impl EffectManager {
                                 inner.set_profile(profile);
                             }
                             Message::CustomEffect { effect } => {
-                                inner.custom_effect(effect);
+                                inner.custom_effect(&effect);
                             }
                             Message::Exit => break,
                         },
@@ -175,11 +176,11 @@ impl Inner {
             Effects::AmbientLight { mut fps } => {
                 fps = fps.clamp(1, 60);
 
-                AmbientLight::play(self, fps)
+                AmbientLight::play(self, fps);
             }
             Effects::SmoothWave => {
                 profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
-                Swipe::play(self, &profile)
+                Swipe::play(self, &profile);
             }
             Effects::Swipe => Swipe::play(self, &profile),
             Effects::Disco => Disco::play(self, &profile, &mut thread_rng),
@@ -191,7 +192,7 @@ impl Inner {
         self.stop_signals.store_false();
     }
 
-    fn custom_effect(&mut self, custom_effect: CustomEffect) {
+    fn custom_effect(&mut self, custom_effect: &CustomEffect) {
         self.stop_signals.store_false();
 
         'outer: loop {

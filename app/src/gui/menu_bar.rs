@@ -108,7 +108,7 @@ impl MenuBarState {
 
             let about_modal = modals::about(ctx);
             if ui.button("About").clicked() {
-                about_modal.open()
+                about_modal.open();
             }
 
             if ui.button("Donate").clicked() {

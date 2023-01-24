@@ -13,7 +13,7 @@ pub struct Persist {
 
 impl Persist {
     pub fn load_or_default(path: &PathBuf) -> Self {
-        let mut persist: Persist = Persist::default();
+        let mut persist: Self = Self::default();
 
         if let Ok(string) = fs::read_to_string(path) {
             persist = serde_json::from_str(&string).unwrap_or_default();

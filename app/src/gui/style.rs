@@ -11,7 +11,7 @@ pub struct Theme {
 impl Default for Theme {
     fn default() -> Self {
         Self {
-            spacing: Default::default(),
+            spacing: SpacingStyle::default(),
             visuals: Visuals {
                 selection: Selection {
                     bg_fill: Color32::from_rgb(40, 100, 160),

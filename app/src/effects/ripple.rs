@@ -160,7 +160,7 @@ impl Ripple {
             if !effect_active.load(Ordering::SeqCst) {
                 for (i, zone) in key_zones.iter().enumerate() {
                     if keys.iter().any(|key| zone.contains(key)) {
-                        zone_state[i] = RippleMove::Center
+                        zone_state[i] = RippleMove::Center;
                     }
                 }
 
@@ -179,23 +179,23 @@ impl Ripple {
                         match ripple_move {
                             RippleMove::Center => {
                                 if left >= 0 && zone_range.contains(&(left as usize)) {
-                                    zone_state[left as usize] = RippleMove::Left
+                                    zone_state[left as usize] = RippleMove::Left;
                                 }
 
                                 if zone_range.contains(&right) {
-                                    zone_state[right] = RippleMove::Right
+                                    zone_state[right] = RippleMove::Right;
                                 }
                                 zone_state[i] = RippleMove::Off;
                             }
                             RippleMove::Left => {
                                 if zone_range.contains(&(left as usize)) {
-                                    zone_state[left as usize] = RippleMove::Left
+                                    zone_state[left as usize] = RippleMove::Left;
                                 }
                                 zone_state[i] = RippleMove::Off;
                             }
                             RippleMove::Right => {
                                 if zone_range.contains(&right) {
-                                    zone_state[right] = RippleMove::Right
+                                    zone_state[right] = RippleMove::Right;
                                 }
                                 zone_state[i] = RippleMove::Off;
                             }

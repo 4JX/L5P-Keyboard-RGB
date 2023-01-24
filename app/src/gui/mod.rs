@@ -63,25 +63,22 @@ pub enum CustomEffectState {
 impl CustomEffectState {
     fn is_none(&self) -> bool {
         match self {
-            CustomEffectState::None => true,
-            CustomEffectState::Queued(_) => false,
-            CustomEffectState::Playing => false,
+            Self::None => true,
+            Self::Queued(_) | Self::Playing => false,
         }
     }
 
     fn is_queued(&self) -> bool {
         match self {
-            CustomEffectState::None => false,
-            CustomEffectState::Queued(_) => true,
-            CustomEffectState::Playing => false,
+            Self::None | Self::Playing => false,
+            Self::Queued(_) => true,
         }
     }
 
     fn is_playing(&self) -> bool {
         match self {
-            CustomEffectState::None => false,
-            CustomEffectState::Queued(_) => false,
-            CustomEffectState::Playing => true,
+            Self::None | Self::Queued(_) => false,
+            Self::Playing => true,
         }
     }
 }
@@ -137,7 +134,7 @@ impl App {
         app
     }
 
-    pub fn init(self, cc: &CreationContext<'_>) -> App {
+    pub fn init(self, cc: &CreationContext<'_>) -> Self {
         self.configure_style(&cc.egui_ctx);
         self
     }
@@ -160,17 +157,13 @@ impl eframe::App for App {
             }
         }
 
-        if !self.unique_instance {
-            if modals::unique_instance(ctx) {
-                self.exit_app();
-            };
-        }
+        if !self.unique_instance && modals::unique_instance(ctx) {
+            self.exit_app();
+        };
 
-        if self.manager.is_none() {
-            if modals::manager_error(ctx) {
-                self.exit_app();
-            }
-        }
+        if self.manager.is_none() && modals::manager_error(ctx) {
+            self.exit_app();
+        };
 
         let mut changed = false;
 
@@ -243,7 +236,7 @@ impl eframe::App for App {
                                         let text: &'static str = val.into();
                                         if ui.selectable_value(&mut self.profile.effect, val, text).changed() {
                                             changed = true;
-                                            self.custom_effect = CustomEffectState::None
+                                            self.custom_effect = CustomEffectState::None;
                                         };
                                     }
                                 });
@@ -260,7 +253,7 @@ impl eframe::App for App {
                 } else if self.custom_effect.is_queued() {
                     let state = mem::replace(&mut self.custom_effect, CustomEffectState::Playing);
                     if let CustomEffectState::Queued(effect) = state {
-                        manager.custom_effect(effect)
+                        manager.custom_effect(effect);
                     }
                 }
             }
@@ -318,7 +311,7 @@ impl App {
 
         if persist.settings.check_for_updates && time_since_last_check > Duration::days(1) {
             let client = reqwest::blocking::Client::builder()
-                .user_agent(format! {"4JX/L5P-Keyboard-RGB, Ver {}", env!("CARGO_PKG_VERSION")})
+                .user_agent(format!("4JX/L5P-Keyboard-RGB, Ver {}", env!("CARGO_PKG_VERSION")))
                 .build()
                 .unwrap();
 
@@ -326,14 +319,11 @@ impl App {
                 let json: Value = res.json().unwrap();
 
                 if let Some(entry) = json.pointer("/0/name") {
-                    let mut name = entry.to_string().replace("\"", "");
+                    let mut name = entry.to_string().replace('\"', "");
 
                     match version_name {
                         Some(current_name) => {
                             if persist.data.updates.skip_version && current_name != name.as_mut() {
-                                *current_name = name;
-                                persist.data.updates.skip_version = false;
-                            } else {
                                 *current_name = name;
                                 persist.data.updates.skip_version = false;
                             }

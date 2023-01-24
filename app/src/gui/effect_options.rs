@@ -14,7 +14,7 @@ pub struct EffectOptions {
     selected_brightness: Brightness,
 }
 
-#[derive(PartialEq, EnumIter, IntoStaticStr, Clone, Copy, Default)]
+#[derive(PartialEq, Eq, EnumIter, IntoStaticStr, Clone, Copy, Default)]
 pub enum Brightness {
     #[default]
     Low,

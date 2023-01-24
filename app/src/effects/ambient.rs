@@ -31,18 +31,18 @@ impl AmbientLight {
                 dest: (NonZeroU32::new(4).unwrap(), NonZeroU32::new(1).unwrap()),
             };
 
-            let seconds_per_frame = Duration::from_nanos(1_000_000_000 / fps as u64);
+            let seconds_per_frame = Duration::from_nanos(1_000_000_000 / u64::from(fps));
             let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Box));
 
             #[cfg(target_os = "windows")]
             let mut try_gdi = 1;
 
-             while !manager.stop_signals.keyboard_stop_signal.load(Ordering::SeqCst) {
+            while !manager.stop_signals.keyboard_stop_signal.load(Ordering::SeqCst) {
                 let now = Instant::now();
 
                 match capturer.frame(seconds_per_frame) {
                     Ok(frame) => {
-                        let rgb = process_frame(frame, dimensions, &mut resizer);
+                        let rgb = process_frame(&frame, dimensions, &mut resizer);
 
                         manager.keyboard.set_colors_to(&rgb).unwrap();
                         #[cfg(target_os = "windows")]
@@ -82,7 +82,7 @@ impl AmbientLight {
     }
 }
 
-fn process_frame(frame: Frame, dimensions: ScreenDimensions, resizer: &mut Resizer) -> [u8; 12] {
+fn process_frame(frame: &Frame, dimensions: ScreenDimensions, resizer: &mut Resizer) -> [u8; 12] {
     // Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
     // Read source image from file
 

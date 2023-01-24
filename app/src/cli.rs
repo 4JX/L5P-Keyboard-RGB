@@ -132,11 +132,8 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
     match cli.command {
         Some(subcommand) => {
             // Early logic for specific subcommands
-            match subcommand {
-                Commands::Set { .. } | Commands::CustomEffect { .. } => {
-                    assert!(is_unique_instance, "Another instance of the program is already running, please close it before starting a new one.");
-                }
-                _ => {}
+            if let Commands::Set { .. } | Commands::CustomEffect { .. } = subcommand {
+                assert!(is_unique_instance, "Another instance of the program is already running, please close it before starting a new one.");
             }
 
             match subcommand {
@@ -180,7 +177,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
                 Commands::List => {
                     println!("List of available effects:");
                     for (i, effect) in Effects::iter().enumerate() {
-                        println!("{i}. {}", effect);
+                        println!("{i}. {effect}",);
                     }
 
                     Ok(CliOutput {
@@ -211,7 +208,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
 
         None => {
             let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
-            println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{} --help\".", exec_name);
+            println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
             Ok(CliOutput {
                 start_gui_maybe_hidden: Some(cli.hide_window),
                 output: CliOutputType::Profile(Profile::default()),

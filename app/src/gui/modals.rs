@@ -83,7 +83,7 @@ pub fn update_available(ctx: &Context, new_version: &str, skip_version: &mut boo
         modal.title(ui, "An update is available!");
         modal.frame(ui, |ui| {
             modal.body(ui, format!("Current version: {}", env!("CARGO_PKG_VERSION")));
-            modal.body(ui, format!("New version: {}", new_version));
+            modal.body(ui, format!("New version: {new_version}"));
 
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = -2.0;
@@ -103,5 +103,5 @@ pub fn update_available(ctx: &Context, new_version: &str, skip_version: &mut boo
         });
     });
 
-    modal.open()
+    modal.open();
 }

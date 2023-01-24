@@ -30,27 +30,27 @@ impl PartialEq for Effects {
 
 #[allow(dead_code)]
 impl Effects {
-    pub fn takes_color_array(&self) -> bool {
-        matches!(self, Effects::Static | Effects::Breath | Effects::Swipe { .. } | Effects::Fade | Effects::Ripple)
+    pub fn takes_color_array(self) -> bool {
+        matches!(self, Self::Static | Self::Breath | Self::Swipe { .. } | Self::Fade | Self::Ripple)
     }
 
-    pub fn takes_direction(&self) -> bool {
-        matches!(self, Effects::Wave | Effects::SmoothWave | Effects::Swipe { .. })
+    pub fn takes_direction(self) -> bool {
+        matches!(self, Self::Wave | Self::SmoothWave | Self::Swipe { .. })
     }
 
-    pub fn takes_speed(&self) -> bool {
+    pub fn takes_speed(self) -> bool {
         matches!(
             self,
-            Effects::Breath | Effects::Smooth | Effects::Wave | Effects::Lightning | Effects::SmoothWave | Effects::Swipe | Effects::Disco | Effects::Fade | Effects::Ripple
+            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave | Self::Swipe | Self::Disco | Self::Fade | Self::Ripple
         )
     }
 
-    pub fn is_built_in(&self) -> bool {
-        matches!(self, Effects::Static | Effects::Breath | Effects::Smooth | Effects::Wave)
+    pub fn is_built_in(self) -> bool {
+        matches!(self, Self::Static | Self::Breath | Self::Smooth | Self::Wave)
     }
 }
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Debug, EnumIter, IntoStaticStr, PartialEq, Default)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Debug, EnumIter, IntoStaticStr, PartialEq, Eq, Default)]
 pub enum Direction {
     #[default]
     Left,
