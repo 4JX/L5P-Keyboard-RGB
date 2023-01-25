@@ -342,7 +342,7 @@ impl App {
         if version_name.is_some() {
             let n = version_name.as_ref().unwrap();
 
-            if n.is_empty() || n == concat!("va", env!("CARGO_PKG_VERSION")) {
+            if n.is_empty() || n == concat!("v", env!("CARGO_PKG_VERSION")) {
                 *version_name = None;
             }
         }
