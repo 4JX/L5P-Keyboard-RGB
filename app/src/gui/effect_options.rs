@@ -1,4 +1,5 @@
 use eframe::egui::{ComboBox, Slider, Ui};
+use legion_rgb_driver::SPEED_RANGE;
 use strum::IntoEnumIterator;
 use strum_macros::{EnumIter, IntoStaticStr};
 
@@ -64,7 +65,7 @@ impl EffectOptions {
                     ui.label("FPS");
                 })
             } else {
-                let range = if profile.effect.is_built_in() { 1..=3 } else { 1..=10 };
+                let range = if profile.effect.is_built_in() { SPEED_RANGE } else { 1..=10 };
 
                 ui.horizontal(|ui| {
                     *update_lights |= ui.add_enabled(profile.effect.takes_speed(), Slider::new(&mut profile.speed, range)).changed();
