@@ -16,7 +16,7 @@ use crate::{
     cli::CliOutputType,
     effects::{self, custom_effect::CustomEffect, EffectManager},
     enums::Effects,
-    persist::{Persist, UpdateData},
+    persist::{Settings, Updates},
     profile::Profile,
     util::StorageTrait,
 };
@@ -33,7 +33,7 @@ pub struct App {
     unique_instance: bool,
     show_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
-    update_data: UpdateData,
+    update_data: Updates,
     show_update_modal: bool,
 
     manager: Option<EffectManager>,
@@ -87,14 +87,14 @@ impl App {
     pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tray_active: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
         let manager = EffectManager::new(effects::OperationMode::Gui).ok();
 
-        let persist: Persist = Self::load_persist();
+        let settings: Settings = Self::load_settings();
 
         let mut app = match output {
             CliOutputType::Profile(profile) => Self {
                 unique_instance,
                 show_window: !hide_window,
                 window_open_rx: None,
-                update_data: persist.data.updates.clone(),
+                update_data: settings.updates.clone(),
                 show_update_modal: true,
 
                 manager,
@@ -102,7 +102,7 @@ impl App {
                 custom_effect: CustomEffectState::default(),
 
                 menu_bar: MenuBarState::new(tx),
-                profile_list: ProfileList::new(persist.data.profiles),
+                profile_list: ProfileList::new(settings.profiles),
                 effect_options: EffectOptions::default(),
                 global_rgb: [0; 3],
                 theme: Theme::default(),
@@ -111,7 +111,7 @@ impl App {
                 unique_instance,
                 show_window: !hide_window,
                 window_open_rx: None,
-                update_data: persist.data.updates.clone(),
+                update_data: settings.updates.clone(),
                 show_update_modal: true,
 
                 manager,
@@ -119,7 +119,7 @@ impl App {
                 custom_effect: CustomEffectState::Queued(effect),
 
                 menu_bar: MenuBarState::new(tx),
-                profile_list: ProfileList::new(persist.data.profiles),
+                profile_list: ProfileList::new(settings.profiles),
                 effect_options: EffectOptions::default(),
                 global_rgb: [0; 3],
                 theme: Theme::default(),
@@ -272,13 +272,13 @@ impl eframe::App for App {
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         let path = PathBuf::from("./settings.json");
 
-        let mut persist = Persist::load_or_default(&path);
+        let mut settings = Settings::load_or_default(&path);
 
-        persist.data.profiles = std::mem::take(&mut self.profile_list.profiles);
+        settings.profiles = std::mem::take(&mut self.profile_list.profiles);
 
-        persist.data.updates = std::mem::take(&mut self.update_data);
+        settings.updates = std::mem::take(&mut self.update_data);
 
-        persist.save(path).unwrap();
+        settings.save(path).unwrap();
     }
 }
 
@@ -302,14 +302,14 @@ impl App {
         ctx.set_style(style);
     }
 
-    fn load_persist() -> Persist {
-        let mut persist = Persist::load_or_default(&PathBuf::from("./settings.json"));
+    fn load_settings() -> Settings {
+        let mut settings = Settings::load_or_default(&PathBuf::from("./settings.json"));
 
-        let version_name = &mut persist.data.updates.version_name;
+        let version_name = &mut settings.updates.version_name;
 
-        let time_since_last_check = Utc::now() - persist.data.updates.last_checked;
+        let time_since_last_check = Utc::now() - settings.updates.last_checked;
 
-        if persist.settings.check_for_updates && time_since_last_check > Duration::days(1) {
+        if settings.updates.check_for_updates && time_since_last_check > Duration::days(1) {
             let client = reqwest::blocking::Client::builder()
                 .user_agent(format!("4JX/L5P-Keyboard-RGB, Ver {}", env!("CARGO_PKG_VERSION")))
                 .build()
@@ -323,20 +323,20 @@ impl App {
 
                     match version_name {
                         Some(current_name) => {
-                            if persist.data.updates.skip_version && current_name != name.as_mut() {
+                            if settings.updates.skip_version && current_name != name.as_mut() {
                                 *current_name = name;
-                                persist.data.updates.skip_version = false;
+                                settings.updates.skip_version = false;
                             }
                         }
                         None => {
                             *version_name = Some(name);
-                            persist.data.updates.skip_version = false;
+                            settings.updates.skip_version = false;
                         }
                     }
                 }
             };
 
-            persist.data.updates.last_checked = Utc::now();
+            settings.updates.last_checked = Utc::now();
         }
 
         if version_name.is_some() {
@@ -347,7 +347,7 @@ impl App {
             }
         }
 
-        persist
+        settings
     }
 
     fn exit_app(&mut self) {
