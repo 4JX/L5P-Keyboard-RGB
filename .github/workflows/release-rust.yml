@@ -31,6 +31,7 @@ jobs:
 
     env:
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
+      VCPKG_INSTALLED_DIR: ${{ github.workspace }}/vcpkg/installed
 
     steps:
       - name: Checkout
@@ -55,44 +56,34 @@ jobs:
            sudo apt-get update -y
            sudo apt install -y libunwind-dev
            sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
-           vcpkg update && vcpkg install libvpx libyuv
           elif [ "$RUNNER_OS" == "macOS" ]; then
            brew install nasm
-           vcpkg update && vcpkg install libvpx libyuv
           elif [ "$RUNNER_OS" == "Windows" ]; then
-          #  echo "Nothing to do."
-          vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
+           echo "Nothing to do."
           fi
         shell: bash
 
-      # - name: Set up VCPKG deps
-      #   uses: lukka/run-vcpkg@v10
-      #   id: runvcpkg
-      #   with:
-      #     vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
-      #     # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
-      #     runVcpkgInstall: true
-      #     vcpkgJsonGlob: '**/vcpkg.json'
-      #     appendedCacheKey: vcpkginstall
+      - name: Set up VCPKG deps
+        uses: lukka/run-vcpkg@v10
+        id: runvcpkg
+        with:
+          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
+          # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
+          runVcpkgInstall: true
+          vcpkgJsonGlob: '**/vcpkg.json'
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
 
       # - name: Prints output of run-vcpkg's action.
       #   run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
 
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=$(echo $VCPKG_INSTALLATION_ROOT)" >> $GITHUB_ENV
-        shell: bash
+      # - name: Set VCPKG_ROOT
+      #   run: echo "VCPKG_ROOT=$(echo $VCPKG_INSTALLATION_ROOT)" >> $GITHUB_ENV
+      #   shell: bash
 
       - name: Build
         shell: cmd
         run: |
-          set PATH=C:\msys64\mingw64\bin;%PATH%
           cargo build --release --verbose
-        if: matrix.os == 'windows-latest'
-
-      - name: Build
-        shell: bash
-        run: cargo build --release --verbose
-        if: matrix.os != 'windows-latest'
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3

@@ -43,7 +43,7 @@ reqwest = { version = "0.11.14", default-features = false, features = [
 ] }
 chrono = { version = "0.4.23", features = ["serde"] }
 
-# Dependabot alerts
+# Dependabot alertsa
 regex = "1.6.0"
 crossbeam-utils = "0.8.12"
 
