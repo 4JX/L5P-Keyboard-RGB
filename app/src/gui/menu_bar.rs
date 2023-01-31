@@ -112,7 +112,7 @@ impl MenuBarState {
             }
 
             if ui.button("Donate").clicked() {
-                open::that("https://liberapay.com/4JX/donate").unwrap();
+                open::that("https://www.buymeacoffee.com/4JXdev").unwrap();
             }
 
             if ui.button("Exit").clicked() {

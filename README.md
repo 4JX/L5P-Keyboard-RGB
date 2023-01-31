@@ -1,15 +1,18 @@
-<div align="center">
+<img height="100" align="left" src="./app/res/trayIcon.svg" alt="logo">
+
+# Legion RGB Control
 
 [![Latest Version](https://img.shields.io/github/v/tag/4JX/L5P-Keyboard-RGB?style=for-the-badge&label=Download+Latest)](https://github.com/4JX/L5P-Keyboard-RGB/releases)
 ![Build Status](https://img.shields.io/github/actions/workflow/status/4JX/L5P-Keyboard-RGB/release-rust.yml?style=for-the-badge)
 [![Support Server](https://img.shields.io/discord/819491422327406592?style=for-the-badge)](https://discord.gg/rQEQzsyPe8)
+
+<div align="center">
+<img style="max-width: 500px; width: 100%;" src="./Preview.png" alt="logo">
+
+<a href="https://www.buymeacoffee.com/4JXdev"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=4JX&button_colour=FFDD00&font_colour=000000&font_family=Poppins&outline_colour=000000&coffee_colour=ffffff" style="width: 200px"/></a>
 [![Donate](https://liberapay.com/assets/widgets/donate.svg)](https://liberapay.com/4JX/donate)
 
 </div>
-  
-# Legion RGB Control
-
-![Preview](Preview.png)
 
 ## Index <!-- omit in toc -->
 
@@ -154,7 +157,7 @@ legion-kb-rgb set -e SmoothWave -s 4 -b 2 -d Left
 This program has been tested to work on:
 
 - Legion 5 (Pro) 2020, 2021 and 2022.
-- Ideapad Gaming 3 2021
+- Ideapad Gaming 3 2021, 2022
 
 ### "How about X model"
 
@@ -167,20 +170,12 @@ This program has been tested to work on:
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Git](https://git-scm.com/downloads)
-- [Ninja](https://github.com/ninja-build/ninja)
-  - If building `fltk-rs` with the `use-ninja` feature. (On by default)
 - On Linux, you'll need additional dependencies:
 
 #### Ubuntu
 
 ```sh
-sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev
-```
-
-#### Arch Linux
-
-```sh
-sudo pacman -S nasm cmake
+sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 ```
 
 ### Using `cargo-make`
