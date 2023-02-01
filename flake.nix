@@ -48,6 +48,9 @@
           glib
           gst_all_1.gstreamer
           gst_all_1.gst-plugins-base
+          xorg.libXi
+          libevdev
+          xorg.libXtst
         ];
 
         # Libraries needed at runtime
@@ -56,7 +59,6 @@
           xorg.libxcb
           freetype
           xorg.libXrandr
-          xorg.libXi
           libGL
         ] ++ sharedDeps;
 
@@ -119,35 +121,42 @@
         workspaceFilter = path: type:
           (protoFilter path type) || (vpxHeaderFileFilter path type) || (resFileFilter path type) || (craneLib.filterCargoSources path type);
 
+
+        src = nixLib.cleanSourceWith
+          {
+            src = workspaceSrc;
+            filter = workspaceFilter;
+          };
+
+        buildInputs = with pkgs;
+          [
+            libvpx
+            libyuv
+          ]
+          ++ sharedDeps
+          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
+
+        nativeBuildInputs = with pkgs;
+          [
+            pkg-config
+            cmake
+            clang
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
+
+        cargoArtifacts = craneLib.buildDepsOnly ({
+          inherit src buildInputs nativeBuildInputs;
+        } // envVars);
+
         # The main application derivation
         legion-kb-rgb = craneLib.buildPackage
           ({
             inherit (craneLib.crateNameFromCargoToml { src = ./app; }) pname version;
-
-            src = nixLib.cleanSourceWith
-              {
-                src = workspaceSrc;
-                filter = workspaceFilter;
-              };
+            inherit src cargoArtifacts buildInputs nativeBuildInputs;
 
             doCheck = false;
 
             # cargoBuildCommand = "cargo build";
-
-            buildInputs = with pkgs;
-              [
-                libvpx
-                libyuv
-              ]
-              ++ sharedDeps
-              ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
-
-            nativeBuildInputs = with pkgs;
-              [
-                pkg-config
-                cmake
-                clang
-              ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
           } // envVars);
 
         # Wrap the program for ease of use
