@@ -103,5 +103,7 @@ pub fn update_available(ctx: &Context, new_version: &str, skip_version: &mut boo
         });
     });
 
-    modal.open();
+    if *show_modal {
+        modal.open();
+    }
 }

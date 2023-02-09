@@ -1,6 +1,9 @@
-use std::{mem, path::PathBuf, process};
+use std::{
+    mem,
+    path::{Path, PathBuf},
+    process,
+};
 
-use chrono::{Duration, Utc};
 use crossbeam_channel::{Receiver, Sender};
 use eframe::{
     egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
@@ -9,7 +12,6 @@ use eframe::{
     CreationContext,
 };
 
-use serde_json::Value;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -87,7 +89,7 @@ impl App {
     pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tray_active: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
         let manager = EffectManager::new(effects::OperationMode::Gui).ok();
 
-        let settings: Settings = Self::load_settings();
+        let settings: Settings = Settings::load_with_check(Path::new("./settings.json"));
 
         let mut app = match output {
             CliOutputType::Profile(profile) => Self {
@@ -151,7 +153,7 @@ impl eframe::App for App {
             }
         }
 
-        if !self.update_data.skip_version && self.show_update_modal {
+        if !self.update_data.skip_version {
             if let Some(update_name) = self.update_data.version_name.as_ref() {
                 modals::update_available(ctx, update_name, &mut self.update_data.skip_version, &mut self.show_update_modal);
             }
@@ -300,54 +302,6 @@ impl App {
 
         // ctx.set_fonts(text_utils::get_font_def());
         ctx.set_style(style);
-    }
-
-    fn load_settings() -> Settings {
-        let mut settings = Settings::load_or_default(&PathBuf::from("./settings.json"));
-
-        let version_name = &mut settings.updates.version_name;
-
-        let time_since_last_check = Utc::now() - settings.updates.last_checked;
-
-        if settings.updates.check_for_updates && time_since_last_check > Duration::days(1) {
-            let client = reqwest::blocking::Client::builder()
-                .user_agent(format!("4JX/L5P-Keyboard-RGB, Ver {}", env!("CARGO_PKG_VERSION")))
-                .build()
-                .unwrap();
-
-            if let Ok(res) = client.get("https://api.github.com/repos/4JX/L5P-Keyboard-RGB/tags").send() {
-                let json: Value = res.json().unwrap();
-
-                if let Some(entry) = json.pointer("/0/name") {
-                    let mut name = entry.to_string().replace('\"', "");
-
-                    match version_name {
-                        Some(current_name) => {
-                            if settings.updates.skip_version && current_name != name.as_mut() {
-                                *current_name = name;
-                                settings.updates.skip_version = false;
-                            }
-                        }
-                        None => {
-                            *version_name = Some(name);
-                            settings.updates.skip_version = false;
-                        }
-                    }
-                }
-            };
-
-            settings.updates.last_checked = Utc::now();
-        }
-
-        if version_name.is_some() {
-            let n = version_name.as_ref().unwrap();
-
-            if n.is_empty() || n == concat!("v", env!("CARGO_PKG_VERSION")) {
-                *version_name = None;
-            }
-        }
-
-        settings
     }
 
     fn exit_app(&mut self) {
