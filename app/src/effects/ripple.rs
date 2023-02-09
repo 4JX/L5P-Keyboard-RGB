@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -152,6 +153,7 @@ impl Ripple {
             thread::sleep(Duration::from_millis(5));
         });
 
+        let mut zone_pressed: [HashSet<Key>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
         let mut zone_state: [RippleMove; 4] = [RippleMove::Off, RippleMove::Off, RippleMove::Off, RippleMove::Off];
 
         let mut rx = manager.input_tx.subscribe();
@@ -160,15 +162,23 @@ impl Ripple {
 
         while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
             match rx.try_recv() {
-                Ok(event) => {
-                    if let rdev::EventType::KeyPress(key) = event.event_type {
+                Ok(event) => match event.event_type {
+                    rdev::EventType::KeyPress(key) => {
                         for (i, zone) in key_zones.iter().enumerate() {
                             if zone.contains(&key) {
-                                zone_state[i] = RippleMove::Center;
+                                zone_pressed[i].insert(key);
                             }
                         }
                     }
-                }
+                    rdev::EventType::KeyRelease(key) => {
+                        for (i, zone) in key_zones.iter().enumerate() {
+                            if zone.contains(&key) {
+                                zone_pressed[i].remove(&key);
+                            }
+                        }
+                    }
+                    _ => (),
+                },
                 Err(err) => {
                     if let tokio::sync::broadcast::error::TryRecvError::Closed = err {
                         break;
@@ -176,7 +186,13 @@ impl Ripple {
                 }
             }
 
-            advance_zone_state(&mut zone_state, &mut last_step_time, &p.speed);
+            zone_state = advance_zone_state(zone_state, &mut last_step_time, &p.speed);
+
+            for (i, pressed) in zone_pressed.iter().enumerate() {
+                if !pressed.is_empty() {
+                    zone_state[i] = RippleMove::Center;
+                }
+            }
 
             let rgb_array = p.rgb_array();
             let mut final_arr: [u8; 12] = [0; 12];
@@ -195,40 +211,45 @@ impl Ripple {
     }
 }
 
-fn advance_zone_state(zone_state: &mut [RippleMove; 4], last_step_time: &mut Instant, speed: &u8) {
+fn advance_zone_state(zone_state: [RippleMove; 4], last_step_time: &mut Instant, speed: &u8) -> [RippleMove; 4] {
     let now = Instant::now();
-    if now - *last_step_time > Duration::from_millis((200 / *speed) as u64) {
-        *last_step_time = now;
-        let zone_range = 0..4;
-        for (i, ripple_move) in zone_state.clone().iter().enumerate() {
-            // Left needs to be signed due to overflows
-            let left = i as i32 - 1;
-            let right = i + 1;
-            match ripple_move {
-                RippleMove::Center => {
-                    if left >= 0 && zone_range.contains(&(left as usize)) {
-                        zone_state[left as usize] = RippleMove::Left;
-                    }
 
-                    if zone_range.contains(&right) {
-                        zone_state[right] = RippleMove::Right;
-                    }
-                    zone_state[i] = RippleMove::Off;
-                }
+    if now - *last_step_time > Duration::from_millis((200 / *speed) as u64) {
+        let mut new_state: [RippleMove; 4] = [RippleMove::Off, RippleMove::Off, RippleMove::Off, RippleMove::Off];
+
+        *last_step_time = now;
+
+        // Process moves first, then add centers
+        for (i, ripple_move) in zone_state.iter().enumerate() {
+            match ripple_move {
                 RippleMove::Left => {
-                    if zone_range.contains(&(left as usize)) {
-                        zone_state[left as usize] = RippleMove::Left;
+                    if let Some(left) = new_state.get_mut(i - 1) {
+                        *left = RippleMove::Left;
                     }
-                    zone_state[i] = RippleMove::Off;
                 }
                 RippleMove::Right => {
-                    if zone_range.contains(&right) {
-                        zone_state[right] = RippleMove::Right;
+                    if let Some(right) = new_state.get_mut(i + 1) {
+                        *right = RippleMove::Right;
                     }
-                    zone_state[i] = RippleMove::Off;
                 }
                 _ => {}
             }
         }
-    };
+
+        for (i, ripple_move) in zone_state.iter().enumerate() {
+            if let RippleMove::Center = ripple_move {
+                if let Some(left) = new_state.get_mut(i - 1) {
+                    *left = RippleMove::Left;
+                }
+
+                if let Some(right) = new_state.get_mut(i + 1) {
+                    *right = RippleMove::Right;
+                }
+            }
+        }
+
+        new_state
+    } else {
+        zone_state
+    }
 }
