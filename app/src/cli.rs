@@ -7,7 +7,7 @@ use thiserror::Error;
 
 use crate::{
     effects::custom_effect::CustomEffect,
-    enums::{Direction, Effects},
+    enums::{Brightness, Direction, Effects},
     profile::{self, Profile},
 };
 
@@ -57,9 +57,9 @@ enum Commands {
         #[arg(short, long, default_value = "0,0,0,0,0,0,0,0,0,0,0,0", value_parser = parse_colors)]
         colors: Option<[u8; 12]>,
 
-        /// The brightness of the effect
-        #[arg(short, long, default_value_t = 1, value_parser = clap_value_parser!(["1","2"], u8))]
-        brightness: u8,
+        /// The brightness of the effect [possible values: Low, High]
+        #[arg(short, long, value_parser)]
+        brightness: Brightness,
 
         /// The speed of the effect
         #[arg(short, long, default_value_t = 1, value_parser = clap_value_parser!(["1","2","3","4","5"], u8))]
@@ -119,6 +119,7 @@ pub struct CliOutput {
 pub enum CliOutputType {
     Profile(Profile),
     Custom(CustomEffect),
+    NoArgs,
     Exit,
 }
 
@@ -211,7 +212,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
             println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
             Ok(CliOutput {
                 start_gui_maybe_hidden: Some(cli.hide_window),
-                output: CliOutputType::Profile(Profile::default()),
+                output: CliOutputType::NoArgs,
             })
         }
     }

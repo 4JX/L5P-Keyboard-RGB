@@ -57,6 +57,13 @@ pub enum Direction {
     Right,
 }
 
+#[derive(PartialEq, Eq, EnumIter, IntoStaticStr, Clone, Copy, Default, Serialize, Deserialize, Debug, Display, EnumString)]
+pub enum Brightness {
+    #[default]
+    Low,
+    High,
+}
+
 #[derive(Debug)]
 pub enum Message {
     CustomEffect { effect: CustomEffect },

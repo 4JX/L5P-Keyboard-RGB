@@ -1,26 +1,16 @@
 use eframe::egui::{ComboBox, Slider, Ui};
 use legion_rgb_driver::SPEED_RANGE;
 use strum::IntoEnumIterator;
-use strum_macros::{EnumIter, IntoStaticStr};
 
 use crate::{
-    enums::{Direction, Effects},
+    enums::{Brightness, Direction, Effects},
     profile::Profile,
 };
 
 use super::style::SpacingStyle;
 
 #[derive(Default)]
-pub struct EffectOptions {
-    selected_brightness: Brightness,
-}
-
-#[derive(PartialEq, Eq, EnumIter, IntoStaticStr, Clone, Copy, Default)]
-pub enum Brightness {
-    #[default]
-    Low,
-    High,
-}
+pub struct EffectOptions;
 
 const COMBOBOX_WIDTH: f32 = 20.0;
 
@@ -32,13 +22,13 @@ impl EffectOptions {
             ComboBox::from_label("Brightness")
                 .width(COMBOBOX_WIDTH)
                 .selected_text({
-                    let text: &'static str = self.selected_brightness.into();
+                    let text: &'static str = profile.brightness.into();
                     text
                 })
                 .show_ui(ui, |ui| {
                     for val in Brightness::iter() {
                         let text: &'static str = val.into();
-                        *update_lights |= ui.selectable_value(&mut self.selected_brightness, val, text).changed();
+                        *update_lights |= ui.selectable_value(&mut profile.brightness, val, text).changed();
                     }
                 });
 
@@ -73,12 +63,5 @@ impl EffectOptions {
                 })
             }
         });
-
-        if *update_lights {
-            profile.brightness = match self.selected_brightness {
-                Brightness::Low => 1,
-                Brightness::High => 2,
-            };
-        }
     }
 }

@@ -1,7 +1,7 @@
 use std::{convert::TryInto, path::PathBuf};
 
 use crate::{
-    enums::{Direction, Effects},
+    enums::{Brightness, Direction, Effects},
     util::StorageTrait,
 };
 
@@ -33,7 +33,7 @@ pub struct Profile {
     pub effect: Effects,
     pub direction: Direction,
     pub speed: u8,
-    pub brightness: u8,
+    pub brightness: Brightness,
 }
 
 impl Default for Profile {
@@ -44,7 +44,7 @@ impl Default for Profile {
             effect: Effects::default(),
             direction: Direction::default(),
             speed: 1,
-            brightness: 1,
+            brightness: Brightness::default(),
         }
     }
 }

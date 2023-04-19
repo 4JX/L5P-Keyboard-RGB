@@ -68,6 +68,7 @@ fn main() -> Result<()> {
                 Ok(())
             }
             cli::CliOutputType::Exit => Ok(()),
+            cli::CliOutputType::NoArgs => unreachable!("No arguments were provided but the app is in CLI mode"),
         }
     }
 }
@@ -127,7 +128,9 @@ fn start_ui(cli_output: CliOutput, is_unique: bool, hide_window: bool) {
     let quit_sender = gui_sender.clone();
     tray_item_err |= tray.add_menu_item("Quit", move || quit_sender.send(GuiMessage::Quit).unwrap()).is_err();
 
-    let app = App::new(cli_output.output, hide_window, is_unique, !tray_item_err, gui_sender, gui_receiver);
+    let gui_sender_clone = gui_sender.clone();
 
-    eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc))));
+    let app = App::new(cli_output.output, hide_window, is_unique, !tray_item_err, gui_sender_clone, gui_receiver);
+
+    eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender))));
 }

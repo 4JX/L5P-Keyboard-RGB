@@ -51,6 +51,7 @@ pub struct ManagerCreationError;
 pub struct EffectManager {
     pub tx: Sender<Message>,
     inner_handle: JoinHandle<()>,
+    input_tx: broadcast::Sender<Event>,
     stop_signals: StopSignals,
 }
 
@@ -100,7 +101,7 @@ impl EffectManager {
         let mut inner = Inner {
             keyboard,
             rx,
-            input_tx,
+            input_tx: input_tx.clone(),
             stop_signals: stop_signals.clone(),
             last_profile: Profile::default(),
         };
@@ -131,7 +132,12 @@ impl EffectManager {
             OperationMode::Gui => effect_thread_loop!(inner.rx.try_iter().last()),
         };
 
-        let manager = Self { tx, inner_handle, stop_signals };
+        let manager = Self {
+            tx,
+            inner_handle,
+            input_tx,
+            stop_signals,
+        };
 
         Ok(manager)
     }
@@ -150,6 +156,10 @@ impl EffectManager {
         self.tx.send(Message::Exit).unwrap();
         self.inner_handle.join().unwrap();
     }
+
+    pub fn input_rx(&self) -> broadcast::Receiver<Event> {
+        self.input_tx.subscribe()
+    }
 }
 
 impl Inner {
@@ -165,7 +175,7 @@ impl Inner {
 
             self.keyboard.set_speed(clamped_speed).unwrap();
         };
-        self.keyboard.set_brightness(profile.brightness).unwrap();
+        self.keyboard.set_brightness(profile.brightness as u8 + 1).unwrap();
 
         match profile.effect {
             Effects::Static => {

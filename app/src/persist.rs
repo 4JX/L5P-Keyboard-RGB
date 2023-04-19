@@ -9,6 +9,7 @@ use crate::{profile::Profile, util::StorageTrait};
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct Settings {
     pub profiles: Vec<Profile>,
+    pub ui_state: Profile,
     pub updates: Updates,
 }
 

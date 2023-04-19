@@ -1,7 +1,7 @@
 use std::{
     mem,
     path::{Path, PathBuf},
-    process,
+    process, thread,
 };
 
 use crossbeam_channel::{Receiver, Sender};
@@ -40,6 +40,7 @@ pub struct App {
 
     manager: Option<EffectManager>,
     profile: Profile,
+    profile_changed: bool,
     custom_effect: CustomEffectState,
 
     menu_bar: MenuBarState,
@@ -51,6 +52,7 @@ pub struct App {
 
 pub enum GuiMessage {
     ShowWindow,
+    CycleProfiles,
     Quit,
 }
 
@@ -91,43 +93,33 @@ impl App {
 
         let settings: Settings = Settings::load_with_check(Path::new("./settings.json"));
 
-        let mut app = match output {
-            CliOutputType::Profile(profile) => Self {
-                unique_instance,
-                show_window: !hide_window,
-                window_open_rx: None,
-                update_data: settings.updates.clone(),
-                show_update_modal: true,
+        // Default app state
+        let mut app = Self {
+            unique_instance,
+            show_window: !hide_window,
+            window_open_rx: None,
+            update_data: settings.updates.clone(),
+            show_update_modal: true,
 
-                manager,
-                profile,
-                custom_effect: CustomEffectState::default(),
+            manager,
+            profile: Profile::default(),
+            profile_changed: false,
+            custom_effect: CustomEffectState::default(),
 
-                menu_bar: MenuBarState::new(tx),
-                profile_list: ProfileList::new(settings.profiles),
-                effect_options: EffectOptions::default(),
-                global_rgb: [0; 3],
-                theme: Theme::default(),
-            },
-            CliOutputType::Custom(effect) => Self {
-                unique_instance,
-                show_window: !hide_window,
-                window_open_rx: None,
-                update_data: settings.updates.clone(),
-                show_update_modal: true,
-
-                manager,
-                profile: Profile::default(),
-                custom_effect: CustomEffectState::Queued(effect),
-
-                menu_bar: MenuBarState::new(tx),
-                profile_list: ProfileList::new(settings.profiles),
-                effect_options: EffectOptions::default(),
-                global_rgb: [0; 3],
-                theme: Theme::default(),
-            },
-            CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
+            menu_bar: MenuBarState::new(tx),
+            profile_list: ProfileList::new(settings.profiles),
+            effect_options: EffectOptions::default(),
+            global_rgb: [0; 3],
+            theme: Theme::default(),
         };
+
+        // Update the state according to the option chosen by the user
+        match output {
+            CliOutputType::Profile(profile) => app.profile = profile,
+            CliOutputType::Custom(effect) => app.custom_effect = CustomEffectState::Queued(effect),
+            CliOutputType::NoArgs => app.profile = settings.ui_state,
+            CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
+        }
 
         if tray_active {
             app.window_open_rx = Some(rx);
@@ -136,7 +128,42 @@ impl App {
         app
     }
 
-    pub fn init(self, cc: &CreationContext<'_>) -> Self {
+    pub fn init(self, cc: &CreationContext<'_>, tx: Sender<GuiMessage>) -> Self {
+        let ctx = cc.egui_ctx.clone();
+        if let Some(manager) = &self.manager {
+            let effect_change_sender = tx;
+            let mut input_rx = manager.input_rx();
+            thread::spawn(move || {
+                let mut modifier_pressed = false;
+                let mut meta_pressed = false;
+
+                loop {
+                    if let Ok(event) = input_rx.try_recv() {
+                        match event.event_type {
+                            rdev::EventType::KeyPress(key) => {
+                                match key {
+                                    rdev::Key::AltGr => modifier_pressed = true,
+                                    rdev::Key::MetaLeft => meta_pressed = true,
+                                    _ => {}
+                                }
+
+                                if modifier_pressed && meta_pressed {
+                                    let _ = effect_change_sender.send(GuiMessage::CycleProfiles);
+                                    ctx.request_repaint();
+                                }
+                            }
+                            rdev::EventType::KeyRelease(key) => match key {
+                                rdev::Key::AltGr => modifier_pressed = false,
+                                rdev::Key::MetaLeft => meta_pressed = false,
+                                _ => {}
+                            },
+                            _ => {}
+                        }
+                    }
+                }
+            });
+        }
+
         self.configure_style(&cc.egui_ctx);
         self
     }
@@ -148,6 +175,7 @@ impl eframe::App for App {
             if let Ok(message) = rx.try_recv() {
                 match message {
                     GuiMessage::ShowWindow => self.show_window = true,
+                    GuiMessage::CycleProfiles => self.cycle_profiles(),
                     GuiMessage::Quit => self.exit_app(),
                 }
             }
@@ -167,12 +195,10 @@ impl eframe::App for App {
             self.exit_app();
         };
 
-        let mut changed = false;
-
         frame.set_visible(self.show_window);
 
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
-            self.menu_bar.show(ctx, ui, &mut self.profile, &mut self.custom_effect, &mut changed);
+            self.menu_bar.show(ctx, ui, &mut self.profile, &mut self.custom_effect, &mut self.profile_changed);
         });
 
         CentralPanel::default()
@@ -191,7 +217,7 @@ impl eframe::App for App {
                                 ui.style_mut().spacing.interact_size = Vec2::splat(60.0);
 
                                 for i in 0..4 {
-                                    changed |= ui.color_edit_button_srgb(&mut self.profile.rgb_zones[i].rgb).changed();
+                                    self.profile_changed |= ui.color_edit_button_srgb(&mut self.profile.rgb_zones[i].rgb).changed();
                                 }
                             });
 
@@ -202,7 +228,7 @@ impl eframe::App for App {
                                     self.profile.rgb_zones[i].rgb = self.global_rgb;
                                 }
 
-                                changed = true;
+                                self.profile_changed = true;
                             };
 
                             response.response
@@ -212,16 +238,17 @@ impl eframe::App for App {
 
                         ui.scope(|ui| {
                             ui.set_enabled(self.custom_effect.is_none());
-                            self.effect_options.show(ui, &mut self.profile, &mut changed, &self.theme.spacing);
+                            self.effect_options.show(ui, &mut self.profile, &mut self.profile_changed, &self.theme.spacing);
                         });
 
-                        self.profile_list.show(ctx, ui, &mut self.profile, &self.theme.spacing, &mut changed, &mut self.custom_effect);
+                        self.profile_list
+                            .show(ctx, ui, &mut self.profile, &self.theme.spacing, &mut self.profile_changed, &mut self.custom_effect);
                     });
 
                     ui.vertical_centered_justified(|ui| {
                         if self.custom_effect.is_playing() && ui.button("Stop custom effect").clicked() {
                             self.custom_effect = CustomEffectState::None;
-                            changed = true;
+                            self.profile_changed = true;
                         };
 
                         Frame {
@@ -236,8 +263,8 @@ impl eframe::App for App {
                                 ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
                                     for val in Effects::iter() {
                                         let text: &'static str = val.into();
-                                        if ui.selectable_value(&mut self.profile.effect, val, text).changed() {
-                                            changed = true;
+                                        if ui.selectable_value(&mut self.profile.effect, val, text).clicked() {
+                                            self.profile_changed = true;
                                             self.custom_effect = CustomEffectState::None;
                                         };
                                     }
@@ -248,7 +275,7 @@ impl eframe::App for App {
                 });
             });
 
-        if changed {
+        if self.profile_changed {
             if let Some(manager) = self.manager.as_mut() {
                 if self.custom_effect.is_none() {
                     manager.set_profile(self.profile.clone());
@@ -259,6 +286,8 @@ impl eframe::App for App {
                     }
                 }
             }
+
+            self.profile_changed = false;
         }
     }
 
@@ -277,6 +306,8 @@ impl eframe::App for App {
         let mut settings = Settings::load_or_default(&path);
 
         settings.profiles = std::mem::take(&mut self.profile_list.profiles);
+
+        settings.ui_state = std::mem::take(&mut self.profile);
 
         settings.updates = std::mem::take(&mut self.update_data);
 
@@ -310,5 +341,21 @@ impl App {
         self.on_exit(None);
 
         process::exit(0);
+    }
+
+    fn cycle_profiles(&mut self) {
+        let len = self.profile_list.profiles.len();
+
+        let current_profile_name = &self.profile.name;
+
+        if let Some((i, _)) = self.profile_list.profiles.iter().enumerate().find(|(_, profile)| &profile.name == current_profile_name) {
+            if i == len - 1 {
+                self.profile = self.profile_list.profiles[0].clone();
+            } else {
+                self.profile = self.profile_list.profiles[i + 1].clone();
+            }
+
+            self.profile_changed = true;
+        }
     }
 }
