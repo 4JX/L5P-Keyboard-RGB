@@ -192,8 +192,19 @@ pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard> {
     let info = api
         .device_list()
         .find(|d| {
-            let info_tuple = (d.vendor_id(), d.product_id(), d.usage_page(), d.usage());
-            KNOWN_DEVICE_INFOS.iter().any(|known| known == &info_tuple)
+            #[cfg(target_os = "windows")]
+            {
+                let info_tuple = (d.vendor_id(), d.product_id(), d.usage_page(), d.usage());
+
+                KNOWN_DEVICE_INFOS.iter().any(|known| known == &info_tuple)
+            }
+
+            #[cfg(target_os = "linux")]
+            {
+                let info_tuple = (d.vendor_id(), d.product_id());
+
+                KNOWN_DEVICE_INFOS.iter().any(|known| (known.0, known.1) == info_tuple)
+            }
         })
         .ok_or(error::Error::DeviceNotFound)?;
 

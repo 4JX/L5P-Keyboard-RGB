@@ -51,6 +51,7 @@
           xorg.libXi
           libevdev
           xorg.libXtst
+          libusb1
         ];
 
         # Libraries needed at runtime
