@@ -6,7 +6,7 @@ pub(super) struct Temperature;
 
 impl Temperature {
     pub fn play(manager: &mut super::Inner) {
-        let safe_temp = 30.0;
+        let safe_temp = 20.0;
         let ramp_boost = 1.6;
         let temp_cool: [f32; 12] = [0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0];
         let temp_hot: [f32; 12] = [255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0];
@@ -20,7 +20,7 @@ impl Temperature {
         sys.refresh_all();
 
         for component in sys.components_mut() {
-            if component.label() == "Tctl" {
+            if component.label().contains("Tctl") {
                 while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
                     component.refresh();
                     let mut adjusted_temp = component.temperature() - safe_temp;
@@ -34,7 +34,7 @@ impl Temperature {
                         target[index] = color_differences[index].mul_add(temp_percent, temp_cool[index]);
                     }
                     manager.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1).unwrap();
-                    thread::sleep(Duration::from_millis(20));
+                    thread::sleep(Duration::from_millis(200));
                 }
             }
         }
