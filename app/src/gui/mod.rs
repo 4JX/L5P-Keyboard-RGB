@@ -2,6 +2,7 @@ use std::{
     mem,
     path::{Path, PathBuf},
     process, thread,
+    time::Duration,
 };
 
 use crossbeam_channel::{Receiver, Sender};
@@ -103,7 +104,8 @@ impl App {
 
             manager,
             profile: Profile::default(),
-            profile_changed: false,
+            // Default to true for an instant update on launch
+            profile_changed: true,
             custom_effect: CustomEffectState::default(),
 
             menu_bar: MenuBarState::new(tx),
@@ -160,6 +162,8 @@ impl App {
                             _ => {}
                         }
                     }
+
+                    thread::sleep(Duration::from_millis(20));
                 }
             });
         }
