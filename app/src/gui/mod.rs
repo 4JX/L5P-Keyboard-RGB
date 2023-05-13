@@ -353,7 +353,7 @@ impl App {
         let current_profile_name = &self.profile.name;
 
         if let Some((i, _)) = self.profile_list.profiles.iter().enumerate().find(|(_, profile)| &profile.name == current_profile_name) {
-            if i == len - 1 {
+            if i == len - 1 && len > 0 {
                 self.profile = self.profile_list.profiles[0].clone();
             } else {
                 self.profile = self.profile_list.profiles[i + 1].clone();
