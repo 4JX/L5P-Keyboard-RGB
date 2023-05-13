@@ -65,29 +65,6 @@ pub enum CustomEffectState {
     Playing,
 }
 
-impl CustomEffectState {
-    fn is_none(&self) -> bool {
-        match self {
-            Self::None => true,
-            Self::Queued(_) | Self::Playing => false,
-        }
-    }
-
-    fn is_queued(&self) -> bool {
-        match self {
-            Self::None | Self::Playing => false,
-            Self::Queued(_) => true,
-        }
-    }
-
-    fn is_playing(&self) -> bool {
-        match self {
-            Self::None | Self::Queued(_) => false,
-            Self::Playing => true,
-        }
-    }
-}
-
 impl App {
     pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tray_active: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
         let manager = EffectManager::new(effects::OperationMode::Gui).ok();
@@ -213,7 +190,7 @@ impl eframe::App for App {
                 ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
                     ui.vertical(|ui| {
                         let res = ui.scope(|ui| {
-                            ui.set_enabled(self.profile.effect.takes_color_array() && self.custom_effect.is_none());
+                            ui.set_enabled(self.profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None));
 
                             ui.style_mut().spacing.item_spacing.y = self.theme.spacing.medium;
 
@@ -241,7 +218,7 @@ impl eframe::App for App {
                         ui.set_width(res.inner.rect.width());
 
                         ui.scope(|ui| {
-                            ui.set_enabled(self.custom_effect.is_none());
+                            ui.set_enabled(matches!(self.custom_effect, CustomEffectState::None));
                             self.effect_options.show(ui, &mut self.profile, &mut self.profile_changed, &self.theme.spacing);
                         });
 
@@ -250,7 +227,7 @@ impl eframe::App for App {
                     });
 
                     ui.vertical_centered_justified(|ui| {
-                        if self.custom_effect.is_playing() && ui.button("Stop custom effect").clicked() {
+                        if matches!(self.custom_effect, CustomEffectState::Playing) && ui.button("Stop custom effect").clicked() {
                             self.custom_effect = CustomEffectState::None;
                             self.profile_changed = true;
                         };
@@ -281,9 +258,9 @@ impl eframe::App for App {
 
         if self.profile_changed {
             if let Some(manager) = self.manager.as_mut() {
-                if self.custom_effect.is_none() {
+                if matches!(self.custom_effect, CustomEffectState::Playing) {
                     manager.set_profile(self.profile.clone());
-                } else if self.custom_effect.is_queued() {
+                } else if matches!(self.custom_effect, CustomEffectState::Queued(_)) {
                     let state = mem::replace(&mut self.custom_effect, CustomEffectState::Playing);
                     if let CustomEffectState::Queued(effect) = state {
                         manager.custom_effect(effect);
