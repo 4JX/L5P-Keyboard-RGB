@@ -7,7 +7,6 @@ use crossbeam_channel::{Receiver, Sender};
 use error_stack::{IntoReport, Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use rand::thread_rng;
-use rdev::{grab, Event};
 use std::{
     sync::atomic::{AtomicBool, Ordering},
     thread,
@@ -15,7 +14,6 @@ use std::{
 };
 use std::{sync::Arc, thread::JoinHandle};
 use thiserror::Error;
-use tokio::sync::broadcast;
 
 use self::{
     ambient::AmbientLight,
@@ -51,7 +49,6 @@ pub struct ManagerCreationError;
 pub struct EffectManager {
     pub tx: Sender<Message>,
     inner_handle: JoinHandle<()>,
-    input_tx: broadcast::Sender<Event>,
     stop_signals: StopSignals,
 }
 
@@ -59,7 +56,6 @@ pub struct EffectManager {
 struct Inner {
     keyboard: Keyboard,
     rx: Receiver<Message>,
-    input_tx: broadcast::Sender<Event>,
     stop_signals: StopSignals,
     last_profile: Profile,
 }
@@ -85,23 +81,10 @@ impl EffectManager {
             .change_context(ManagerCreationError)?;
 
         let (tx, rx) = crossbeam_channel::unbounded::<Message>();
-        let (input_tx, _input_rx) = broadcast::channel::<Event>(16);
-
-        let input_tx_clone = input_tx.clone();
-
-        thread::spawn(move || {
-            let _ = grab(move |event| {
-                // Errors here come from when there are no receivers listening
-                let _ = input_tx_clone.send(event.clone());
-
-                Some(event)
-            });
-        });
 
         let mut inner = Inner {
             keyboard,
             rx,
-            input_tx: input_tx.clone(),
             stop_signals: stop_signals.clone(),
             last_profile: Profile::default(),
         };
@@ -132,12 +115,7 @@ impl EffectManager {
             OperationMode::Gui => effect_thread_loop!(inner.rx.try_iter().last()),
         };
 
-        let manager = Self {
-            tx,
-            inner_handle,
-            input_tx,
-            stop_signals,
-        };
+        let manager = Self { tx, inner_handle, stop_signals };
 
         Ok(manager)
     }
@@ -155,10 +133,6 @@ impl EffectManager {
     pub fn join_and_exit(self) {
         self.tx.send(Message::Exit).unwrap();
         self.inner_handle.join().unwrap();
-    }
-
-    pub fn input_rx(&self) -> broadcast::Receiver<Event> {
-        self.input_tx.subscribe()
     }
 }
 

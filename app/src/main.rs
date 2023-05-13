@@ -117,16 +117,24 @@ fn start_ui(cli_output: CliOutput, is_unique: bool, hide_window: bool) {
     let tray_icon = load_tray_icon(include_bytes!("../res/trayIcon.ico"));
 
     #[cfg(target_os = "linux")]
-    let mut tray = TrayItem::new("Keyboard RGB", tray_icon).unwrap();
+    let tray_result = TrayItem::new("Keyboard RGB", tray_icon);
 
     #[cfg(target_os = "windows")]
-    let mut tray = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon")).unwrap();
+    let tray_result = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon"));
 
-    let show_sender = gui_sender.clone();
-    let mut tray_item_err = tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
+    let mut tray_item_err = false;
 
-    let quit_sender = gui_sender.clone();
-    tray_item_err |= tray.add_menu_item("Quit", move || quit_sender.send(GuiMessage::Quit).unwrap()).is_err();
+    if tray_result.is_ok() {
+        let mut tray = tray_result.unwrap();
+
+        let show_sender = gui_sender.clone();
+        tray_item_err |= tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
+
+        let quit_sender = gui_sender.clone();
+        tray_item_err |= tray.add_menu_item("Quit", move || quit_sender.send(GuiMessage::Quit).unwrap()).is_err();
+    } else {
+        tray_item_err = true;
+    }
 
     let gui_sender_clone = gui_sender.clone();
 

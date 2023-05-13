@@ -7,7 +7,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use tokio::sync::broadcast::error::TryRecvError;
+use device_query::DeviceQuery;
 
 use crate::profile::Profile;
 
@@ -20,43 +20,36 @@ impl Fade {
         let kill_thread = Arc::new(AtomicBool::new(false));
         let exit_thread = kill_thread.clone();
 
-        let mut rx = manager.input_tx.subscribe();
+        let state = device_query::DeviceState::new();
 
-        thread::spawn(move || loop {
-            if rx.try_recv().is_ok() {
-                stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
+        thread::spawn(move || {
+            let state = device_query::DeviceState::new();
+
+            loop {
+                if !state.get_keys().is_empty() {
+                    stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
+                }
+
+                if exit_thread.load(Ordering::SeqCst) {
+                    break;
+                }
+
+                thread::sleep(Duration::from_millis(5));
             }
-
-            if exit_thread.load(Ordering::SeqCst) {
-                break;
-            }
-
-            thread::sleep(Duration::from_millis(5));
         });
-
-        let mut rx = manager.input_tx.subscribe();
 
         let mut now = Instant::now();
         while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-            match rx.try_recv() {
-                Ok(_) => {
-                    manager.keyboard.set_colors_to(&p.rgb_array()).unwrap();
-                    manager.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
-                    now = Instant::now();
+            if state.get_keys().is_empty() {
+                if now.elapsed() > Duration::from_secs(20 / u64::from(p.speed)) {
+                    manager.keyboard.transition_colors_to(&[0; 12], 230, 3).unwrap();
+                } else {
+                    thread::sleep(Duration::from_millis(20));
                 }
-                Err(err) => {
-                    match err {
-                        TryRecvError::Empty | TryRecvError::Lagged(_) => {
-                            // Assume an error means no keys/events
-                            if now.elapsed() > Duration::from_secs(20 / u64::from(p.speed)) {
-                                manager.keyboard.transition_colors_to(&[0; 12], 230, 3).unwrap();
-                            } else {
-                                thread::sleep(Duration::from_millis(20));
-                            }
-                        }
-                        TryRecvError::Closed => break,
-                    }
-                }
+            } else {
+                manager.keyboard.set_colors_to(&p.rgb_array()).unwrap();
+                manager.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
+                now = Instant::now();
             }
         }
 

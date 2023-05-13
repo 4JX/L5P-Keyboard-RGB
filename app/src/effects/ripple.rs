@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use rdev::Key;
+use device_query::{DeviceEvents, Keycode};
 
 use crate::profile::Profile;
 
@@ -25,111 +25,110 @@ pub(super) struct Ripple;
 impl Ripple {
     pub fn play(manager: &mut super::Inner, p: &Profile) {
         // Welcome to the definition of i-don't-know-what-im-doing
-        let keys_zone_1: [Key; 23] = [
-            Key::Escape,
-            Key::F1,
-            Key::F2,
-            Key::F3,
-            Key::F4,
-            // Key::Grave,
-            Key::Num1,
-            Key::Num2,
-            Key::Num3,
-            Key::Num4,
-            Key::Tab,
-            Key::KeyQ,
-            Key::KeyW,
-            Key::KeyE,
-            Key::CapsLock,
-            Key::KeyA,
-            Key::KeyS,
-            Key::KeyD,
-            Key::ShiftLeft,
-            Key::KeyZ,
-            Key::KeyX,
-            Key::ControlLeft,
-            Key::MetaLeft,
-            Key::Alt,
+        let keys_zone_1: [Keycode; 24] = [
+            Keycode::Escape,
+            Keycode::F1,
+            Keycode::F2,
+            Keycode::F3,
+            Keycode::F4,
+            Keycode::Grave,
+            Keycode::Key1,
+            Keycode::Key2,
+            Keycode::Key3,
+            Keycode::Key4,
+            Keycode::Tab,
+            Keycode::Q,
+            Keycode::W,
+            Keycode::E,
+            Keycode::CapsLock,
+            Keycode::A,
+            Keycode::S,
+            Keycode::D,
+            Keycode::LShift,
+            Keycode::Z,
+            Keycode::X,
+            Keycode::LControl,
+            Keycode::Meta,
+            Keycode::LAlt,
+        ];
+        let keys_zone_2: [Keycode; 29] = [
+            Keycode::F5,
+            Keycode::F6,
+            Keycode::F7,
+            Keycode::F8,
+            Keycode::F9,
+            Keycode::F10,
+            Keycode::Key5,
+            Keycode::Key6,
+            Keycode::Key7,
+            Keycode::Key8,
+            Keycode::Key9,
+            Keycode::R,
+            Keycode::T,
+            Keycode::Y,
+            Keycode::U,
+            Keycode::I,
+            Keycode::F,
+            Keycode::G,
+            Keycode::H,
+            Keycode::J,
+            Keycode::K,
+            Keycode::C,
+            Keycode::V,
+            Keycode::B,
+            Keycode::N,
+            Keycode::M,
+            Keycode::Comma,
+            Keycode::Space,
+            Keycode::RAlt,
+        ];
+        let keys_zone_3: [Keycode; 25] = [
+            Keycode::F11,
+            Keycode::F12,
+            Keycode::Insert,
+            Keycode::Delete,
+            Keycode::Key0,
+            Keycode::Minus,
+            Keycode::Equal,
+            Keycode::Backspace,
+            Keycode::O,
+            Keycode::P,
+            Keycode::LeftBracket,
+            Keycode::RightBracket,
+            Keycode::Enter,
+            Keycode::L,
+            Keycode::Semicolon,
+            Keycode::Apostrophe,
+            Keycode::BackSlash,
+            Keycode::Dot,
+            Keycode::Slash,
+            Keycode::RShift,
+            Keycode::RControl,
+            Keycode::Up,
+            Keycode::Down,
+            Keycode::Left,
+            Keycode::Right,
         ];
 
-        let keys_zone_2: [Key; 29] = [
-            Key::F5,
-            Key::F6,
-            Key::F7,
-            Key::F8,
-            Key::F9,
-            Key::F10,
-            Key::Num5,
-            Key::Num6,
-            Key::Num7,
-            Key::Num8,
-            Key::Num9,
-            Key::KeyR,
-            Key::KeyT,
-            Key::KeyY,
-            Key::KeyU,
-            Key::KeyI,
-            Key::KeyF,
-            Key::KeyG,
-            Key::KeyH,
-            Key::KeyJ,
-            Key::KeyK,
-            Key::KeyC,
-            Key::KeyV,
-            Key::KeyB,
-            Key::KeyN,
-            Key::KeyM,
-            Key::Comma,
-            Key::Space,
-            Key::AltGr,
-        ];
-        let keys_zone_3: [Key; 25] = [
-            Key::F11,
-            Key::F12,
-            Key::Insert,
-            Key::Delete,
-            Key::Num0,
-            Key::Minus,
-            Key::Equal,
-            Key::Backspace,
-            Key::KeyO,
-            Key::KeyP,
-            Key::LeftBracket,
-            Key::RightBracket,
-            Key::Return,
-            Key::KeyL,
-            Key::SemiColon,
-            Key::Quote,
-            Key::BackSlash,
-            Key::Dot,
-            Key::Slash,
-            Key::ShiftRight,
-            Key::ControlRight,
-            Key::UpArrow,
-            Key::DownArrow,
-            Key::LeftArrow,
-            Key::RightArrow,
-        ];
-
-        let keys_zone_4: [Key; 18] = [
-            Key::Home,
-            Key::End,
-            Key::PageUp,
-            Key::PageDown,
-            Key::KpDivide,
-            Key::KpMultiply,
-            Key::KpMinus,
-            Key::Kp7,
-            Key::Kp8,
-            Key::Kp9,
-            Key::Kp4,
-            Key::Kp5,
-            Key::Kp6,
-            Key::KpPlus,
-            Key::Kp1,
-            Key::Kp2,
-            Key::Kp3,
-            Key::Kp0,
+        let keys_zone_4: [Keycode; 18] = [
+            Keycode::Home,
+            Keycode::End,
+            Keycode::PageUp,
+            Keycode::PageDown,
+            Keycode::NumpadDivide,
+            Keycode::NumpadMultiply,
+            Keycode::NumpadSubtract,
+            Keycode::Numpad7,
+            Keycode::Numpad8,
+            Keycode::Numpad9,
+            Keycode::Numpad4,
+            Keycode::Numpad5,
+            Keycode::Numpad6,
+            Keycode::NumpadAdd,
+            Keycode::Numpad1,
+            Keycode::Numpad2,
+            Keycode::Numpad3,
+            Keycode::Numpad0,
         ];
 
         let key_zones = [keys_zone_1.to_vec(), keys_zone_2.to_vec(), keys_zone_3.to_vec(), keys_zone_4.to_vec()];
@@ -139,48 +138,68 @@ impl Ripple {
         let kill_thread = Arc::new(AtomicBool::new(false));
         let exit_thread = kill_thread.clone();
 
-        let mut rx = manager.input_tx.subscribe();
+        enum Event {
+            KeyPress(Keycode),
+            KeyRelease(Keycode),
+        }
 
-        thread::spawn(move || loop {
-            if rx.try_recv().is_ok() && rx.len() == 1 {
+        let (tx, rx) = crossbeam_channel::unbounded::<Event>();
+
+        thread::spawn(move || {
+            let state = device_query::DeviceState::new();
+
+            // tx_clone.send(Event::KeyPress(Keycode::Meta)).unwrap();
+            let tx_clone = tx.clone();
+
+            let guard = state.on_key_down(move |key| {
                 stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
-            }
 
-            if exit_thread.load(Ordering::SeqCst) {
-                break;
-            }
+                let _ = tx_clone.send(Event::KeyPress(key.clone()));
+            });
 
-            thread::sleep(Duration::from_millis(5));
+            let guard2 = state.on_key_up(move |key| {
+                let _ = tx.send(Event::KeyRelease(key.clone()));
+            });
+
+            loop {
+                if exit_thread.load(Ordering::SeqCst) {
+                    drop(guard);
+                    drop(guard2);
+
+                    break;
+                }
+
+                thread::sleep(Duration::from_millis(5));
+            }
         });
 
-        let mut zone_pressed: [HashSet<Key>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
+        let mut zone_pressed: [HashSet<Keycode>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
         let mut zone_state: [RippleMove; 4] = [RippleMove::Off, RippleMove::Off, RippleMove::Off, RippleMove::Off];
-
-        let mut rx = manager.input_tx.subscribe();
 
         let mut last_step_time = Instant::now();
 
         while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
             match rx.try_recv() {
-                Ok(event) => match event.event_type {
-                    rdev::EventType::KeyPress(key) => {
+                Ok(event) => match event {
+                    Event::KeyPress(key) => {
                         for (i, zone) in key_zones.iter().enumerate() {
                             if zone.contains(&key) {
                                 zone_pressed[i].insert(key);
                             }
                         }
+
+                        manager.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
                     }
-                    rdev::EventType::KeyRelease(key) => {
+                    Event::KeyRelease(key) => {
                         for (i, zone) in key_zones.iter().enumerate() {
                             if zone.contains(&key) {
                                 zone_pressed[i].remove(&key);
                             }
                         }
                     }
-                    _ => (),
                 },
                 Err(err) => {
-                    if let tokio::sync::broadcast::error::TryRecvError::Closed = err {
+                    if let crossbeam_channel::TryRecvError::Disconnected = err {
                         break;
                     }
                 }

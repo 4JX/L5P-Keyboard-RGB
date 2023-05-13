@@ -6,6 +6,7 @@ use std::{
 };
 
 use crossbeam_channel::{Receiver, Sender};
+use device_query::{DeviceQuery, Keycode};
 use eframe::{
     egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
     emath::Align,
@@ -109,43 +110,31 @@ impl App {
 
     pub fn init(self, cc: &CreationContext<'_>, tx: Sender<GuiMessage>) -> Self {
         let ctx = cc.egui_ctx.clone();
-        if let Some(manager) = &self.manager {
-            let effect_change_sender = tx;
-            let mut input_rx = manager.input_rx();
+        if self.manager.is_some() {
             thread::spawn(move || {
-                let mut modifier_pressed = false;
-                let mut meta_pressed = false;
+                let state = device_query::DeviceState::new();
+                let mut lock_switching = false;
 
                 loop {
-                    if let Ok(event) = input_rx.try_recv() {
-                        match event.event_type {
-                            rdev::EventType::KeyPress(key) => {
-                                match key {
-                                    rdev::Key::AltGr => modifier_pressed = true,
-                                    rdev::Key::MetaLeft => meta_pressed = true,
-                                    _ => {}
-                                }
+                    let keys = state.get_keys();
 
-                                if modifier_pressed && meta_pressed {
-                                    let _ = effect_change_sender.send(GuiMessage::CycleProfiles);
-                                    ctx.request_repaint();
-                                }
-                            }
-                            rdev::EventType::KeyRelease(key) => match key {
-                                rdev::Key::AltGr => modifier_pressed = false,
-                                rdev::Key::MetaLeft => meta_pressed = false,
-                                _ => {}
-                            },
-                            _ => {}
+                    if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::RAlt) {
+                        if !lock_switching {
+                            let _ = tx.send(GuiMessage::CycleProfiles);
+                            ctx.request_repaint();
+                            lock_switching = true;
                         }
+                    } else {
+                        lock_switching = false;
                     }
 
-                    thread::sleep(Duration::from_millis(20));
+                    thread::sleep(Duration::from_millis(50));
                 }
             });
         }
 
         self.configure_style(&cc.egui_ctx);
+
         self
     }
 }
@@ -258,7 +247,7 @@ impl eframe::App for App {
 
         if self.profile_changed {
             if let Some(manager) = self.manager.as_mut() {
-                if matches!(self.custom_effect, CustomEffectState::Playing) {
+                if matches!(self.custom_effect, CustomEffectState::None) {
                     manager.set_profile(self.profile.clone());
                 } else if matches!(self.custom_effect, CustomEffectState::Queued(_)) {
                     let state = mem::replace(&mut self.custom_effect, CustomEffectState::Playing);
