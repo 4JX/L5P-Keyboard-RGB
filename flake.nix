@@ -48,6 +48,7 @@
           glib
           gst_all_1.gstreamer
           gst_all_1.gst-plugins-base
+          xorg.libXi
           libusb1
           expat
         ];
@@ -59,7 +60,6 @@
           freetype
           xorg.libXrandr
           libGL
-          xorg.libXi
         ] ++ sharedDeps;
 
 
@@ -151,8 +151,7 @@
         # The main application derivation
         legion-kb-rgb = craneLib.buildPackage
           ({
-            inherit (craneLib.crateNameFromCargoToml { src = ./app/Cargo.toml; }) pname version;
-
+            inherit (craneLib.crateNameFromCargoToml { src = ./app; }) pname version;
             inherit src cargoArtifacts buildInputs nativeBuildInputs;
 
             doCheck = false;
@@ -169,9 +168,7 @@
 
           postBuild = ''
             wrapProgram $out/bin/${name} \
-              --prefix LD_LIBRARY_PATH : ${nixLib.makeLibraryPath runtimeDeps} \
-              --set RUST_BACKTRACE full \
-              --set COLORBT_SHOW_HIDDEN 1
+              --prefix LD_LIBRARY_PATH : ${nixLib.makeLibraryPath runtimeDeps}
           '';
         };
       in
@@ -188,5 +185,8 @@
         };
 
         devShells.default = legion-kb-rgb;
+        devShells.rust = pkgs.mkShell {
+          buildInputs = [ rust ];
+        };
       });
 }
