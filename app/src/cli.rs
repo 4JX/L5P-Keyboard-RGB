@@ -58,7 +58,7 @@ enum Commands {
         colors: Option<[u8; 12]>,
 
         /// The brightness of the effect [possible values: Low, High]
-        #[arg(short, long, value_parser)]
+        #[arg(short, long, default_value = "Low", value_parser)]
         brightness: Brightness,
 
         /// The speed of the effect

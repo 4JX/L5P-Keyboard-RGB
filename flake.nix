@@ -28,7 +28,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.66.1";
+        rustVersion = "1.69.0";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [
@@ -145,13 +145,15 @@
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
         cargoArtifacts = craneLib.buildDepsOnly ({
+          inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
+
           inherit src buildInputs nativeBuildInputs;
         } // envVars);
 
         # The main application derivation
         legion-kb-rgb = craneLib.buildPackage
           ({
-            inherit (craneLib.crateNameFromCargoToml { src = ./app; }) pname version;
+            inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
             inherit src cargoArtifacts buildInputs nativeBuildInputs;
 
             doCheck = false;
