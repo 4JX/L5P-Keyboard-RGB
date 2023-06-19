@@ -28,7 +28,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.69.0";
+        rustVersion = "1.70.0";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [

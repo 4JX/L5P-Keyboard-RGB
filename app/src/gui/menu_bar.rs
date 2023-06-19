@@ -1,5 +1,8 @@
 use crossbeam_channel::Sender;
-use eframe::egui::{self, Context};
+use eframe::{
+    egui::{self, Context},
+    epaint::Vec2,
+};
 use egui_file::FileDialog;
 use egui_notify::Toasts;
 use std::{path::PathBuf, time::Duration};
@@ -122,10 +125,10 @@ impl MenuBarState {
     }
 
     fn new_open_dialog(&self) -> FileDialog {
-        FileDialog::open_file(self.opened_file.clone()).scrollarea_max_height(180.0)
+        FileDialog::open_file(self.opened_file.clone()).default_size(Vec2::splat(300.0))
     }
 
     fn new_save_dialog(&self) -> FileDialog {
-        FileDialog::save_file(self.opened_file.clone()).scrollarea_max_height(180.0)
+        FileDialog::save_file(self.opened_file.clone()).default_size(Vec2::splat(300.0))
     }
 }

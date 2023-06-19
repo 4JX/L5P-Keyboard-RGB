@@ -140,5 +140,5 @@ fn start_ui(cli_output: CliOutput, is_unique: bool, hide_window: bool) {
 
     let app = App::new(cli_output.output, hide_window, is_unique, !tray_item_err, gui_sender_clone, gui_receiver);
 
-    eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender))));
+    eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender)))).unwrap();
 }
