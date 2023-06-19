@@ -75,35 +75,3 @@ pub fn about(ctx: &Context) -> Modal {
 
     modal
 }
-
-pub fn update_available(ctx: &Context, new_version: &str, skip_version: &mut bool, show_modal: &mut bool) {
-    let modal = Modal::new(ctx, "manager_error_modal");
-
-    modal.show(|ui| {
-        modal.title(ui, "An update is available!");
-        modal.frame(ui, |ui| {
-            modal.body(ui, format!("Current version: {}", env!("CARGO_PKG_VERSION")));
-            modal.body(ui, format!("New version: {new_version}"));
-
-            ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = -2.0;
-
-                modal.body(ui, "Download:");
-                util::clickable_link(ui, "https://github.com/4JX/L5P-Keyboard-RGB/releases");
-            });
-        });
-
-        modal.buttons(ui, |ui| {
-            *show_modal = !modal.button(ui, "Close").clicked();
-
-            if modal.button(ui, "Skip version").clicked() {
-                *skip_version = true;
-                *show_modal = false;
-            }
-        });
-    });
-
-    if *show_modal {
-        modal.open();
-    }
-}

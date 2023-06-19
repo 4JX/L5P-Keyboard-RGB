@@ -20,7 +20,7 @@ use crate::{
     cli::CliOutputType,
     effects::{self, custom_effect::CustomEffect, EffectManager},
     enums::Effects,
-    persist::{Settings, Updates},
+    persist::Settings,
     profile::Profile,
     util::StorageTrait,
 };
@@ -37,8 +37,6 @@ pub struct App {
     unique_instance: bool,
     show_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
-    update_data: Updates,
-    show_update_modal: bool,
 
     manager: Option<EffectManager>,
     profile: Profile,
@@ -70,15 +68,13 @@ impl App {
     pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tray_active: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
         let manager = EffectManager::new(effects::OperationMode::Gui).ok();
 
-        let settings: Settings = Settings::load_with_check(Path::new("./settings.json"));
+        let settings: Settings = Settings::load_or_default(Path::new("./settings.json"));
 
         // Default app state
         let mut app = Self {
             unique_instance,
             show_window: !hide_window,
             window_open_rx: None,
-            update_data: settings.updates.clone(),
-            show_update_modal: true,
 
             manager,
             profile: Profile::default(),
@@ -148,12 +144,6 @@ impl eframe::App for App {
                     GuiMessage::CycleProfiles => self.cycle_profiles(),
                     GuiMessage::Quit => self.exit_app(),
                 }
-            }
-        }
-
-        if !self.update_data.skip_version {
-            if let Some(update_name) = self.update_data.version_name.as_ref() {
-                modals::update_available(ctx, update_name, &mut self.update_data.skip_version, &mut self.show_update_modal);
             }
         }
 
@@ -278,8 +268,6 @@ impl eframe::App for App {
         settings.profiles = std::mem::take(&mut self.profile_list.profiles);
 
         settings.ui_state = std::mem::take(&mut self.profile);
-
-        settings.updates = std::mem::take(&mut self.update_data);
 
         settings.save(path).unwrap();
     }

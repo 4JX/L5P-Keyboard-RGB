@@ -35,12 +35,6 @@ eframe = "0.20.1"
 egui-modal = { git = "https://github.com/n00kii/egui-modal.git", rev = "72ef5ca" }
 egui_file = "0.5.4"
 egui-notify = "0.5.1"
-reqwest = { version = "0.11.17", default-features = false, features = [
-    "rustls-tls",
-    "blocking",
-    "json",
-] }
-chrono = { version = "0.4.23", features = ["serde"] }
 device_query = "1.1.3"
 
 # Fix version to stop cargo from yelling about dependency resolution
