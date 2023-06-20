@@ -91,6 +91,13 @@ The best way to add a new effect is to directly edit the source code, as it allo
 
 ```sh
 # Regular legions
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c984", MODE="0666"
+```
+
+- **2022 Models:**
+
+```sh
+# Regular legions
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c975", MODE="0666"
 
 # Ideapad models
