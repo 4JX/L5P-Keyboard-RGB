@@ -81,9 +81,8 @@ jobs:
       #   shell: bash
 
       - name: Build
-        shell: cmd
-        run: |
-          cargo build --release --verbose
+        shell: bash
+        run: cargo build --release --verbose
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
