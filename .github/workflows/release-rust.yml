@@ -20,13 +20,26 @@ jobs:
             os: ubuntu-latest
             artifact_name: target/release/legion-kb-rgb
             asset_name: legion-kb-rgb-linux
+            triplet: x64-linux
+            vcpkgCommitId: 'f6a5d4e8eb7476b8d7fc12a56dff300c1c986131'
           - name: windows
             os: windows-latest
             artifact_name: target/release/legion-kb-rgb.exe
             asset_name: legion-kb-rgb-windows
+            triplet: x64-windows-static
+            vcpkgCommitId: 'f6a5d4e8eb7476b8d7fc12a56dff300c1c986131'
+
+    env:
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
+      VCPKG_INSTALLED_DIR: ${{ github.workspace }}/vcpkg/installed
 
     steps:
-      - uses: actions/cache@v2
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
         with:
           path: |
             ~/.cargo/bin/
@@ -35,35 +48,44 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Set VCPKG_ROOT
-        run: echo "VCPKG_ROOT=$(echo $VCPKG_INSTALLATION_ROOT)" >> $GITHUB_ENV
-        shell: bash
+          restore-keys: ${{ runner.os }}-cargo-
+
       - name: Download dependencies
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
-           sudo apt-get update && sudo apt-get install -y libpango1.0-dev libx11-dev libxext-dev libxft-dev libxinerama-dev libxcursor-dev libxrender-dev libxfixes-dev libudev-dev nasm libxcb-randr0-dev libusb-1.0-0-dev libdbus-1-dev ninja-build
-           vcpkg update && vcpkg install libvpx libyuv
+           sudo apt-get update -y
+           sudo apt install -y libunwind-dev
+           sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev libusb-1.0-0-dev
           elif [ "$RUNNER_OS" == "macOS" ]; then
-           brew install nasm ninja
-           vcpkg update && vcpkg install libvpx libyuv
+           brew install nasm
           elif [ "$RUNNER_OS" == "Windows" ]; then
-           choco install ninja
-           vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
+           echo "Nothing to do."
           fi
         shell: bash
-      - uses: actions/checkout@v2
-      - name: Build
-        shell: cmd
-        run: |
-          set PATH=C:\msys64\mingw64\bin;%PATH%
-          cargo build --release --verbose
-        if: matrix.os == 'windows-latest'
+
+      - name: Set up VCPKG deps
+        uses: lukka/run-vcpkg@v11
+        id: runvcpkg
+        with:
+          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
+          # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
+          runVcpkgInstall: true
+          vcpkgJsonGlob: '**/vcpkg.json'
+          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+
+      # - name: Prints output of run-vcpkg's action.
+      #   run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
+
+      # - name: Set VCPKG_ROOT
+      #   run: echo "VCPKG_ROOT=$(echo $VCPKG_INSTALLATION_ROOT)" >> $GITHUB_ENV
+      #   shell: bash
+
       - name: Build
         shell: bash
         run: cargo build --release --verbose
-        if: matrix.os != 'windows-latest'
+
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.asset_name }}
           path: ${{ matrix.artifact_name }}
