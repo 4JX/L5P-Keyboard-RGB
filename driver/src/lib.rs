@@ -11,7 +11,8 @@ use std::{
 
 pub mod error;
 
-const KNOWN_DEVICE_INFOS: [(u16, u16, u16, u16); 6] = [
+const KNOWN_DEVICE_INFOS: [(u16, u16, u16, u16); 7] = [
+    (0x048d, 0xc985, 0xff89, 0x00cc), // 2023
     (0x048d, 0xc984, 0xff89, 0x00cc), // 2023
     (0x048d, 0xc975, 0xff89, 0x00cc), // 2022
     (0x048d, 0xc973, 0xff89, 0x00cc), // 2022 Ideapad
