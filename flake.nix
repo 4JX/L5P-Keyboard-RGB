@@ -51,6 +51,13 @@
           xorg.libXi
           libusb1
           expat
+
+          # Tray item stuff
+          pango
+          gdk-pixbuf
+          atkmm
+          gtk3
+          gobject-introspection
         ];
 
         # Libraries needed at runtime

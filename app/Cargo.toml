@@ -16,7 +16,8 @@ scrap = { git = "https://github.com/rustdesk/rustdesk", rev = "6c15dd6", feature
 ] }
 rand = "0.8.5"
 fast_image_resize = "2.4.0"
-tray-item = { version = "0.5.0-alpha", git = "https://github.com/njust/tray-item-rs" }
+tray-item = { version = "0.8.0", features = ["libappindicator"] }
+gtk = "0.15"
 clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
@@ -48,6 +49,7 @@ crossbeam-utils = "0.8.12"
 
 [build-dependencies]
 winres = "0.1.12"
+gio = "0.15"
 
 [package.metadata.vcpkg]
 git = "https://github.com/microsoft/vcpkg"
