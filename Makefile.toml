@@ -8,13 +8,13 @@ linux_alias = "build-linux"
 
 [tasks.build-windows]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
+env = { VCPKG_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 command = "cargo"
 args = ["build"]
 
 [tasks.build-linux]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
+env = { VCPKG_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 command = "cargo"
 args = ["build"]
 
@@ -24,13 +24,13 @@ linux_alias = "build-release-linux"
 
 [tasks.build-release-windows]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
+env = { VCPKG_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 command = "cargo"
 args = ["build", "--release"]
 
 [tasks.build-release-linux]
 dependencies = ["setup-vcpkg"]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
+env = { VCPKG_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 command = "cargo"
 args = ["build", "--release"]
 
@@ -44,13 +44,13 @@ windows_alias = "run-windows"
 linux_alias = "run-linux"
 
 [tasks.run-windows]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
+env = { VCPKG_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 script = '''
 cls && cargo run --release
 '''
 
 [tasks.run-linux]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
+env = { VCPKG_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 script = '''
 clear && cargo build --release && ./target/release/legion-kb-rgb
 '''
@@ -61,13 +61,13 @@ windows_alias = "clippy-all-windows"
 linux_alias = "clippy-all-linux"
 
 [tasks.clippy-all-windows]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
+env = { VCPKG_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}\\target\\vcpkg" }
 script = '''
 cls && cargo clippy -- -W clippy::pedantic -W clippy::nursery -A clippy::unreadable_literal -A clippy::too_many_lines -A clippy::items-after-statements -A clippy::module-name-repetitions
 '''
 
 [tasks.clippy-all-linux]
-env = { VCPKG_INSTALLATION_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
+env = { VCPKG_ROOT = "${CARGO_MAKE_WORKING_DIRECTORY}/target/vcpkg" }
 script = '''
 clear && cargo clippy -- -W clippy::pedantic -W clippy::nursery -A clippy::unreadable_literal -A clippy::too_many_lines -A clippy::items-after-statements -A clippy::module-name-repetitions
 '''

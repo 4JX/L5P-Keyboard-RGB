@@ -183,7 +183,7 @@ This program has been tested to work on:
 #### Ubuntu
 
 ```sh
-sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev
+sudo apt-get install -y libclang-dev libxcb-shm0-dev libusb-1.0-0-dev libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev
 ```
 
 ### Using `cargo-make`
@@ -212,32 +212,17 @@ cargo make build-release
 ### Building manually
 
 - Download and bootstrap [VCPKG](https://github.com/Microsoft/vcpkg#getting-started)
-  - You'll need to set an environment variable called `VCPKG_INSTALLATION_ROOT` pointing to the directory where you downloaded and bootstrapped VCPKG.
+- You'll need to set an environment variable called `VCPKG_ROOT` pointing to the directory where you downloaded and bootstrapped VCPKG.
 
-#### Windows
+- Download the VCPKG dependencies
 
-- Download the necessary dependencies
+Windows:
 
 ```cmd
 vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
 ```
 
-- Clone the repository
-
-```cmd
-git clone https://github.com/4JX/L5P-Keyboard-RGB.git
-```
-
-- Build the project
-
-```cmd
-cd L5P-Keyboard-RGB/
-cargo build --release
-```
-
-#### Linux
-
-- Download the necessary dependencies
+Linux:
 
 ```sh
 vcpkg update && vcpkg install libvpx libyuv
