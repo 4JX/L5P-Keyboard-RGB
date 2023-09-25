@@ -52,12 +52,15 @@
           libusb1
           expat
 
-          # Tray item stuff
-          pango
+          # Tray icon stuff
           gdk-pixbuf
+          cairo
+          pango
           atkmm
           gtk3
-          gobject-introspection
+          xdotool
+
+          # gobject-introspection
         ];
 
         # Libraries needed at runtime
@@ -67,11 +70,12 @@
           freetype
           xorg.libXrandr
           libGL
+
+          # Tray icon stuff
+          libappindicator
         ] ++ sharedDeps;
 
-
-
-        # Manually simulate a vcpkg installation so that it can link the libaries
+        # Manually simulate a vcpkg installation so that it can link the libraries
         # properly. Borrowed and adapted from: https://github.com/NixOS/nixpkgs/blob/69a35ff92dc404bf04083be2fad4f3643b2152c9/pkgs/applications/networking/remote/rustdesk/default.nix#L51
         vcpkg = pkgs.stdenv.mkDerivation {
           pname = "vcpkg";
@@ -110,10 +114,8 @@
           '';
         };
 
-        envVars = rec {
+        envVars = {
           RUST_BACKTRACE = 1;
-          MOLD_PATH = "${pkgs.mold.out}/bin/mold";
-          RUSTFLAGS = "-Clink-arg=-fuse-ld=${MOLD_PATH} -Clinker=clang";
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           VCPKG_ROOT = "${vcpkg.out}";
         };
@@ -122,12 +124,9 @@
         workspaceSrc = ./.;
         workspaceSrcString = builtins.toString workspaceSrc;
 
-        protoFilter = path: _type: builtins.match "${workspaceSrcString}/app/libs/hbb_common/protos/.*.proto$" path != null;
-        vpxHeaderFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/libs/scrap/vpx_ffi.h$" path != null;
         resFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/res/.*" path != null;
         workspaceFilter = path: type:
-          (protoFilter path type) || (vpxHeaderFileFilter path type) || (resFileFilter path type) || (craneLib.filterCargoSources path type);
-
+          (resFileFilter path type) || (craneLib.filterCargoSources path type);
 
         src = nixLib.cleanSourceWith
           {
@@ -151,17 +150,19 @@
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
+        stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
+
         cargoArtifacts = craneLib.buildDepsOnly ({
           inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
-          inherit src buildInputs nativeBuildInputs;
+          inherit src buildInputs nativeBuildInputs stdenv;
         } // envVars);
 
         # The main application derivation
         legion-kb-rgb = craneLib.buildPackage
           ({
             inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
-            inherit src cargoArtifacts buildInputs nativeBuildInputs;
+            inherit src cargoArtifacts buildInputs nativeBuildInputs stdenv;
 
             doCheck = false;
 

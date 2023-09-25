@@ -15,6 +15,7 @@ use eframe::{
 };
 
 use strum::IntoEnumIterator;
+use tray_icon::{menu::MenuEvent, TrayIconEvent};
 
 use crate::{
     cli::CliOutputType,
@@ -137,6 +138,14 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+        if let Ok(event) = TrayIconEvent::receiver().try_recv() {
+            println!("tray event: {:?}", event);
+        }
+
+        if let Ok(event) = MenuEvent::receiver().try_recv() {
+            println!("menu event: {:?}", event);
+        }
+
         if let Some(rx) = &self.window_open_rx {
             if let Ok(message) = rx.try_recv() {
                 match message {

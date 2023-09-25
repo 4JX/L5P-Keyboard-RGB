@@ -11,7 +11,12 @@ use color_eyre::{eyre::eyre, Result};
 use effects::EffectManager;
 use eframe::{epaint::Vec2, IconData};
 use gui::{App, GuiMessage};
-use tray_item::{IconSource, TrayItem};
+#[cfg(not(target_os = "linux"))]
+use std::{cell::RefCell, rc::Rc};
+use tray_icon::{
+    menu::{MenuItem, PredefinedMenuItem, Submenu},
+    TrayIconBuilder,
+};
 use util::is_unique_instance;
 
 const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
@@ -86,20 +91,6 @@ fn load_icon_data(image_data: &[u8]) -> IconData {
     }
 }
 
-#[cfg(target_os = "linux")]
-#[must_use]
-pub fn load_tray_icon(image_data: &[u8]) -> IconSource {
-    let image = image::load_from_memory(image_data).unwrap();
-    let image_buffer = image.to_rgba8();
-    let pixels = image_buffer.into_flat_samples().samples;
-
-    IconSource::Data {
-        data: pixels,
-        width: image.width() as i32,
-        height: image.height() as i32,
-    }
-}
-
 fn start_ui(cli_output: CliOutput, is_unique: bool, hide_window: bool) {
     let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
     let native_options = eframe::NativeOptions {
@@ -113,32 +104,83 @@ fn start_ui(cli_output: CliOutput, is_unique: bool, hide_window: bool) {
     //Create the tray icon
     let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
 
+    let icon = load_icon(include_bytes!("../res/trayIcon.png"));
+
+    // Since egui uses winit under the hood and doesn't use gtk on Linux, and we need gtk for
+    // the tray icon to show up, we need to spawn a thread
+    // where we initialize gtk and create the tray_icon
     #[cfg(target_os = "linux")]
-    let tray_icon = load_tray_icon(include_bytes!("../res/trayIcon.ico"));
+    std::thread::spawn(|| {
+        use tray_icon::menu::Menu;
 
-    #[cfg(target_os = "linux")]
-    let tray_result = TrayItem::new("Keyboard RGB", tray_icon);
+        gtk::init().unwrap();
+        let _tray_icon = TrayIconBuilder::new()
+            .with_menu(Box::new(
+                Menu::with_items(&[
+                    &MenuItem::new("Menu item #1", true, None),
+                    &PredefinedMenuItem::separator(),
+                    &MenuItem::new("Menu item #3", true, None),
+                    &PredefinedMenuItem::separator(),
+                    &Submenu::with_items("Submenu Inner", true, &[&MenuItem::new("Submenu item #1", true, None), &PredefinedMenuItem::separator()]).unwrap(),
+                ])
+                .unwrap(),
+            ))
+            .with_icon(icon)
+            .build()
+            .unwrap();
 
-    #[cfg(target_os = "windows")]
-    let tray_result = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon"));
+        gtk::main();
+    });
 
-    let mut tray_item_err = false;
+    #[cfg(not(target_os = "linux"))]
+    let mut _tray_icon = Rc::new(RefCell::new(None));
+    #[cfg(not(target_os = "linux"))]
+    let tray_c = _tray_icon.clone();
 
-    if tray_result.is_ok() {
-        let mut tray = tray_result.unwrap();
-
-        let show_sender = gui_sender.clone();
-        tray_item_err |= tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
-
-        let quit_sender = gui_sender.clone();
-        tray_item_err |= tray.add_menu_item("Quit", move || quit_sender.send(GuiMessage::Quit).unwrap()).is_err();
-    } else {
-        tray_item_err = true;
+    // TODO: Move this inside egui app init
+    #[cfg(not(target_os = "linux"))]
+    {
+        tray_c.borrow_mut().replace(TrayIconBuilder::new().with_icon(icon).build().unwrap());
     }
+
+    // --- OLD CODE, TO BE PORTED ---
+    // #[cfg(target_os = "linux")]
+    // let tray_result = TrayItem::new("Keyboard RGB", IconSource::Resource("/tray-icon-base"));
+
+    // #[cfg(target_os = "windows")]
+    // let tray_result = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon"));
+
+    // let mut tray_item_err = false;
+
+    // if tray_result.is_ok() {
+    //     let mut tray = tray_result.unwrap();
+
+    //     let show_sender = gui_sender.clone();
+    //     tray_item_err |= tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
+
+    //     let quit_sender = gui_sender.clone();
+    //     tray_item_err |= tray.add_menu_item("Quit", move || quit_sender.send(GuiMessage::Quit).unwrap()).is_err();
+    // } else {
+    //     tray_item_err = true;
+    // }
 
     let gui_sender_clone = gui_sender.clone();
 
+    let tray_item_err = false;
     let app = App::new(cli_output.output, hide_window, is_unique, !tray_item_err, gui_sender_clone, gui_receiver);
 
     eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender)))).unwrap();
+}
+
+pub fn load_icon(image_data: &[u8]) -> tray_icon::Icon {
+    let (icon_rgba, icon_width, icon_height) = {
+        let image = image::load_from_memory(image_data).unwrap();
+        let image_buffer = image.to_rgba8();
+        let (width, height) = image_buffer.dimensions();
+        let rgba = image_buffer.into_raw();
+
+        (rgba, width, height)
+    };
+
+    tray_icon::Icon::from_rgba(icon_rgba, icon_width, icon_height).expect("Failed to open icon")
 }

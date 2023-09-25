@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="">
-    <file alias="tray-icon-base">trayIcon.ico</file>
+    <file alias="tray-icon-base">trayIcon.png</file>
   </gresource>
 </gresources>
