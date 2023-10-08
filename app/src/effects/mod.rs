@@ -4,7 +4,7 @@ use crate::{
 };
 
 use crossbeam_channel::{Receiver, Sender};
-use error_stack::{IntoReport, Result, ResultExt};
+use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use rand::thread_rng;
 use std::{
@@ -74,7 +74,6 @@ impl EffectManager {
         };
 
         let keyboard = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())
-            .into_report()
             .change_context(AcquireKeyboardError)
             .attach_printable("Ensure that you have a supported model and that the application has access to it.")
             .attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage")

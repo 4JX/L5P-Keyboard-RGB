@@ -1,9 +1,9 @@
 use clap::crate_name;
 use eframe::egui::Ui;
-use error_stack::{IntoReport, Result, ResultExt};
+use error_stack::{Result, ResultExt};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use single_instance::SingleInstance;
-use std::{fs::File, io::Write, path::PathBuf};
+use std::{fs::File, io::Write, path::Path};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -19,20 +19,20 @@ where
     Self: DeserializeOwned + Serialize + Sized,
     for<'de> Self: Deserialize<'de> + 'a,
 {
-    fn load(path: PathBuf) -> Result<Self, LoadFileError> {
-        let file = std::fs::File::open(path).into_report().change_context(LoadFileError)?;
+    fn load(path: &Path) -> Result<Self, LoadFileError> {
+        let file = std::fs::File::open(path).change_context(LoadFileError)?;
 
         let reader = std::io::BufReader::new(file);
 
-        serde_json::de::from_reader(reader).into_report().change_context(LoadFileError)
+        serde_json::de::from_reader(reader).change_context(LoadFileError)
     }
 
-    fn save(&self, path: PathBuf) -> Result<(), SaveFileError> {
-        let mut file = File::create(path).into_report().change_context(SaveFileError)?;
+    fn save(&self, path: &Path) -> Result<(), SaveFileError> {
+        let mut file = File::create(path).change_context(SaveFileError)?;
 
-        let stringified_json = serde_json::to_string(&self).into_report().change_context(SaveFileError)?;
+        let stringified_json = serde_json::to_string(&self).change_context(SaveFileError)?;
 
-        file.write_all(stringified_json.as_bytes()).into_report().change_context(SaveFileError)?;
+        file.write_all(stringified_json.as_bytes()).change_context(SaveFileError)?;
 
         Ok(())
     }

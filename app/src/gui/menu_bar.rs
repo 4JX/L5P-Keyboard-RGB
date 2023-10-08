@@ -46,7 +46,7 @@ impl MenuBarState {
         if let Some(dialog) = &mut self.open_file_dialog {
             if dialog.show(ctx).selected() {
                 if let Some(path) = dialog.path() {
-                    self.opened_file = Some(path.clone());
+                    self.opened_file = Some(path.to_owned());
                     if let Some(kind) = &self.file_kind {
                         match kind {
                             FileOperation::LoadProfile => match Profile::load_profile(path) {

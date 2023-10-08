@@ -1,14 +1,11 @@
-use std::{
-    mem,
-    path::{Path, PathBuf},
-    process, thread,
-    time::Duration,
-};
+use std::{mem, path::Path, process, thread, time::Duration};
 
 use crossbeam_channel::{Receiver, Sender};
 use device_query::{DeviceQuery, Keycode};
+#[cfg(debug_assertions)]
+use eframe::egui::style::DebugOptions;
 use eframe::{
-    egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
+    egui::{CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
     emath::Align,
     epaint::{Color32, Rounding, Vec2},
     CreationContext,
@@ -302,9 +299,9 @@ impl eframe::App for App {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        let path = PathBuf::from("./settings.json");
+        let path = Path::new("./settings.json");
 
-        let mut settings = Settings::load_or_default(&path);
+        let mut settings = Settings::load_or_default(path);
 
         settings.profiles = std::mem::take(&mut self.profile_list.profiles);
 
@@ -319,8 +316,11 @@ impl App {
         let style = Style {
             // text_styles: text_utils::default_text_styles(),
             visuals: self.theme.visuals.clone(),
+            #[cfg(debug_assertions)]
             debug: DebugOptions {
                 debug_on_hover: false,
+                debug_on_hover_with_all_modifiers: false,
+                hover_shows_next: false,
                 show_expand_width: false,
                 show_expand_height: false,
                 show_resize: false,

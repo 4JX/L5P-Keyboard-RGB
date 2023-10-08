@@ -185,7 +185,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
             };
 
             if let Some(filename) = save {
-                profile.save_profile(filename).expect("Failed to save.");
+                profile.save_profile(&filename).expect("Failed to save.");
             }
 
             Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Profile(profile)))
@@ -200,13 +200,13 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
         }
 
         Commands::LoadProfile { path } => {
-            let profile = Profile::load_profile(path).change_context(CliError)?;
+            let profile = Profile::load_profile(&path).change_context(CliError)?;
 
             Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Profile(profile)))
         }
 
         Commands::CustomEffect { path } => {
-            let effect = CustomEffect::from_file(path).change_context(CliError)?;
+            let effect = CustomEffect::from_file(&path).change_context(CliError)?;
 
             Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Custom(effect)))
         }
