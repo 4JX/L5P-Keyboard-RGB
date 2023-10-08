@@ -9,13 +9,38 @@ license = "GPL-3.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# Main driver
 legion-rgb-driver = { path = "../driver" }
+
+# Cli
+clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
+
+# Ui
+eframe = "0.23.0"
+egui-modal = "0.2.5"
+# egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
+egui_file = "0.11.0"
+egui-notify = "0.10.0"
+# egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
+
+# App window, taskbar and tray icon loading
+image = "0.24.5"
+
+# AmbientLight effect
 scrap = { git = "https://github.com/rustdesk/rustdesk", rev = "6c15dd6", features = [
     "wayland",
 ] }
-rand = "0.8.5"
 fast_image_resize = "2.4.0"
-clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
+# default-features = false just removes the use_wasm feature that removes a lot of unecessary slack
+# since this app wont ever use the web
+# photon-rs = { version = "0.3.2", default-features = false }
+photon-rs = { git = "https://github.com/4JX/photon", rev = "53d9464", default-features = false }
+
+
+# Keyboard and mouse grabbing
+device_query = "1.1.3"
+
+rand = "0.8.5"
 strum = "0.25.0"
 strum_macros = "0.25.2"
 serde = { version = "1.0.152", features = ["derive"] }
@@ -25,23 +50,13 @@ sysinfo = "0.29.0"
 crossbeam-channel = "0.5.8"
 thiserror = "1.0.38"
 single-instance = "0.3.3"
-image = "0.24.5"
 open = "5.0.0"
 error-stack = "0.4.1"
-eframe = "0.23.0"
-egui-modal = "0.2.5"
-# egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
-egui_file = "0.11.0"
-egui-notify = "0.10.0"
-# egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
-device_query = "1.1.3"
 
-# Fix version to stop cargo from yelling about dependency resolution
-bytes = "1.4.0"
+# Fix versions to stop cargo from yelling about dependency resolution
 
-# Dependabot alertsa
-regex = "1.6.0"
-crossbeam-utils = "0.8.12"
+# Dependabot alerts
+
 
 [target.'cfg(target_os = "windows")'.dependencies]
 tray-item = { version = "0.8.0" }

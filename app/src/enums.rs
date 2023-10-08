@@ -2,7 +2,7 @@ use crate::{effects::custom_effect::CustomEffect, profile::Profile};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr};
 
-#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, Eq, Debug, IntoStaticStr, Default)]
+#[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, Debug, IntoStaticStr, Default)]
 pub enum Effects {
     #[default]
     Static,
@@ -12,6 +12,7 @@ pub enum Effects {
     Lightning,
     AmbientLight {
         fps: u8,
+        saturation_boost: f32,
     },
     SmoothWave,
     Swipe,

@@ -49,18 +49,22 @@ impl EffectOptions {
                     });
             });
 
-            if let Effects::AmbientLight { fps } = &mut profile.effect {
+            if let Effects::AmbientLight { fps, saturation_boost: saturation } = &mut profile.effect {
                 ui.horizontal(|ui| {
                     *update_lights |= ui.add(Slider::new(fps, 1..=60)).changed();
                     ui.label("FPS");
-                })
+                });
+                ui.horizontal(|ui| {
+                    *update_lights |= ui.add(Slider::new(saturation, 0.0..=1.0)).changed();
+                    ui.label("Saturation Boost");
+                });
             } else {
                 let range = if profile.effect.is_built_in() { SPEED_RANGE } else { 1..=10 };
 
                 ui.horizontal(|ui| {
                     *update_lights |= ui.add_enabled(profile.effect.takes_speed(), Slider::new(&mut profile.speed, range)).changed();
                     ui.label("Speed");
-                })
+                });
             }
         });
     }

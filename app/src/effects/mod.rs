@@ -172,10 +172,11 @@ impl Inner {
             },
 
             Effects::Lightning => Lightning::play(self, &profile, &mut thread_rng),
-            Effects::AmbientLight { mut fps } => {
+            Effects::AmbientLight { mut fps, mut saturation_boost } => {
                 fps = fps.clamp(1, 60);
+                saturation_boost = saturation_boost.clamp(0.0, 1.0);
 
-                AmbientLight::play(self, fps);
+                AmbientLight::play(self, fps, saturation_boost);
             }
             Effects::SmoothWave => {
                 profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
