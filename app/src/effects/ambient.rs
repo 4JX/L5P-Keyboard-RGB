@@ -40,6 +40,7 @@ impl AmbientLight {
             while !manager.stop_signals.keyboard_stop_signal.load(Ordering::SeqCst) {
                 let now = Instant::now();
 
+                #[allow(clippy::single_match)]
                 match capturer.frame(seconds_per_frame) {
                     Ok(frame) => {
                         let rgb = process_frame(&frame, dimensions, &mut resizer);

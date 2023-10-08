@@ -18,7 +18,7 @@ use strum::IntoEnumIterator;
 use tray_item::{IconSource, TrayItem};
 
 use crate::{
-    cli::CliOutputType,
+    cli::OutputType,
     effects::{self, custom_effect::CustomEffect, EffectManager},
     enums::Effects,
     persist::Settings,
@@ -36,7 +36,7 @@ mod style;
 
 pub struct App {
     unique_instance: bool,
-    show_window: bool,
+    hide_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
     // The tray struct needs to be kept from being dropped for the tray to appear on windows
     // If this is none it will be assumed there's no tray regardless of cause
@@ -69,7 +69,7 @@ pub enum CustomEffectState {
 }
 
 impl App {
-    pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
+    pub fn new(output: OutputType, hide_window: bool, unique_instance: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
         let manager = EffectManager::new(effects::OperationMode::Gui).ok();
 
         let settings: Settings = Settings::load_or_default(Path::new("./settings.json"));
@@ -77,7 +77,7 @@ impl App {
         // Default app state
         let mut app = Self {
             unique_instance,
-            show_window: !hide_window,
+            hide_window,
             window_open_rx: Some(rx),
             tray: None,
 
@@ -96,10 +96,10 @@ impl App {
 
         // Update the state according to the option chosen by the user
         match output {
-            CliOutputType::Profile(profile) => app.profile = profile,
-            CliOutputType::Custom(effect) => app.custom_effect = CustomEffectState::Queued(effect),
-            CliOutputType::NoArgs => app.profile = settings.ui_state,
-            CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
+            OutputType::Profile(profile) => app.profile = profile,
+            OutputType::Custom(effect) => app.custom_effect = CustomEffectState::Queued(effect),
+            OutputType::NoArgs => app.profile = settings.ui_state,
+            OutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
         }
 
         app
@@ -181,7 +181,7 @@ impl eframe::App for App {
         if let Some(rx) = &self.window_open_rx {
             if let Ok(message) = rx.try_recv() {
                 match message {
-                    GuiMessage::ShowWindow => self.show_window = true,
+                    GuiMessage::ShowWindow => self.hide_window = false,
                     GuiMessage::CycleProfiles => self.cycle_profiles(),
                     GuiMessage::Quit => self.exit_app(),
                 }
@@ -196,7 +196,7 @@ impl eframe::App for App {
             self.exit_app();
         };
 
-        frame.set_visible(self.show_window);
+        frame.set_visible(!self.hide_window);
 
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
             self.menu_bar.show(ctx, ui, &mut self.profile, &mut self.custom_effect, &mut self.profile_changed);
@@ -294,7 +294,7 @@ impl eframe::App for App {
 
     fn on_close_event(&mut self) -> bool {
         if self.tray.is_some() {
-            self.show_window = false;
+            self.hide_window = true;
             false
         } else {
             true

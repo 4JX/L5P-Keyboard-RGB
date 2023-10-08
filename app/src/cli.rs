@@ -108,15 +108,26 @@ fn parse_colors(arg: &str) -> std::result::Result<[u8; 12], String> {
     }
 }
 
-pub struct CliOutput {
-    /// Indicates if the user wants to start the GUI
-    pub start_gui_maybe_hidden: Option<bool>,
+pub enum CliOutput {
+    /// Start the UI
+    Gui { hide_window: bool, output: OutputType },
 
-    /// What instruction was received through the CLI
-    pub output: CliOutputType,
+    /// CLI arguments were passed
+    Cli(OutputType),
 }
 
-pub enum CliOutputType {
+impl CliOutput {
+    fn maybe_gui(start_gui: bool, hide_window: bool, output: OutputType) -> Self {
+        if start_gui {
+            Self::Gui { hide_window, output }
+        } else {
+            Self::Cli(output)
+        }
+    }
+}
+
+/// What instruction was received through the CLI
+pub enum OutputType {
     Profile(Profile),
     Custom(CustomEffect),
     NoArgs,
@@ -130,90 +141,74 @@ pub struct CliError;
 pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
     let cli = Cli::parse();
 
-    match cli.command {
-        Some(subcommand) => {
-            // Early logic for specific subcommands
-            if let Commands::Set { .. } | Commands::CustomEffect { .. } = subcommand {
-                assert!(is_unique_instance, "Another instance of the program is already running, please close it before starting a new one.");
+    let Some(subcommand) = cli.command else {
+        let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
+        println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
+        return  Ok(CliOutput::maybe_gui(true, cli.hide_window, OutputType::NoArgs))
+    };
+
+    // Early logic for specific subcommands
+    if let Commands::Set { .. } | Commands::CustomEffect { .. } = subcommand {
+        if !is_unique_instance {
+            println!("Another instance of the program is already running, please close it before starting a new one.");
+            process::exit(0);
+        }
+    }
+
+    match subcommand {
+        Commands::Set {
+            effect,
+            colors,
+            brightness,
+            speed,
+            direction,
+            save,
+        } => {
+            let direction = direction.unwrap_or_default();
+
+            let rgb_array: [u8; 12] = if effect.takes_color_array() {
+                colors.unwrap_or_else(|| {
+                    println!("This effect requires specifying the colors to use.");
+                    process::exit(0);
+                })
+            } else {
+                [0; 12]
+            };
+
+            let profile = Profile {
+                name: "Profile".to_string(),
+                rgb_zones: profile::arr_to_zones(rgb_array),
+                effect,
+                direction,
+                speed,
+                brightness,
+            };
+
+            if let Some(filename) = save {
+                profile.save_profile(filename).expect("Failed to save.");
             }
 
-            match subcommand {
-                Commands::Set {
-                    effect,
-                    colors,
-                    brightness,
-                    speed,
-                    direction,
-                    save,
-                } => {
-                    let direction = direction.unwrap_or_default();
-
-                    let rgb_array: [u8; 12] = if effect.takes_color_array() {
-                        colors.unwrap_or_else(|| {
-                            println!("This effect requires specifying the colors to use.");
-                            process::exit(0);
-                        })
-                    } else {
-                        [0; 12]
-                    };
-
-                    let profile = Profile {
-                        name: "Profile".to_string(),
-                        rgb_zones: profile::arr_to_zones(rgb_array),
-                        effect,
-                        direction,
-                        speed,
-                        brightness,
-                    };
-
-                    if let Some(filename) = save {
-                        profile.save_profile(filename).expect("Failed to save.");
-                    }
-
-                    Ok(CliOutput {
-                        start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
-                        output: CliOutputType::Profile(profile),
-                    })
-                }
-                Commands::List => {
-                    println!("List of available effects:");
-                    for (i, effect) in Effects::iter().enumerate() {
-                        println!("{i}. {effect}",);
-                    }
-
-                    Ok(CliOutput {
-                        start_gui_maybe_hidden: None,
-                        output: CliOutputType::Exit,
-                    })
-                }
-
-                Commands::LoadProfile { path } => {
-                    let profile = Profile::load_profile(path).change_context(CliError)?;
-
-                    Ok(CliOutput {
-                        start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
-                        output: CliOutputType::Profile(profile),
-                    })
-                }
-
-                Commands::CustomEffect { path } => {
-                    let effect = CustomEffect::from_file(path).change_context(CliError)?;
-
-                    Ok(CliOutput {
-                        start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
-                        output: CliOutputType::Custom(effect),
-                    })
-                }
+            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Profile(profile)))
+        }
+        Commands::List => {
+            println!("List of available effects:");
+            for (i, effect) in Effects::iter().enumerate() {
+                println!("{}. {effect}", i + 1);
             }
+
+            Ok(CliOutput::maybe_gui(false, cli.hide_window, OutputType::Exit))
         }
 
-        None => {
-            let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
-            println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
-            Ok(CliOutput {
-                start_gui_maybe_hidden: Some(cli.hide_window),
-                output: CliOutputType::NoArgs,
-            })
+        Commands::LoadProfile { path } => {
+            let profile = Profile::load_profile(path).change_context(CliError)?;
+
+            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Profile(profile)))
+        }
+
+        Commands::CustomEffect { path } => {
+            let effect = CustomEffect::from_file(path).change_context(CliError)?;
+
+            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Custom(effect)))
         }
     }
 }

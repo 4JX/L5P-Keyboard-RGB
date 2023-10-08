@@ -154,11 +154,11 @@ impl Ripple {
             let guard = state.on_key_down(move |key| {
                 stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
 
-                let _ = tx_clone.send(Event::KeyPress(key.clone()));
+                let _ = tx_clone.send(Event::KeyPress(*key));
             });
 
             let guard2 = state.on_key_up(move |key| {
-                let _ = tx.send(Event::KeyRelease(key.clone()));
+                let _ = tx.send(Event::KeyRelease(*key));
             });
 
             loop {
