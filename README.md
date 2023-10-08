@@ -93,6 +93,9 @@ The best way to add a new effect is to directly edit the source code, as it allo
 # Regular legions
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c985", MODE="0666"
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c984", MODE="0666"
+
+# LOQ Models
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c983", MODE="0666"
 ```
 
 - **2022 Models:**
