@@ -10,13 +10,11 @@ license = "GPL-3.0"
 
 [dependencies]
 legion-rgb-driver = { path = "../driver" }
-
 scrap = { git = "https://github.com/rustdesk/rustdesk", rev = "6c15dd6", features = [
     "wayland",
 ] }
 rand = "0.8.5"
 fast_image_resize = "2.4.0"
-tray-item = { version = "0.5.0-alpha", git = "https://github.com/njust/tray-item-rs" }
 clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
@@ -45,9 +43,14 @@ bytes = "1.4.0"
 regex = "1.6.0"
 crossbeam-utils = "0.8.12"
 
+[target.'cfg(target_os = "windows")'.dependencies]
+tray-item = { version = "0.8.0" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tray-item = { version = "0.8.0", features = ["ksni"] }
 
 [build-dependencies]
-winres = "0.1.12"
+windres = "0.2.2"
 
 [package.metadata.vcpkg]
 git = "https://github.com/microsoft/vcpkg"

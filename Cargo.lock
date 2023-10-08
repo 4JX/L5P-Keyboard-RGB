@@ -804,6 +804,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "concat-string"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7439becb5fafc780b6f4de382b1a7a3e70234afe783854a4702ee8adbb838609"
+
+[[package]]
 name = "concurrent-queue"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1411,6 +1417,17 @@ dependencies = [
  "libc",
  "redox_syscall 0.2.16",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "find-winsdk"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8cbf17b871570c1f8612b763bac3e86290602bcf5dc3c5ce657e0e1e9071d9e"
+dependencies = [
+ "serde 1.0.164",
+ "serde_derive",
+ "winreg 0.5.1",
 ]
 
 [[package]]
@@ -2280,7 +2297,7 @@ checksum = "03087c2bad5e1034e8cace5926dec053fb3790248370865f5117a7d0213354c8"
 
 [[package]]
 name = "legion-kb-rgb"
-version = "0.19.0"
+version = "0.19.2"
 dependencies = [
  "bytes",
  "clap 4.3.5",
@@ -2308,7 +2325,7 @@ dependencies = [
  "sysinfo",
  "thiserror",
  "tray-item",
- "winres",
+ "windres",
 ]
 
 [[package]]
@@ -2404,7 +2421,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26141aceb9f046065617266f41a4a652e4583da643472a10a89b4b3664d99eb6"
 dependencies = [
- "winreg",
+ "winreg 0.11.0",
 ]
 
 [[package]]
@@ -4147,8 +4164,9 @@ dependencies = [
 
 [[package]]
 name = "tray-item"
-version = "0.5.0-alpha"
-source = "git+https://github.com/njust/tray-item-rs#68c6afd4dc05ecbb051f2149b54934be9c9db8a5"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76e87dd77acd3451f2a894d1596cdd73f931972eef8847696a3c8376fce3f760"
 dependencies = [
  "cocoa",
  "core-graphics",
@@ -4158,7 +4176,7 @@ dependencies = [
  "objc-foundation",
  "objc_id",
  "padlock",
- "winapi",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -4212,9 +4230,9 @@ checksum = "1dd624098567895118886609431a7c3b8f516e41d30e0643f03d94592a147e36"
 
 [[package]]
 name = "unicode-width"
-version = "0.1.10"
+version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0edd1e5b14653f783770bce4a4dabb4a5108a5370a5f5d8cfe8710c361f6c8b"
+checksum = "e51733f11c9c4f72aa0c160008246859e340b00807569a0da0e7a1079b27ba85"
 
 [[package]]
 name = "unicode-xid"
@@ -4734,6 +4752,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a515f5799fe4961cb532f983ce2b23082366b898e52ffbce459c86f67c8378a"
 
 [[package]]
+name = "windres"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82115619221b2b66001a39088b8059d171b1f9005a00d6a10c6e8a71a30a4cdc"
+dependencies = [
+ "concat-string",
+ "find-winsdk",
+]
+
+[[package]]
 name = "winit"
 version = "0.28.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4779,21 +4807,22 @@ dependencies = [
 
 [[package]]
 name = "winreg"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a27a759395c1195c4cc5cda607ef6f8f6498f64e78f7900f5de0a127a424704a"
+dependencies = [
+ "serde 1.0.164",
+ "winapi",
+]
+
+[[package]]
+name = "winreg"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76a1a57ff50e9b408431e8f97d5456f2807f8eb2a2cd79b06068fc87f8ecf189"
 dependencies = [
  "cfg-if",
  "winapi",
-]
-
-[[package]]
-name = "winres"
-version = "0.1.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b68db261ef59e9e52806f688020631e987592bd83619edccda9c47d42cde4f6c"
-dependencies = [
- "toml 0.5.11",
 ]
 
 [[package]]

@@ -11,7 +11,6 @@ use color_eyre::{eyre::eyre, Result};
 use effects::EffectManager;
 use eframe::{epaint::Vec2, IconData};
 use gui::{App, GuiMessage};
-use tray_item::{IconSource, TrayItem};
 use util::is_unique_instance;
 
 const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
@@ -86,20 +85,6 @@ fn load_icon_data(image_data: &[u8]) -> IconData {
     }
 }
 
-#[cfg(target_os = "linux")]
-#[must_use]
-pub fn load_tray_icon(image_data: &[u8]) -> IconSource {
-    let image = image::load_from_memory(image_data).unwrap();
-    let image_buffer = image.to_rgba8();
-    let pixels = image_buffer.into_flat_samples().samples;
-
-    IconSource::Data {
-        data: pixels,
-        width: image.width() as i32,
-        height: image.height() as i32,
-    }
-}
-
 fn start_ui(cli_output: CliOutput, is_unique: bool, hide_window: bool) {
     let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
     let native_options = eframe::NativeOptions {
@@ -110,35 +95,10 @@ fn start_ui(cli_output: CliOutput, is_unique: bool, hide_window: bool) {
         ..eframe::NativeOptions::default()
     };
 
-    //Create the tray icon
     let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
 
-    #[cfg(target_os = "linux")]
-    let tray_icon = load_tray_icon(include_bytes!("../res/trayIcon.ico"));
-
-    #[cfg(target_os = "linux")]
-    let tray_result = TrayItem::new("Keyboard RGB", tray_icon);
-
-    #[cfg(target_os = "windows")]
-    let tray_result = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon"));
-
-    let mut tray_item_err = false;
-
-    if tray_result.is_ok() {
-        let mut tray = tray_result.unwrap();
-
-        let show_sender = gui_sender.clone();
-        tray_item_err |= tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
-
-        let quit_sender = gui_sender.clone();
-        tray_item_err |= tray.add_menu_item("Quit", move || quit_sender.send(GuiMessage::Quit).unwrap()).is_err();
-    } else {
-        tray_item_err = true;
-    }
-
     let gui_sender_clone = gui_sender.clone();
-
-    let app = App::new(cli_output.output, hide_window, is_unique, !tray_item_err, gui_sender_clone, gui_receiver);
+    let app = App::new(cli_output.output, hide_window, is_unique, gui_sender_clone, gui_receiver);
 
     eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender)))).unwrap();
 }

@@ -15,6 +15,7 @@ use eframe::{
 };
 
 use strum::IntoEnumIterator;
+use tray_item::{IconSource, TrayItem};
 
 use crate::{
     cli::CliOutputType,
@@ -37,6 +38,9 @@ pub struct App {
     unique_instance: bool,
     show_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
+    // The tray struct needs to be kept from being dropped for the tray to appear on windows
+    // If this is none it will be assumed there's no tray regardless of cause
+    tray: Option<TrayItem>,
 
     manager: Option<EffectManager>,
     profile: Profile,
@@ -65,7 +69,7 @@ pub enum CustomEffectState {
 }
 
 impl App {
-    pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tray_active: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
+    pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
         let manager = EffectManager::new(effects::OperationMode::Gui).ok();
 
         let settings: Settings = Settings::load_or_default(Path::new("./settings.json"));
@@ -74,7 +78,8 @@ impl App {
         let mut app = Self {
             unique_instance,
             show_window: !hide_window,
-            window_open_rx: None,
+            window_open_rx: Some(rx),
+            tray: None,
 
             manager,
             profile: Profile::default(),
@@ -97,14 +102,38 @@ impl App {
             CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
         }
 
-        if tray_active {
-            app.window_open_rx = Some(rx);
-        }
-
         app
     }
 
-    pub fn init(self, cc: &CreationContext<'_>, tx: Sender<GuiMessage>) -> Self {
+    pub fn init(mut self, cc: &CreationContext<'_>, gui_sender: Sender<GuiMessage>) -> Self {
+        //Create the tray icon
+        #[cfg(target_os = "linux")]
+        let tray_icon = load_tray_icon(include_bytes!("../../res/trayIcon.ico"));
+
+        #[cfg(target_os = "linux")]
+        let tray_result = TrayItem::new("Keyboard RGB", tray_icon);
+
+        #[cfg(target_os = "windows")]
+        let tray_result = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon"));
+
+        self.tray = if let Ok(mut tray) = tray_result {
+            let mut is_err = false;
+
+            let show_sender = gui_sender.clone();
+            is_err |= tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
+
+            let quit_sender = gui_sender.clone();
+            is_err |= tray.add_menu_item("Quit", move || quit_sender.send(GuiMessage::Quit).unwrap()).is_err();
+
+            if !is_err {
+                Some(tray)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         let ctx = cc.egui_ctx.clone();
         if self.manager.is_some() {
             thread::spawn(move || {
@@ -116,7 +145,7 @@ impl App {
 
                     if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::RAlt) {
                         if !lock_switching {
-                            let _ = tx.send(GuiMessage::CycleProfiles);
+                            let _ = gui_sender.send(GuiMessage::CycleProfiles);
                             ctx.request_repaint();
                             lock_switching = true;
                         }
@@ -252,7 +281,7 @@ impl eframe::App for App {
     }
 
     fn on_close_event(&mut self) -> bool {
-        if self.window_open_rx.is_some() {
+        if self.tray.is_some() {
             self.show_window = false;
             false
         } else {
@@ -315,5 +344,19 @@ impl App {
 
             self.profile_changed = true;
         }
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[must_use]
+pub fn load_tray_icon(image_data: &[u8]) -> IconSource {
+    let image = image::load_from_memory(image_data).unwrap();
+    let image_buffer = image.to_rgba8();
+    let pixels = image_buffer.into_flat_samples().samples;
+
+    IconSource::Data {
+        data: pixels,
+        width: image.width() as i32,
+        height: image.height() as i32,
     }
 }
