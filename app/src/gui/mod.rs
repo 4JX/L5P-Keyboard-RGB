@@ -120,10 +120,22 @@ impl App {
             let mut is_err = false;
 
             let show_sender = gui_sender.clone();
-            is_err |= tray.add_menu_item("Show", move || show_sender.send(GuiMessage::ShowWindow).unwrap()).is_err();
+            let egui_ctx = cc.egui_ctx.clone();
+            is_err |= tray
+                .add_menu_item("Show", move || {
+                    egui_ctx.request_repaint();
+                    show_sender.send(GuiMessage::ShowWindow).unwrap()
+                })
+                .is_err();
 
             let quit_sender = gui_sender.clone();
-            is_err |= tray.add_menu_item("Quit", move || quit_sender.send(GuiMessage::Quit).unwrap()).is_err();
+            let egui_ctx = cc.egui_ctx.clone();
+            is_err |= tray
+                .add_menu_item("Quit", move || {
+                    egui_ctx.request_repaint();
+                    quit_sender.send(GuiMessage::Quit).unwrap()
+                })
+                .is_err();
 
             if !is_err {
                 Some(tray)
