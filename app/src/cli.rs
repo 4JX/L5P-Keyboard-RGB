@@ -144,7 +144,7 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
     let Some(subcommand) = cli.command else {
         let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
         println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
-        return  Ok(CliOutput::maybe_gui(true, cli.hide_window, OutputType::NoArgs))
+        return Ok(CliOutput::maybe_gui(true, cli.hide_window, OutputType::NoArgs));
     };
 
     // Early logic for specific subcommands
