@@ -121,6 +121,23 @@ impl MenuBarState {
             if ui.button("Exit").clicked() {
                 self.gui_sender.send(GuiMessage::Quit).unwrap();
             }
+
+            #[cfg(target_os = "windows")]
+            {
+                use crate::console;
+                use eframe::{egui::Layout, emath::Align};
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if ui.button("📜").clicked() {
+                        if !console::alloc() {
+                            self.toasts
+                                .error("Could not allocate debug terminal.")
+                                .set_duration(Some(Duration::from_millis(5000)))
+                                .set_closable(true);
+                        }
+                        println!("Debug terminal enabled.");
+                    }
+                });
+            }
         });
     }
 

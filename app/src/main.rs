@@ -1,4 +1,9 @@
+#![cfg_attr(not(test), windows_subsystem = "windows")]
+#![cfg_attr(test, windows_subsystem = "console")]
+
 mod cli;
+#[cfg(target_os = "windows")]
+mod console;
 mod effects;
 mod enums;
 mod gui;
@@ -15,35 +20,57 @@ use util::is_unique_instance;
 
 const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
 
-fn main() -> Result<()> {
-    color_eyre::install()?;
-
-    // Clear/Hide console if not running via one (Windows specific)
+fn main() {
     #[cfg(target_os = "windows")]
     {
-        #[link(name = "Kernel32")]
-        extern "system" {
-            fn GetConsoleProcessList(processList: *mut u32, count: u32) -> u32;
-            fn FreeConsole() -> i32;
-        }
+        setup_panic().unwrap();
 
-        fn free_console() -> bool {
-            unsafe { FreeConsole() == 0 }
-        }
+        // This just enables output if the program is already being ran from the CLI
+        console::attach();
+        let res = init();
+        console::free();
 
-        fn is_console() -> bool {
-            unsafe {
-                let mut buffer = [0_u32; 1];
-                let count = GetConsoleProcessList(buffer.as_mut_ptr(), 1);
-                count != 1
-            }
-        }
-
-        if !is_console() {
-            free_console();
+        if res.is_err() {
+            std::process::exit(2);
         }
     }
 
+    #[cfg(target_os = "linux")]
+    {
+        color_eyre::install().unwrap();
+
+        init().unwrap();
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn setup_panic() -> Result<()> {
+    // A somewhat unwrapped version of color_eyre::install() to add a "wait for enter" after printing the text
+    use color_eyre::config::Theme;
+    let builder = color_eyre::config::HookBuilder::default()
+    // HACK: Forgo colors in windows outputs because I cannot figure out why allocated consoles don't display them
+    .theme(Theme::new());
+
+    let (panic_hook, eyre_hook) = builder.into_hooks();
+    eyre_hook.install()?;
+
+    std::panic::set_hook(Box::new(move |panic_info| {
+        if !console::alloc() {
+            // No point trying to print without a console...
+            return;
+        }
+
+        eprintln!("{}", panic_hook.panic_report(panic_info));
+        println!("Press Enter to continue...");
+        let _ = std::io::stdin().read_line(&mut String::new());
+
+        std::process::exit(1);
+    }));
+
+    Ok(())
+}
+
+fn init() -> Result<()> {
     let is_unique = is_unique_instance();
 
     let cli_output = cli::try_cli(is_unique).map_err(|err| eyre!("{:?}", err))?;

@@ -52,6 +52,7 @@ thiserror = "1.0.38"
 single-instance = "0.3.3"
 open = "5.0.0"
 error-stack = "0.4.1"
+winapi = { version = "0.3.9", features = ["consoleapi", "wincon"] }
 
 # Fix versions to stop cargo from yelling about dependency resolution
 
