@@ -76,7 +76,6 @@ The best way to add a new effect is to directly edit the source code, as it allo
 - **effect_steps:** Contains the different _"steps"_ the effect will go through.
   - **rgb_array:** An array describing the colours to use in the `[r,g,b,r,g,b...]` format.
   - **step_type:** The type of step to use. You may instantly swap the colours with `Set` or smoothly transition to them with `Transition`.
-  - **speed:** Currently unused.
   - **brightness:** The brightness of the step, can be `1` (low) or `2` (high).
   - **steps:** To smoothly transition between colours, the keyboard LEDs are set at small intervals until they reach the desired color. This controls the number of them.
   - **delay_between_steps:** How much time to wait between each interval (In ms).
@@ -167,8 +166,8 @@ legion-kb-rgb set -e SmoothWave -s 4 -b 2 -d Left
 
 This program has been tested to work on:
 
-- Legion 5 (Pro) 2020, 2021 and 2022.
-- Ideapad Gaming 3 2021, 2022
+- Legion 5 (Pro) 2020, 2021, 2022, 2023
+- Ideapad Gaming 3 2021, 2022, 2023
 
 ### "How about X model"
 
