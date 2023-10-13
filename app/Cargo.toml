@@ -2,7 +2,7 @@
 name = "legion-kb-rgb"
 version = "0.19.2"
 authors = ["4JX"]
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
 license = "GPL-3.0"
 
