@@ -4,9 +4,10 @@ use crate::{
 };
 
 use crossbeam_channel::{Receiver, Sender};
-use error_stack::{IntoReport, Result, ResultExt};
+use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use rand::thread_rng;
+use single_instance::SingleInstance;
 use std::{
     sync::atomic::{AtomicBool, Ordering},
     thread,
@@ -37,18 +38,19 @@ mod ripple;
 mod swipe;
 mod temperature;
 
-#[derive(Debug, Error)]
-#[error("There was an error getting a valid keyboard")]
-pub struct AcquireKeyboardError;
-
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 #[error("Could not create keyboard manager")]
-pub struct ManagerCreationError;
+pub enum ManagerCreationError {
+    #[error("There was an error getting a valid keyboard")]
+    AcquireKeyboard,
+    #[error("An instance of the program is already running")]
+    InstanceAlreadyRunning,
+}
 
 /// Manager wrapper
 pub struct EffectManager {
     pub tx: Sender<Message>,
-    inner_handle: JoinHandle<()>,
+    inner_handle: Option<JoinHandle<()>>,
     stop_signals: StopSignals,
 }
 
@@ -58,6 +60,9 @@ struct Inner {
     rx: Receiver<Message>,
     stop_signals: StopSignals,
     last_profile: Profile,
+    // Can't drop this else it stops "reserving" whatever underlying implementation identifier it uses
+    #[allow(dead_code)]
+    single_instance: SingleInstance,
 }
 
 #[derive(Clone, Copy)]
@@ -73,12 +78,17 @@ impl EffectManager {
             keyboard_stop_signal: Arc::new(AtomicBool::new(false)),
         };
 
+        // Use the crate's name as the identifier, should be unique enough
+        let single_instance = SingleInstance::new(env!("CARGO_PKG_NAME")).unwrap();
+
+        if !single_instance.is_single() {
+            return Err(ManagerCreationError::InstanceAlreadyRunning.into());
+        }
+
         let keyboard = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())
-            .into_report()
-            .change_context(AcquireKeyboardError)
+            .change_context(ManagerCreationError::AcquireKeyboard)
             .attach_printable("Ensure that you have a supported model and that the application has access to it.")
-            .attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage")
-            .change_context(ManagerCreationError)?;
+            .attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage")?;
 
         let (tx, rx) = crossbeam_channel::unbounded::<Message>();
 
@@ -87,6 +97,7 @@ impl EffectManager {
             rx,
             stop_signals: stop_signals.clone(),
             last_profile: Profile::default(),
+            single_instance,
         };
 
         macro_rules! effect_thread_loop {
@@ -115,7 +126,11 @@ impl EffectManager {
             OperationMode::Gui => effect_thread_loop!(inner.rx.try_iter().last()),
         };
 
-        let manager = Self { tx, inner_handle, stop_signals };
+        let manager = Self {
+            tx,
+            inner_handle: Some(inner_handle),
+            stop_signals,
+        };
 
         Ok(manager)
     }
@@ -130,9 +145,11 @@ impl EffectManager {
         self.tx.send(Message::CustomEffect { effect }).unwrap();
     }
 
-    pub fn join_and_exit(self) {
+    pub fn join_and_exit(mut self) {
         self.tx.send(Message::Exit).unwrap();
-        self.inner_handle.join().unwrap();
+        if let Some(handle) = self.inner_handle.take() {
+            handle.join().unwrap();
+        };
     }
 }
 
@@ -173,10 +190,11 @@ impl Inner {
             },
 
             Effects::Lightning => Lightning::play(self, &profile, &mut thread_rng),
-            Effects::AmbientLight { mut fps } => {
+            Effects::AmbientLight { mut fps, mut saturation_boost } => {
                 fps = fps.clamp(1, 60);
+                saturation_boost = saturation_boost.clamp(0.0, 1.0);
 
-                AmbientLight::play(self, fps);
+                AmbientLight::play(self, fps, saturation_boost);
             }
             Effects::SmoothWave => {
                 profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
@@ -214,6 +232,13 @@ impl Inner {
         }
     }
 }
+
+impl Drop for EffectManager {
+    fn drop(&mut self) {
+        let _ = self.tx.send(Message::Exit);
+    }
+}
+
 #[derive(Clone)]
 pub struct StopSignals {
     pub manager_stop_signal: Arc<AtomicBool>,

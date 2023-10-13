@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::Path;
 
 use error_stack::{Result, ResultExt};
 use serde::{Deserialize, Serialize};
@@ -33,7 +33,7 @@ pub struct CustomEffect {
 pub struct LoadCustomEffectError;
 
 impl CustomEffect {
-    pub fn from_file(path: PathBuf) -> Result<Self, LoadCustomEffectError> {
+    pub fn from_file(path: &Path) -> Result<Self, LoadCustomEffectError> {
         Self::load(path).change_context(LoadCustomEffectError)
     }
 }

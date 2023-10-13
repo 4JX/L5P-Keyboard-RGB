@@ -154,11 +154,11 @@ impl Ripple {
             let guard = state.on_key_down(move |key| {
                 stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
 
-                let _ = tx_clone.send(Event::KeyPress(key.clone()));
+                let _ = tx_clone.send(Event::KeyPress(*key));
             });
 
             let guard2 = state.on_key_up(move |key| {
-                let _ = tx.send(Event::KeyRelease(key.clone()));
+                let _ = tx.send(Event::KeyRelease(*key));
             });
 
             loop {
@@ -239,13 +239,16 @@ fn advance_zone_state(zone_state: [RippleMove; 4], last_step_time: &mut Instant,
         *last_step_time = now;
 
         // Process moves first, then add centers
-        for (i, ripple_move) in zone_state.iter().enumerate() {
-            match ripple_move {
+        for (i, zone_move) in zone_state.iter().enumerate() {
+            match zone_move {
                 RippleMove::Left => {
-                    if let Some(left) = new_state.get_mut(i - 1) {
-                        *left = RippleMove::Left;
+                    if i != 0 {
+                        if let Some(left) = new_state.get_mut(i - 1) {
+                            *left = RippleMove::Left;
+                        }
                     }
                 }
+
                 RippleMove::Right => {
                     if let Some(right) = new_state.get_mut(i + 1) {
                         *right = RippleMove::Right;
@@ -257,8 +260,10 @@ fn advance_zone_state(zone_state: [RippleMove; 4], last_step_time: &mut Instant,
 
         for (i, ripple_move) in zone_state.iter().enumerate() {
             if let RippleMove::Center = ripple_move {
-                if let Some(left) = new_state.get_mut(i - 1) {
-                    *left = RippleMove::Left;
+                if i != 0 {
+                    if let Some(left) = new_state.get_mut(i - 1) {
+                        *left = RippleMove::Left;
+                    }
                 }
 
                 if let Some(right) = new_state.get_mut(i + 1) {

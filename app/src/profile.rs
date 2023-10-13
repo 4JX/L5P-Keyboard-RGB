@@ -1,4 +1,4 @@
-use std::{convert::TryInto, path::PathBuf};
+use std::{convert::TryInto, path::Path};
 
 use crate::{
     enums::{Brightness, Direction, Effects},
@@ -58,11 +58,11 @@ pub struct LoadProfileError;
 pub struct SaveProfileError;
 
 impl Profile {
-    pub fn load_profile(path: PathBuf) -> Result<Self, LoadProfileError> {
+    pub fn load_profile(path: &Path) -> Result<Self, LoadProfileError> {
         Self::load(path).change_context(LoadProfileError)
     }
 
-    pub fn save_profile(&self, path: PathBuf) -> Result<(), SaveProfileError> {
+    pub fn save_profile(&self, path: &Path) -> Result<(), SaveProfileError> {
         self.save(path).change_context(SaveProfileError)
     }
 

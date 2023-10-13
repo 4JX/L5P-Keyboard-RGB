@@ -1,5 +1,4 @@
 # https://rust-lang.github.io/rustfmt/?version=master&search=
-fn_args_layout = "Compressed"
-# hard_tabs = true
+fn_params_layout = "Compressed"
 max_width = 200
 use_try_shorthand = true

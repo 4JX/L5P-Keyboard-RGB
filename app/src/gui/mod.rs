@@ -1,24 +1,22 @@
-use std::{
-    mem,
-    path::{Path, PathBuf},
-    process, thread,
-    time::Duration,
-};
+use std::{mem, path::Path, process, thread, time::Duration};
 
 use crossbeam_channel::{Receiver, Sender};
 use device_query::{DeviceQuery, Keycode};
+#[cfg(debug_assertions)]
+use eframe::egui::style::DebugOptions;
 use eframe::{
-    egui::{style::DebugOptions, CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
+    egui::{CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
     emath::Align,
     epaint::{Color32, Rounding, Vec2},
     CreationContext,
 };
 
 use strum::IntoEnumIterator;
+use tray_item::{IconSource, TrayItem};
 
 use crate::{
-    cli::CliOutputType,
-    effects::{self, custom_effect::CustomEffect, EffectManager},
+    cli::OutputType,
+    effects::{self, custom_effect::CustomEffect, EffectManager, ManagerCreationError},
     enums::Effects,
     persist::Settings,
     profile::Profile,
@@ -34,9 +32,12 @@ mod profile_list;
 mod style;
 
 pub struct App {
-    unique_instance: bool,
-    show_window: bool,
+    instance_not_unique: bool,
+    hide_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
+    // The tray struct needs to be kept from being dropped for the tray to appear on windows
+    // If this is none it will be assumed there's no tray regardless of cause
+    tray: Option<TrayItem>,
 
     manager: Option<EffectManager>,
     profile: Profile,
@@ -65,16 +66,25 @@ pub enum CustomEffectState {
 }
 
 impl App {
-    pub fn new(output: CliOutputType, hide_window: bool, unique_instance: bool, tray_active: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
-        let manager = EffectManager::new(effects::OperationMode::Gui).ok();
+    pub fn new(output: OutputType, hide_window: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
+        let manager_result = EffectManager::new(effects::OperationMode::Gui);
+
+        let instance_not_unique = if let Err(err) = &manager_result {
+            &ManagerCreationError::InstanceAlreadyRunning == err.current_context()
+        } else {
+            false
+        };
+
+        let manager = manager_result.ok();
 
         let settings: Settings = Settings::load_or_default(Path::new("./settings.json"));
 
         // Default app state
         let mut app = Self {
-            unique_instance,
-            show_window: !hide_window,
-            window_open_rx: None,
+            instance_not_unique,
+            hide_window,
+            window_open_rx: Some(rx),
+            tray: None,
 
             manager,
             profile: Profile::default(),
@@ -91,20 +101,56 @@ impl App {
 
         // Update the state according to the option chosen by the user
         match output {
-            CliOutputType::Profile(profile) => app.profile = profile,
-            CliOutputType::Custom(effect) => app.custom_effect = CustomEffectState::Queued(effect),
-            CliOutputType::NoArgs => app.profile = settings.ui_state,
-            CliOutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
-        }
-
-        if tray_active {
-            app.window_open_rx = Some(rx);
+            OutputType::Profile(profile) => app.profile = profile,
+            OutputType::Custom(effect) => app.custom_effect = CustomEffectState::Queued(effect),
+            OutputType::NoArgs => app.profile = settings.ui_state,
+            OutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
         }
 
         app
     }
 
-    pub fn init(self, cc: &CreationContext<'_>, tx: Sender<GuiMessage>) -> Self {
+    pub fn init(mut self, cc: &CreationContext<'_>, gui_sender: Sender<GuiMessage>) -> Self {
+        //Create the tray icon
+        #[cfg(target_os = "linux")]
+        let tray_icon = load_tray_icon(include_bytes!("../../res/trayIcon.ico"));
+
+        #[cfg(target_os = "linux")]
+        let tray_result = TrayItem::new("Keyboard RGB", tray_icon);
+
+        #[cfg(target_os = "windows")]
+        let tray_result = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon"));
+
+        self.tray = if let Ok(mut tray) = tray_result {
+            let mut is_err = false;
+
+            let show_sender = gui_sender.clone();
+            let egui_ctx = cc.egui_ctx.clone();
+            is_err |= tray
+                .add_menu_item("Show", move || {
+                    egui_ctx.request_repaint();
+                    show_sender.send(GuiMessage::ShowWindow).unwrap()
+                })
+                .is_err();
+
+            let quit_sender = gui_sender.clone();
+            let egui_ctx = cc.egui_ctx.clone();
+            is_err |= tray
+                .add_menu_item("Quit", move || {
+                    egui_ctx.request_repaint();
+                    quit_sender.send(GuiMessage::Quit).unwrap()
+                })
+                .is_err();
+
+            if !is_err {
+                Some(tray)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         let ctx = cc.egui_ctx.clone();
         if self.manager.is_some() {
             thread::spawn(move || {
@@ -116,7 +162,7 @@ impl App {
 
                     if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::RAlt) {
                         if !lock_switching {
-                            let _ = tx.send(GuiMessage::CycleProfiles);
+                            let _ = gui_sender.send(GuiMessage::CycleProfiles);
                             ctx.request_repaint();
                             lock_switching = true;
                         }
@@ -140,22 +186,23 @@ impl eframe::App for App {
         if let Some(rx) = &self.window_open_rx {
             if let Ok(message) = rx.try_recv() {
                 match message {
-                    GuiMessage::ShowWindow => self.show_window = true,
+                    GuiMessage::ShowWindow => self.hide_window = false,
                     GuiMessage::CycleProfiles => self.cycle_profiles(),
                     GuiMessage::Quit => self.exit_app(),
                 }
             }
         }
 
-        if !self.unique_instance && modals::unique_instance(ctx) {
+        if self.instance_not_unique && modals::unique_instance(ctx) {
             self.exit_app();
         };
 
-        if self.manager.is_none() && modals::manager_error(ctx) {
+        // The uniqueness prompt has priority over generic errors
+        if !self.instance_not_unique && self.manager.is_none() && modals::manager_error(ctx) {
             self.exit_app();
         };
 
-        frame.set_visible(self.show_window);
+        frame.set_visible(!self.hide_window);
 
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
             self.menu_bar.show(ctx, ui, &mut self.profile, &mut self.custom_effect, &mut self.profile_changed);
@@ -252,8 +299,8 @@ impl eframe::App for App {
     }
 
     fn on_close_event(&mut self) -> bool {
-        if self.window_open_rx.is_some() {
-            self.show_window = false;
+        if self.tray.is_some() {
+            self.hide_window = true;
             false
         } else {
             true
@@ -261,9 +308,9 @@ impl eframe::App for App {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        let path = PathBuf::from("./settings.json");
+        let path = Path::new("./settings.json");
 
-        let mut settings = Settings::load_or_default(&path);
+        let mut settings = Settings::load_or_default(path);
 
         settings.profiles = std::mem::take(&mut self.profile_list.profiles);
 
@@ -278,8 +325,11 @@ impl App {
         let style = Style {
             // text_styles: text_utils::default_text_styles(),
             visuals: self.theme.visuals.clone(),
+            #[cfg(debug_assertions)]
             debug: DebugOptions {
                 debug_on_hover: false,
+                debug_on_hover_with_all_modifiers: false,
+                hover_shows_next: false,
                 show_expand_width: false,
                 show_expand_height: false,
                 show_resize: false,
@@ -315,5 +365,19 @@ impl App {
 
             self.profile_changed = true;
         }
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[must_use]
+pub fn load_tray_icon(image_data: &[u8]) -> IconSource {
+    let image = image::load_from_memory(image_data).unwrap();
+    let image_buffer = image.to_rgba8();
+    let pixels = image_buffer.into_flat_samples().samples;
+
+    IconSource::Data {
+        data: pixels,
+        width: image.width() as i32,
+        height: image.height() as i32,
     }
 }

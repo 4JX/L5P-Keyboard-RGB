@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use thiserror::Error;
 
 use crate::{
-    effects::custom_effect::CustomEffect,
+    effects::{self, custom_effect::CustomEffect, ManagerCreationError},
     enums::{Brightness, Direction, Effects},
     profile::{self, Profile},
 };
@@ -108,15 +108,34 @@ fn parse_colors(arg: &str) -> std::result::Result<[u8; 12], String> {
     }
 }
 
-pub struct CliOutput {
-    /// Indicates if the user wants to start the GUI
-    pub start_gui_maybe_hidden: Option<bool>,
+pub enum CliOutput {
+    /// Start the UI
+    Gui { hide_window: bool, output: OutputType },
 
-    /// What instruction was received through the CLI
-    pub output: CliOutputType,
+    /// CLI arguments were passed
+    Cli(OutputType),
 }
 
-pub enum CliOutputType {
+impl CliOutput {
+    fn maybe_gui(start_gui: bool, hide_window: bool, output: OutputType) -> Self {
+        if start_gui {
+            Self::Gui { hide_window, output }
+        } else {
+            Self::Cli(output)
+        }
+    }
+}
+
+pub enum GuiCommand {
+    /// Start the UI
+    Start { hide_window: bool, output: OutputType },
+
+    /// Close the program as the CLI was invoked
+    Exit,
+}
+
+/// What instruction was received through the CLI
+pub enum OutputType {
     Profile(Profile),
     Custom(CustomEffect),
     NoArgs,
@@ -127,93 +146,111 @@ pub enum CliOutputType {
 #[error("There was an error while executing the CLI")]
 pub struct CliError;
 
-pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
-    let cli = Cli::parse();
+pub fn try_cli() -> Result<GuiCommand, CliError> {
+    let output = parse_cli()?;
 
-    match cli.command {
-        Some(subcommand) => {
-            // Early logic for specific subcommands
-            if let Commands::Set { .. } | Commands::CustomEffect { .. } = subcommand {
-                assert!(is_unique_instance, "Another instance of the program is already running, please close it before starting a new one.");
+    match output {
+        CliOutput::Gui { hide_window, output } => Ok(GuiCommand::Start { hide_window, output }),
+        CliOutput::Cli(output) => {
+            let manager_result = effects::EffectManager::new(effects::OperationMode::Cli);
+
+            let instance_not_unique = if let Err(err) = &manager_result {
+                &ManagerCreationError::InstanceAlreadyRunning == err.current_context()
+            } else {
+                false
+            };
+
+            // Don't interrupt other instances if trying to interact with the keyboard
+            if let OutputType::Profile(..) | OutputType::Custom(..) = output {
+                if instance_not_unique {
+                    println!("Another instance of the program is already running, please close it before starting a new one.");
+                    process::exit(0);
+                }
             }
 
-            match subcommand {
-                Commands::Set {
-                    effect,
-                    colors,
-                    brightness,
-                    speed,
-                    direction,
-                    save,
-                } => {
-                    let direction = direction.unwrap_or_default();
+            let mut effect_manager = manager_result.unwrap();
 
-                    let rgb_array: [u8; 12] = if effect.takes_color_array() {
-                        colors.unwrap_or_else(|| {
-                            println!("This effect requires specifying the colors to use.");
-                            process::exit(0);
-                        })
-                    } else {
-                        [0; 12]
-                    };
-
-                    let profile = Profile {
-                        name: "Profile".to_string(),
-                        rgb_zones: profile::arr_to_zones(rgb_array),
-                        effect,
-                        direction,
-                        speed,
-                        brightness,
-                    };
-
-                    if let Some(filename) = save {
-                        profile.save_profile(filename).expect("Failed to save.");
-                    }
-
-                    Ok(CliOutput {
-                        start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
-                        output: CliOutputType::Profile(profile),
-                    })
+            match output {
+                OutputType::Profile(profile) => {
+                    effect_manager.set_profile(profile);
+                    effect_manager.join_and_exit();
+                    Ok(GuiCommand::Exit)
                 }
-                Commands::List => {
-                    println!("List of available effects:");
-                    for (i, effect) in Effects::iter().enumerate() {
-                        println!("{i}. {effect}",);
-                    }
-
-                    Ok(CliOutput {
-                        start_gui_maybe_hidden: None,
-                        output: CliOutputType::Exit,
-                    })
+                OutputType::Custom(effect) => {
+                    effect_manager.custom_effect(effect);
+                    effect_manager.join_and_exit();
+                    Ok(GuiCommand::Exit)
                 }
-
-                Commands::LoadProfile { path } => {
-                    let profile = Profile::load_profile(path).change_context(CliError)?;
-
-                    Ok(CliOutput {
-                        start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
-                        output: CliOutputType::Profile(profile),
-                    })
-                }
-
-                Commands::CustomEffect { path } => {
-                    let effect = CustomEffect::from_file(path).change_context(CliError)?;
-
-                    Ok(CliOutput {
-                        start_gui_maybe_hidden: if cli.gui { Some(cli.hide_window) } else { None },
-                        output: CliOutputType::Custom(effect),
-                    })
-                }
+                OutputType::Exit => Ok(GuiCommand::Exit),
+                OutputType::NoArgs => unreachable!("No arguments were provided but the app is in CLI mode"),
             }
         }
+    }
+}
 
-        None => {
-            let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
-            println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
-            Ok(CliOutput {
-                start_gui_maybe_hidden: Some(cli.hide_window),
-                output: CliOutputType::NoArgs,
-            })
+fn parse_cli() -> Result<CliOutput, CliError> {
+    let cli = Cli::parse();
+
+    let Some(subcommand) = cli.command else {
+        let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
+        println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
+        return Ok(CliOutput::maybe_gui(true, cli.hide_window, OutputType::NoArgs));
+    };
+
+    match subcommand {
+        Commands::Set {
+            effect,
+            colors,
+            brightness,
+            speed,
+            direction,
+            save,
+        } => {
+            let direction = direction.unwrap_or_default();
+
+            let rgb_array: [u8; 12] = if effect.takes_color_array() {
+                colors.unwrap_or_else(|| {
+                    println!("This effect requires specifying the colors to use.");
+                    process::exit(0);
+                })
+            } else {
+                [0; 12]
+            };
+
+            let profile = Profile {
+                name: "Profile".to_string(),
+                rgb_zones: profile::arr_to_zones(rgb_array),
+                effect,
+                direction,
+                speed,
+                brightness,
+            };
+
+            if let Some(filename) = save {
+                profile.save_profile(&filename).expect("Failed to save.");
+            }
+
+            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Profile(profile)))
+        }
+        Commands::List => {
+            println!("List of available effects:");
+            for (i, effect) in Effects::iter().enumerate() {
+                println!("{}. {effect}", i + 1);
+            }
+
+            Ok(CliOutput::maybe_gui(false, cli.hide_window, OutputType::Exit))
+        }
+
+        Commands::LoadProfile { path } => {
+            let profile = Profile::load_profile(&path).change_context(CliError)?;
+
+            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Profile(profile)))
+        }
+
+        Commands::CustomEffect { path } => {
+            let effect = CustomEffect::from_file(&path).change_context(CliError)?;
+
+            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Custom(effect)))
         }
     }
 }

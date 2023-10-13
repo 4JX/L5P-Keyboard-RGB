@@ -1,25 +1,48 @@
 [package]
 name = "legion-kb-rgb"
-version = "0.19.2"
+version = "0.19.3"
 authors = ["4JX"]
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
 license = "GPL-3.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# Main driver
 legion-rgb-driver = { path = "../driver" }
 
+# Cli
+clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
+
+# Ui
+eframe = "0.23.0"
+egui-modal = "0.2.5"
+# egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
+egui_file = "0.11.0"
+egui-notify = "0.10.0"
+# egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
+
+# App window, taskbar and tray icon loading
+image = "0.24.5"
+
+# AmbientLight effect
 scrap = { git = "https://github.com/rustdesk/rustdesk", rev = "6c15dd6", features = [
     "wayland",
 ] }
-rand = "0.8.5"
 fast_image_resize = "2.4.0"
-tray-item = { version = "0.5.0-alpha", git = "https://github.com/njust/tray-item-rs" }
-clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
-strum = "0.24.1"
-strum_macros = "0.24.3"
+# default-features = false just removes the use_wasm feature that removes a lot of unecessary slack
+# since this app wont ever use the web
+# photon-rs = { version = "0.3.2", default-features = false }
+photon-rs = { git = "https://github.com/silvia-odwyer/photon", rev = "3e8a2a6", default-features = false }
+
+
+# Keyboard and mouse grabbing
+device_query = "1.1.3"
+
+rand = "0.8.5"
+strum = "0.25.0"
+strum_macros = "0.25.2"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 color-eyre = "0.6.2"
@@ -27,27 +50,23 @@ sysinfo = "0.29.0"
 crossbeam-channel = "0.5.8"
 thiserror = "1.0.38"
 single-instance = "0.3.3"
-image = "0.24.5"
-open = "4.1.0"
-error-stack = "0.3.1"
-eframe = "0.22.0"
-# egui-modal = "0.1.8"
-egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
-egui_file = "0.9.0"
-# egui-notify = "0.6.0"
-egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
-device_query = "1.1.3"
+open = "5.0.0"
+error-stack = "0.4.1"
+winapi = { version = "0.3.9", features = ["consoleapi", "wincon"] }
 
-# Fix version to stop cargo from yelling about dependency resolution
-bytes = "1.4.0"
+# Fix versions to stop cargo from yelling about dependency resolution
 
-# Dependabot alertsa
-regex = "1.6.0"
-crossbeam-utils = "0.8.12"
+# Dependabot alerts
 
+
+[target.'cfg(target_os = "windows")'.dependencies]
+tray-item = { version = "0.8.0" }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+tray-item = { version = "0.8.0", features = ["ksni"] }
 
 [build-dependencies]
-winres = "0.1.12"
+windres = "0.2.2"
 
 [package.metadata.vcpkg]
 git = "https://github.com/microsoft/vcpkg"

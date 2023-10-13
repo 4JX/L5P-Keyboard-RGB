@@ -1,2 +1,3 @@
 [workspace]
 members = ["app", "driver"]
+resolver = "2"

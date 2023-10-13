@@ -46,7 +46,7 @@ impl MenuBarState {
         if let Some(dialog) = &mut self.open_file_dialog {
             if dialog.show(ctx).selected() {
                 if let Some(path) = dialog.path() {
-                    self.opened_file = Some(path.clone());
+                    self.opened_file = Some(path.to_owned());
                     if let Some(kind) = &self.file_kind {
                         match kind {
                             FileOperation::LoadProfile => match Profile::load_profile(path) {
@@ -120,6 +120,23 @@ impl MenuBarState {
 
             if ui.button("Exit").clicked() {
                 self.gui_sender.send(GuiMessage::Quit).unwrap();
+            }
+
+            #[cfg(target_os = "windows")]
+            {
+                use crate::console;
+                use eframe::{egui::Layout, emath::Align};
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    if ui.button("📜").clicked() {
+                        if !console::alloc() {
+                            self.toasts
+                                .error("Could not allocate debug terminal.")
+                                .set_duration(Some(Duration::from_millis(5000)))
+                                .set_closable(true);
+                        }
+                        println!("Debug terminal enabled.");
+                    }
+                });
             }
         });
     }
