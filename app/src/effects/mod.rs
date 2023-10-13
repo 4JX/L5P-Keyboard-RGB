@@ -50,7 +50,7 @@ pub enum ManagerCreationError {
 /// Manager wrapper
 pub struct EffectManager {
     pub tx: Sender<Message>,
-    inner_handle: JoinHandle<()>,
+    inner_handle: Option<JoinHandle<()>>,
     stop_signals: StopSignals,
 }
 
@@ -126,7 +126,11 @@ impl EffectManager {
             OperationMode::Gui => effect_thread_loop!(inner.rx.try_iter().last()),
         };
 
-        let manager = Self { tx, inner_handle, stop_signals };
+        let manager = Self {
+            tx,
+            inner_handle: Some(inner_handle),
+            stop_signals,
+        };
 
         Ok(manager)
     }
@@ -141,9 +145,11 @@ impl EffectManager {
         self.tx.send(Message::CustomEffect { effect }).unwrap();
     }
 
-    pub fn join_and_exit(self) {
+    pub fn join_and_exit(mut self) {
         self.tx.send(Message::Exit).unwrap();
-        self.inner_handle.join().unwrap();
+        if let Some(handle) = self.inner_handle.take() {
+            handle.join().unwrap();
+        };
     }
 }
 
@@ -226,6 +232,13 @@ impl Inner {
         }
     }
 }
+
+impl Drop for EffectManager {
+    fn drop(&mut self) {
+        let _ = self.tx.send(Message::Exit);
+    }
+}
+
 #[derive(Clone)]
 pub struct StopSignals {
     pub manager_stop_signal: Arc<AtomicBool>,
