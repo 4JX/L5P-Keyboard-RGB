@@ -28,7 +28,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.70.0";
+        rustVersion = "1.73.0";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [
@@ -115,11 +115,9 @@
         workspaceSrc = ./.;
         workspaceSrcString = builtins.toString workspaceSrc;
 
-        protoFilter = path: _type: builtins.match "${workspaceSrcString}/app/libs/hbb_common/protos/.*.proto$" path != null;
-        vpxHeaderFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/libs/scrap/vpx_ffi.h$" path != null;
         resFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/res/.*" path != null;
         workspaceFilter = path: type:
-          (protoFilter path type) || (vpxHeaderFileFilter path type) || (resFileFilter path type) || (craneLib.filterCargoSources path type);
+          (resFileFilter path type) || (craneLib.filterCargoSources path type);
 
 
         src = nixLib.cleanSourceWith
@@ -144,17 +142,25 @@
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
+        stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
+
         cargoArtifacts = craneLib.buildDepsOnly ({
           inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
-          inherit src buildInputs nativeBuildInputs;
+          inherit src buildInputs nativeBuildInputs stdenv;
+
+          # This magic thing here is needed otherwise the build fails
+          # https://github.com/ipetkov/crane/issues/411#issuecomment-1743441117
+          # Might revisit later to see if anything else pops up
+          installCargoArtifactsMode = "use-zstd";
         } // envVars);
 
         # The main application derivation
         legion-kb-rgb = craneLib.buildPackage
           ({
             inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
-            inherit src cargoArtifacts buildInputs nativeBuildInputs;
+
+            inherit src cargoArtifacts buildInputs nativeBuildInputs stdenv;
 
             doCheck = false;
 
