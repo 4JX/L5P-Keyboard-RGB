@@ -7,6 +7,7 @@ use crossbeam_channel::{Receiver, Sender};
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use rand::thread_rng;
+use single_instance::SingleInstance;
 use std::{
     sync::atomic::{AtomicBool, Ordering},
     thread,
@@ -37,13 +38,14 @@ mod ripple;
 mod swipe;
 mod temperature;
 
-#[derive(Debug, Error)]
-#[error("There was an error getting a valid keyboard")]
-pub struct AcquireKeyboardError;
-
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 #[error("Could not create keyboard manager")]
-pub struct ManagerCreationError;
+pub enum ManagerCreationError {
+    #[error("There was an error getting a valid keyboard")]
+    AcquireKeyboard,
+    #[error("An instance of the program is already running")]
+    InstanceAlreadyRunning,
+}
 
 /// Manager wrapper
 pub struct EffectManager {
@@ -58,6 +60,9 @@ struct Inner {
     rx: Receiver<Message>,
     stop_signals: StopSignals,
     last_profile: Profile,
+    // Can't drop this else it stops "reserving" whatever underlying implementation identifier it uses
+    #[allow(dead_code)]
+    single_instance: SingleInstance,
 }
 
 #[derive(Clone, Copy)]
@@ -73,11 +78,17 @@ impl EffectManager {
             keyboard_stop_signal: Arc::new(AtomicBool::new(false)),
         };
 
+        // Use the crate's name as the identifier, should be unique enough
+        let single_instance = SingleInstance::new(env!("CARGO_PKG_NAME")).unwrap();
+
+        if !single_instance.is_single() {
+            return Err(ManagerCreationError::InstanceAlreadyRunning.into());
+        }
+
         let keyboard = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())
-            .change_context(AcquireKeyboardError)
+            .change_context(ManagerCreationError::AcquireKeyboard)
             .attach_printable("Ensure that you have a supported model and that the application has access to it.")
-            .attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage")
-            .change_context(ManagerCreationError)?;
+            .attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage")?;
 
         let (tx, rx) = crossbeam_channel::unbounded::<Message>();
 
@@ -86,6 +97,7 @@ impl EffectManager {
             rx,
             stop_signals: stop_signals.clone(),
             last_profile: Profile::default(),
+            single_instance,
         };
 
         macro_rules! effect_thread_loop {

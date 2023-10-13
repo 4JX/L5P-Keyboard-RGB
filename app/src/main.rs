@@ -11,12 +11,10 @@ mod persist;
 mod profile;
 mod util;
 
-use cli::{CliOutput, OutputType};
+use cli::{GuiCommand, OutputType};
 use color_eyre::{eyre::eyre, Result};
-use effects::EffectManager;
 use eframe::{epaint::Vec2, IconData};
 use gui::{App, GuiMessage};
-use util::is_unique_instance;
 
 const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
 
@@ -71,38 +69,19 @@ fn setup_panic() -> Result<()> {
 }
 
 fn init() -> Result<()> {
-    let is_unique = is_unique_instance();
-
-    let cli_output = cli::try_cli(is_unique).map_err(|err| eyre!("{:?}", err))?;
+    let cli_output = cli::try_cli().map_err(|err| eyre!("{:?}", err))?;
 
     match cli_output {
-        CliOutput::Gui { hide_window, output } => {
-            start_ui(output, is_unique, hide_window);
+        GuiCommand::Start { hide_window, output } => {
+            start_ui(output, hide_window);
 
             Ok(())
         }
-        CliOutput::Cli(output) => {
-            let mut effect_manager = EffectManager::new(effects::OperationMode::Cli).unwrap();
-
-            match output {
-                cli::OutputType::Profile(profile) => {
-                    effect_manager.set_profile(profile);
-                    effect_manager.join_and_exit();
-                    Ok(())
-                }
-                cli::OutputType::Custom(effect) => {
-                    effect_manager.custom_effect(effect);
-                    effect_manager.join_and_exit();
-                    Ok(())
-                }
-                cli::OutputType::Exit => Ok(()),
-                cli::OutputType::NoArgs => unreachable!("No arguments were provided but the app is in CLI mode"),
-            }
-        }
+        GuiCommand::Exit => Ok(()),
     }
 }
 
-fn start_ui(output_type: OutputType, is_unique: bool, hide_window: bool) {
+fn start_ui(output_type: OutputType, hide_window: bool) {
     let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
     let native_options = eframe::NativeOptions {
         initial_window_size: Some(WINDOW_SIZE),
@@ -115,7 +94,7 @@ fn start_ui(output_type: OutputType, is_unique: bool, hide_window: bool) {
     let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
 
     let gui_sender_clone = gui_sender.clone();
-    let app = App::new(output_type, hide_window, is_unique, gui_sender_clone, gui_receiver);
+    let app = App::new(output_type, hide_window, gui_sender_clone, gui_receiver);
 
     eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender)))).unwrap();
 }

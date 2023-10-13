@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use thiserror::Error;
 
 use crate::{
-    effects::custom_effect::CustomEffect,
+    effects::{self, custom_effect::CustomEffect, ManagerCreationError},
     enums::{Brightness, Direction, Effects},
     profile::{self, Profile},
 };
@@ -126,6 +126,14 @@ impl CliOutput {
     }
 }
 
+pub enum GuiCommand {
+    /// Start the UI
+    Start { hide_window: bool, output: OutputType },
+
+    /// Close the program as the CLI was invoked
+    Exit,
+}
+
 /// What instruction was received through the CLI
 pub enum OutputType {
     Profile(Profile),
@@ -138,7 +146,49 @@ pub enum OutputType {
 #[error("There was an error while executing the CLI")]
 pub struct CliError;
 
-pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
+pub fn try_cli() -> Result<GuiCommand, CliError> {
+    let output = parse_cli()?;
+
+    match output {
+        CliOutput::Gui { hide_window, output } => Ok(GuiCommand::Start { hide_window, output }),
+        CliOutput::Cli(output) => {
+            let manager_result = effects::EffectManager::new(effects::OperationMode::Cli);
+
+            let instance_not_unique = if let Err(err) = &manager_result {
+                &ManagerCreationError::InstanceAlreadyRunning == err.current_context()
+            } else {
+                false
+            };
+
+            // Don't interrupt other instances if trying to interact with the keyboard
+            if let OutputType::Profile(..) | OutputType::Custom(..) = output {
+                if instance_not_unique {
+                    println!("Another instance of the program is already running, please close it before starting a new one.");
+                    process::exit(0);
+                }
+            }
+
+            let mut effect_manager = manager_result.unwrap();
+
+            match output {
+                OutputType::Profile(profile) => {
+                    effect_manager.set_profile(profile);
+                    effect_manager.join_and_exit();
+                    Ok(GuiCommand::Exit)
+                }
+                OutputType::Custom(effect) => {
+                    effect_manager.custom_effect(effect);
+                    effect_manager.join_and_exit();
+                    Ok(GuiCommand::Exit)
+                }
+                OutputType::Exit => Ok(GuiCommand::Exit),
+                OutputType::NoArgs => unreachable!("No arguments were provided but the app is in CLI mode"),
+            }
+        }
+    }
+}
+
+fn parse_cli() -> Result<CliOutput, CliError> {
     let cli = Cli::parse();
 
     let Some(subcommand) = cli.command else {
@@ -146,14 +196,6 @@ pub fn try_cli(is_unique_instance: bool) -> Result<CliOutput, CliError> {
         println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
         return Ok(CliOutput::maybe_gui(true, cli.hide_window, OutputType::NoArgs));
     };
-
-    // Early logic for specific subcommands
-    if let Commands::Set { .. } | Commands::CustomEffect { .. } = subcommand {
-        if !is_unique_instance {
-            println!("Another instance of the program is already running, please close it before starting a new one.");
-            process::exit(0);
-        }
-    }
 
     match subcommand {
         Commands::Set {

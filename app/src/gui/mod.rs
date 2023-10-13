@@ -16,7 +16,7 @@ use tray_item::{IconSource, TrayItem};
 
 use crate::{
     cli::OutputType,
-    effects::{self, custom_effect::CustomEffect, EffectManager},
+    effects::{self, custom_effect::CustomEffect, EffectManager, ManagerCreationError},
     enums::Effects,
     persist::Settings,
     profile::Profile,
@@ -32,7 +32,7 @@ mod profile_list;
 mod style;
 
 pub struct App {
-    unique_instance: bool,
+    instance_not_unique: bool,
     hide_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
     // The tray struct needs to be kept from being dropped for the tray to appear on windows
@@ -66,14 +66,22 @@ pub enum CustomEffectState {
 }
 
 impl App {
-    pub fn new(output: OutputType, hide_window: bool, unique_instance: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
-        let manager = EffectManager::new(effects::OperationMode::Gui).ok();
+    pub fn new(output: OutputType, hide_window: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
+        let manager_result = EffectManager::new(effects::OperationMode::Gui);
+
+        let instance_not_unique = if let Err(err) = &manager_result {
+            &ManagerCreationError::InstanceAlreadyRunning == err.current_context()
+        } else {
+            false
+        };
+
+        let manager = manager_result.ok();
 
         let settings: Settings = Settings::load_or_default(Path::new("./settings.json"));
 
         // Default app state
         let mut app = Self {
-            unique_instance,
+            instance_not_unique,
             hide_window,
             window_open_rx: Some(rx),
             tray: None,
@@ -185,11 +193,12 @@ impl eframe::App for App {
             }
         }
 
-        if !self.unique_instance && modals::unique_instance(ctx) {
+        if self.instance_not_unique && modals::unique_instance(ctx) {
             self.exit_app();
         };
 
-        if self.manager.is_none() && modals::manager_error(ctx) {
+        // The uniqueness prompt has priority over generic errors
+        if !self.instance_not_unique && self.manager.is_none() && modals::manager_error(ctx) {
             self.exit_app();
         };
 

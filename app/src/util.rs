@@ -1,8 +1,6 @@
-use clap::crate_name;
 use eframe::egui::Ui;
 use error_stack::{Result, ResultExt};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use single_instance::SingleInstance;
 use std::{fs::File, io::Write, path::Path};
 use thiserror::Error;
 
@@ -36,10 +34,6 @@ where
 
         Ok(())
     }
-}
-
-pub fn is_unique_instance() -> bool {
-    SingleInstance::new(crate_name!()).unwrap().is_single()
 }
 
 pub fn clickable_link(ui: &mut Ui, url: &str) {
