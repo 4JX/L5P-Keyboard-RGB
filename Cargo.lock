@@ -2417,7 +2417,7 @@ checksum = "03087c2bad5e1034e8cace5926dec053fb3790248370865f5117a7d0213354c8"
 
 [[package]]
 name = "legion-kb-rgb"
-version = "0.19.2"
+version = "0.19.3"
 dependencies = [
  "clap 4.3.5",
  "color-eyre",
@@ -3222,7 +3222,7 @@ dependencies = [
 [[package]]
 name = "photon-rs"
 version = "0.3.2"
-source = "git+https://github.com/4JX/photon?rev=53d9464#53d946448ef5d956763f39b632aa485f55916330"
+source = "git+https://github.com/silvia-odwyer/photon?rev=3e8a2a6#3e8a2a68241d69c3980df7d149b65c3357001d14"
 dependencies = [
  "base64",
  "image 0.23.14",

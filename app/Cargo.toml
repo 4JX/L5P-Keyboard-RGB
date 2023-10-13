@@ -1,6 +1,6 @@
 [package]
 name = "legion-kb-rgb"
-version = "0.19.2"
+version = "0.19.3"
 authors = ["4JX"]
 edition = "2021"
 homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
@@ -34,7 +34,7 @@ fast_image_resize = "2.4.0"
 # default-features = false just removes the use_wasm feature that removes a lot of unecessary slack
 # since this app wont ever use the web
 # photon-rs = { version = "0.3.2", default-features = false }
-photon-rs = { git = "https://github.com/4JX/photon", rev = "53d9464", default-features = false }
+photon-rs = { git = "https://github.com/silvia-odwyer/photon", rev = "3e8a2a6", default-features = false }
 
 
 # Keyboard and mouse grabbing
