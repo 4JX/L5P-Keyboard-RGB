@@ -32,7 +32,7 @@ impl PartialEq for Effects {
 #[allow(dead_code)]
 impl Effects {
     pub fn takes_color_array(self) -> bool {
-        matches!(self, Self::Static | Self::Breath | Self::Swipe { .. } | Self::Fade | Self::Ripple)
+        matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Fade | Self::Ripple)
     }
 
     pub fn takes_direction(self) -> bool {
