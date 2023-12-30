@@ -1,113 +1,58 @@
-#![cfg_attr(not(test), windows_subsystem = "windows")]
-#![cfg_attr(test, windows_subsystem = "console")]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-mod cli;
-#[cfg(target_os = "windows")]
-mod console;
-mod effects;
-mod enums;
-mod gui;
-mod persist;
-mod profile;
-mod util;
+use eframe::egui;
 
-use cli::{GuiCommand, OutputType};
-use color_eyre::{eyre::eyre, Result};
-use eframe::{epaint::Vec2, IconData};
-use gui::{App, GuiMessage};
-
-const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
-
-fn main() {
-    #[cfg(target_os = "windows")]
-    {
-        setup_panic().unwrap();
-
-        // This just enables output if the program is already being ran from the CLI
-        console::attach();
-        let res = init();
-        console::free();
-
-        if res.is_err() {
-            std::process::exit(2);
-        }
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        color_eyre::install().unwrap();
-
-        init().unwrap();
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn setup_panic() -> Result<()> {
-    // A somewhat unwrapped version of color_eyre::install() to add a "wait for enter" after printing the text
-    use color_eyre::config::Theme;
-    let builder = color_eyre::config::HookBuilder::default()
-    // HACK: Forgo colors in windows outputs because I cannot figure out why allocated consoles don't display them
-    .theme(Theme::new());
-
-    let (panic_hook, eyre_hook) = builder.into_hooks();
-    eyre_hook.install()?;
-
-    std::panic::set_hook(Box::new(move |panic_info| {
-        if !console::alloc() {
-            // No point trying to print without a console...
-            return;
-        }
-
-        eprintln!("{}", panic_hook.panic_report(panic_info));
-        println!("Press Enter to continue...");
-        let _ = std::io::stdin().read_line(&mut String::new());
-
-        std::process::exit(1);
-    }));
-
-    Ok(())
-}
-
-fn init() -> Result<()> {
-    let cli_output = cli::try_cli().map_err(|err| eyre!("{:?}", err))?;
-
-    match cli_output {
-        GuiCommand::Start { hide_window, output } => {
-            start_ui(output, hide_window);
-
-            Ok(())
-        }
-        GuiCommand::Exit => Ok(()),
-    }
-}
-
-fn start_ui(output_type: OutputType, hide_window: bool) {
-    let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
-    let native_options = eframe::NativeOptions {
-        initial_window_size: Some(WINDOW_SIZE),
-        min_window_size: Some(WINDOW_SIZE),
-        max_window_size: Some(WINDOW_SIZE),
-        icon_data: Some(app_icon),
-        ..eframe::NativeOptions::default()
+fn main() -> Result<(), eframe::Error> {
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+        ..Default::default()
     };
-
-    let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
-
-    let gui_sender_clone = gui_sender.clone();
-    let app = App::new(output_type, hide_window, gui_sender_clone, gui_receiver);
-
-    eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender)))).unwrap();
+    eframe::run_native(
+        "Confirm exit",
+        options,
+        Box::new(|_cc| Box::<MyApp>::default()),
+    )
 }
 
-#[must_use]
-fn load_icon_data(image_data: &[u8]) -> IconData {
-    let image = image::load_from_memory(image_data).unwrap();
-    let image_buffer = image.to_rgba8();
-    let pixels = image_buffer.into_flat_samples().samples;
+#[derive(Default)]
+struct MyApp {
+    show_confirmation_dialog: bool,
+    allowed_to_close: bool,
+}
 
-    IconData {
-        rgba: pixels,
-        width: image.width(),
-        height: image.height(),
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("Try to close the window");
+        });
+
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if self.allowed_to_close {
+                // do nothing - we will close
+            } else {
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                self.show_confirmation_dialog = true;
+            }
+        }
+
+        if self.show_confirmation_dialog {
+            egui::Window::new("Do you want to quit?")
+                .collapsible(false)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        if ui.button("No").clicked() {
+                            self.show_confirmation_dialog = false;
+                            self.allowed_to_close = false;
+                        }
+
+                        if ui.button("Yes").clicked() {
+                            self.show_confirmation_dialog = false;
+                            self.allowed_to_close = true;
+                            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                    });
+                });
+        }
     }
 }

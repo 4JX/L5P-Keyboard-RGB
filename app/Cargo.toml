@@ -16,7 +16,9 @@ legion-rgb-driver = { path = "../driver" }
 clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
 
 # Ui
-eframe = "0.23.0"
+eframe = { git = "https://github.com/emilk/egui", rev = "9951fe0", features = [
+] }
+
 egui-modal = "0.2.5"
 # egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
 egui_file = "0.11.0"

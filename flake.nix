@@ -60,6 +60,14 @@
           freetype
           xorg.libXrandr
           libGL
+
+          mesa
+          xorg.libX11
+          xorg.libXxf86vm
+          xorg.libXi
+
+          wayland
+          libxkbcommon
         ] ++ sharedDeps;
 
 
@@ -112,19 +120,19 @@
         };
 
         # Allow a few more files to be included in the build workspace
-        workspaceSrc = ./.;
-        workspaceSrcString = builtins.toString workspaceSrc;
+        # workspaceSrc = ./.;
+        # workspaceSrcString = builtins.toString workspaceSrc;
 
-        resFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/res/.*" path != null;
-        workspaceFilter = path: type:
-          (resFileFilter path type) || (craneLib.filterCargoSources path type);
+        # resFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/res/.*" path != null;
+        # workspaceFilter = path: type:
+        #   (resFileFilter path type) || (craneLib.filterCargoSources path type);
 
 
-        src = nixLib.cleanSourceWith
-          {
-            src = workspaceSrc;
-            filter = workspaceFilter;
-          };
+        # src = nixLib.cleanSourceWith
+        #   {
+        #     src = workspaceSrc;
+        #     filter = workspaceFilter;
+        #   };
 
         buildInputs = with pkgs;
           [
@@ -142,60 +150,60 @@
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
-        stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
+        # stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
-        inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
+        # inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
-        cargoArtifacts = craneLib.buildDepsOnly ({
+        # cargoArtifacts = craneLib.buildDepsOnly ({
 
-          inherit pname version src buildInputs nativeBuildInputs stdenv;
+        #   inherit pname version src buildInputs nativeBuildInputs stdenv;
 
-          # This magic thing here is needed otherwise the build fails
-          # https://github.com/ipetkov/crane/issues/411#issuecomment-1743441117
-          # Might revisit later to see if anything else pops up
-          installCargoArtifactsMode = "use-zstd";
-        } // envVars);
+        #   # This magic thing here is needed otherwise the build fails
+        #   # https://github.com/ipetkov/crane/issues/411#issuecomment-1743441117
+        #   # Might revisit later to see if anything else pops up
+        #   installCargoArtifactsMode = "use-zstd";
+        # } // envVars);
 
         # The main application derivation
-        legion-kb-rgb = craneLib.buildPackage
-          ({
-            inherit pname version src cargoArtifacts buildInputs nativeBuildInputs stdenv;
+        # legion-kb-rgb = craneLib.buildPackage
+        #   ({
+        #     inherit pname version src cargoArtifacts buildInputs nativeBuildInputs stdenv;
 
-            doCheck = false;
+        #     doCheck = false;
 
-            # cargoBuildCommand = "cargo build";
+        #     # cargoBuildCommand = "cargo build";
 
-            postFixup = ''
-              patchelf --add-rpath "${nixLib.makeLibraryPath runtimeDeps}" "$out/bin/${pname}"
-            '';
-          } // envVars);
+        #     postFixup = ''
+        #       patchelf --add-rpath "${nixLib.makeLibraryPath runtimeDeps}" "$out/bin/${pname}"
+        #     '';
+        #   } // envVars);
 
         # Wrap the program for ease of use
-        wrappedProgram = pkgs.symlinkJoin rec {
-          name = "legion-kb-rgb";
-          paths = [ legion-kb-rgb ];
+        # wrappedProgram = pkgs.symlinkJoin rec {
+        #   name = "legion-kb-rgb";
+        #   paths = [ legion-kb-rgb ];
 
-          buildInputs = [ pkgs.makeWrapper ];
+        #   buildInputs = [ pkgs.makeWrapper ];
 
-          postBuild = ''
-            wrapProgram $out/bin/${name} \
-              --prefix LD_LIBRARY_PATH : ${nixLib.makeLibraryPath runtimeDeps}
-          '';
-        };
+        #   postBuild = ''
+        #     wrapProgram $out/bin/${name} \
+        #       --prefix LD_LIBRARY_PATH : ${nixLib.makeLibraryPath runtimeDeps}
+        #   '';
+        # };
       in
       {
         checks = {
           # inherit legion-kb-rgb;
         };
 
-        packages.default = legion-kb-rgb;
-        packages.wrapped = wrappedProgram;
+        # packages.default = legion-kb-rgb;
+        # packages.wrapped = wrappedProgram;
 
-        apps.default = flake-utils.lib.mkApp {
-          drv = wrappedProgram;
-        };
+        # apps.default = flake-utils.lib.mkApp {
+        #   drv = wrappedProgram;
+        # };
 
-        devShells.default = legion-kb-rgb;
+        # devShells.default = legion-kb-rgb;
         devShells.rust =
           let
             deps = buildInputs ++ nativeBuildInputs ++ sharedDeps ++ runtimeDeps;
