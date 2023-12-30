@@ -64,7 +64,7 @@
 
 
 
-        # Manually simulate a vcpkg installation so that it can link the libaries
+        # Manually simulate a vcpkg installation so that it can link the libraries
         # properly. Borrowed and adapted from: https://github.com/NixOS/nixpkgs/blob/69a35ff92dc404bf04083be2fad4f3643b2152c9/pkgs/applications/networking/remote/rustdesk/default.nix#L51
         vcpkg = pkgs.stdenv.mkDerivation {
           pname = "vcpkg";
@@ -105,8 +105,8 @@
 
         envVars = rec {
           RUST_BACKTRACE = 1;
-          MOLD_PATH = "${pkgs.mold.out}/bin/mold";
-          RUSTFLAGS = "-Clink-arg=-fuse-ld=${MOLD_PATH} -Clinker=clang";
+          # MOLD_PATH = "${pkgs.mold.out}/bin/mold";
+          # RUSTFLAGS = "-Clink-arg=-fuse-ld=${MOLD_PATH} -Clinker=clang";
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           VCPKG_ROOT = "${vcpkg.out}";
         };
@@ -144,10 +144,11 @@
 
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
-        cargoArtifacts = craneLib.buildDepsOnly ({
-          inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
+        inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
-          inherit src buildInputs nativeBuildInputs stdenv;
+        cargoArtifacts = craneLib.buildDepsOnly ({
+
+          inherit pname version src buildInputs nativeBuildInputs stdenv;
 
           # This magic thing here is needed otherwise the build fails
           # https://github.com/ipetkov/crane/issues/411#issuecomment-1743441117
@@ -158,13 +159,15 @@
         # The main application derivation
         legion-kb-rgb = craneLib.buildPackage
           ({
-            inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
-
-            inherit src cargoArtifacts buildInputs nativeBuildInputs stdenv;
+            inherit pname version src cargoArtifacts buildInputs nativeBuildInputs stdenv;
 
             doCheck = false;
 
             # cargoBuildCommand = "cargo build";
+
+            postFixup = ''
+              patchelf --add-rpath "${nixLib.makeLibraryPath runtimeDeps}" "$out/bin/${pname}"
+            '';
           } // envVars);
 
         # Wrap the program for ease of use
@@ -193,8 +196,15 @@
         };
 
         devShells.default = legion-kb-rgb;
-        devShells.rust = pkgs.mkShell {
-          buildInputs = [ rust ];
-        };
+        devShells.rust =
+          let
+            deps = buildInputs ++ nativeBuildInputs ++ sharedDeps ++ runtimeDeps;
+          in
+          pkgs.mkShell {
+            LD_LIBRARY_PATH = nixLib.makeLibraryPath deps;
+            inherit (envVars) VCPKG_ROOT LIBCLANG_PATH;
+
+            buildInputs = [ rust ] ++ deps;
+          };
       });
 }
