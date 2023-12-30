@@ -1,3 +1,13 @@
-[workspace]
-members = ["app", "driver"]
-resolver = "2"
+[package]
+name = "legion-kb-rgb"
+version = "0.19.4"
+authors = ["4JX"]
+edition = "2021"
+homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
+license = "GPL-3.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+eframe = { git = "https://github.com/emilk/egui", rev = "9951fe0", features = [
+] }
