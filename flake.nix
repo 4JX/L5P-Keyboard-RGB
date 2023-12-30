@@ -169,19 +169,6 @@
               patchelf --add-rpath "${nixLib.makeLibraryPath runtimeDeps}" "$out/bin/${pname}"
             '';
           } // envVars);
-
-        # Wrap the program for ease of use
-        wrappedProgram = pkgs.symlinkJoin rec {
-          name = "legion-kb-rgb";
-          paths = [ legion-kb-rgb ];
-
-          buildInputs = [ pkgs.makeWrapper ];
-
-          postBuild = ''
-            wrapProgram $out/bin/${name} \
-              --prefix LD_LIBRARY_PATH : ${nixLib.makeLibraryPath runtimeDeps}
-          '';
-        };
       in
       {
         checks = {
@@ -189,10 +176,9 @@
         };
 
         packages.default = legion-kb-rgb;
-        packages.wrapped = wrappedProgram;
 
         apps.default = flake-utils.lib.mkApp {
-          drv = wrappedProgram;
+          drv = legion-kb-rgb;
         };
 
         devShells.default = legion-kb-rgb;
