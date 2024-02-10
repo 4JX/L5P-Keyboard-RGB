@@ -1,6 +1,6 @@
 use std::{sync::atomic::Ordering, thread, time::Duration};
 
-use sysinfo::{ComponentExt, System, SystemExt};
+use sysinfo::Components;
 
 pub(super) struct Temperature;
 
@@ -16,10 +16,10 @@ impl Temperature {
             color_differences[index] = temp_hot[index] - temp_cool[index];
         }
 
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        let mut components = Components::new_with_refreshed_list();
+        dbg!(&components);
 
-        for component in sys.components_mut() {
+        for component in components.list_mut() {
             if component.label().contains("Tctl") {
                 while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
                     component.refresh();

@@ -5,7 +5,7 @@ use device_query::{DeviceQuery, Keycode};
 #[cfg(debug_assertions)]
 use eframe::egui::style::DebugOptions;
 use eframe::{
-    egui::{CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
+    egui::{CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel, ViewportCommand},
     emath::Align,
     epaint::{Color32, Rounding, Vec2},
     CreationContext,
@@ -182,7 +182,7 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         if let Some(rx) = &self.window_open_rx {
             if let Ok(message) = rx.try_recv() {
                 match message {
@@ -193,16 +193,28 @@ impl eframe::App for App {
             }
         }
 
-        if self.instance_not_unique && modals::unique_instance(ctx) {
-            self.exit_app();
-        };
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if self.tray.is_some() {
+                dbg!("foo");
+                self.hide_window = true;
+                ctx.send_viewport_cmd(ViewportCommand::CancelClose);
 
+                ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+            }
+        }
+
+        if self.instance_not_unique {
+            if modals::unique_instance(ctx) {
+                self.exit_app();
+            };
+        }
         // The uniqueness prompt has priority over generic errors
-        if !self.instance_not_unique && self.manager.is_none() && modals::manager_error(ctx) {
+        else if self.manager.is_none() && modals::manager_error(ctx) {
             self.exit_app();
         };
 
-        frame.set_visible(!self.hide_window);
+        ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+        // ctx.send_viewport_cmd(ViewportCommand::Visible(!self.hide_window));
 
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
             self.menu_bar.show(ctx, ui, &mut self.profile, &mut self.custom_effect, &mut self.profile_changed);
@@ -215,20 +227,21 @@ impl eframe::App for App {
 
                 ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
                     ui.vertical(|ui| {
+                        // Color pickers
                         let res = ui.scope(|ui| {
                             ui.set_enabled(self.profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None));
 
-                            ui.style_mut().spacing.item_spacing.y = self.theme.spacing.medium;
+                            ui.spacing_mut().item_spacing = Vec2::new(self.theme.spacing.medium, self.theme.spacing.medium);
 
                             let response = ui.horizontal(|ui| {
-                                ui.style_mut().spacing.interact_size = Vec2::splat(60.0);
+                                ui.spacing_mut().interact_size = Vec2::new(70.0, 40.0);
 
                                 for i in 0..4 {
                                     self.profile_changed |= ui.color_edit_button_srgb(&mut self.profile.rgb_zones[i].rgb).changed();
                                 }
                             });
 
-                            ui.style_mut().spacing.interact_size = Vec2::new(response.response.rect.width(), 30.0);
+                            ui.spacing_mut().interact_size = Vec2::new(response.response.rect.width(), 30.0);
 
                             if ui.color_edit_button_srgb(&mut self.global_rgb).changed() {
                                 for i in 0..4 {
@@ -252,7 +265,7 @@ impl eframe::App for App {
                             .show(ctx, ui, &mut self.profile, &self.theme.spacing, &mut self.profile_changed, &mut self.custom_effect);
                     });
 
-                    ui.vertical_centered_justified(|ui| {
+                    ui.with_layout(Layout::top_down_justified(Align::Center).with_main_justify(true), |ui| {
                         if matches!(self.custom_effect, CustomEffectState::Playing) && ui.button("Stop custom effect").clicked() {
                             self.custom_effect = CustomEffectState::None;
                             self.profile_changed = true;
@@ -264,10 +277,11 @@ impl eframe::App for App {
                             ..Frame::default()
                         }
                         .show(ui, |ui| {
-                            ui.style_mut().spacing.item_spacing = self.theme.spacing.default;
+                            ui.set_height(ui.available_height());
+                            ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
+                                ScrollArea::vertical().show(ui, |ui| {
+                                    ui.spacing_mut().item_spacing = self.theme.spacing.default;
 
-                            ScrollArea::vertical().show(ui, |ui| {
-                                ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
                                     for val in Effects::iter() {
                                         let text: &'static str = val.into();
                                         if ui.selectable_value(&mut self.profile.effect, val, text).clicked() {
@@ -295,15 +309,6 @@ impl eframe::App for App {
             }
 
             self.profile_changed = false;
-        }
-    }
-
-    fn on_close_event(&mut self) -> bool {
-        if self.tray.is_some() {
-            self.hide_window = true;
-            false
-        } else {
-            true
         }
     }
 

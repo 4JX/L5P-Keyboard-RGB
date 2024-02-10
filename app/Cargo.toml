@@ -16,11 +16,11 @@ legion-rgb-driver = { path = "../driver" }
 clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
 
 # Ui
-eframe = "0.23.0"
-egui-modal = "0.2.5"
+eframe = "0.25.0"
+egui-modal = "0.3.2"
 # egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
-egui_file = "0.11.0"
-egui-notify = "0.10.0"
+egui_file = "0.14.1"
+egui-notify = "0.12.0"
 # egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
 
 # App window, taskbar and tray icon loading
@@ -46,13 +46,14 @@ strum_macros = "0.25.2"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 color-eyre = "0.6.2"
-sysinfo = "0.29.0"
+sysinfo = "0.30.5"
 crossbeam-channel = "0.5.8"
 thiserror = "1.0.38"
 single-instance = "0.3.3"
 open = "5.0.0"
 error-stack = "0.4.1"
 winapi = { version = "0.3.9", features = ["consoleapi", "wincon"] }
+env_logger = "0.11.0"
 
 # Fix versions to stop cargo from yelling about dependency resolution
 

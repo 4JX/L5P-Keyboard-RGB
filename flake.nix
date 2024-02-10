@@ -28,7 +28,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.73.0";
+        rustVersion = "1.75.0";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [
@@ -60,6 +60,8 @@
           freetype
           xorg.libXrandr
           libGL
+          wayland
+          libxkbcommon
         ] ++ sharedDeps;
 
 
