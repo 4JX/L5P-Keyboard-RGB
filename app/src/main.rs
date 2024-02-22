@@ -1,119 +1,33 @@
-#![cfg_attr(not(test), windows_subsystem = "windows")]
-#![cfg_attr(test, windows_subsystem = "console")]
+use eframe::egui::ViewportCommand;
+use eframe::NativeOptions;
 
-mod cli;
-#[cfg(target_os = "windows")]
-mod console;
-mod effects;
-mod enums;
-mod gui;
-mod persist;
-mod profile;
-mod util;
-
-use cli::{GuiCommand, OutputType};
-use color_eyre::{eyre::eyre, Result};
-use eframe::{
-    egui::{IconData, ViewportBuilder},
-    epaint::Vec2,
-};
-use gui::{App, GuiMessage};
-
-const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
 
 fn main() {
     env_logger::init();
 
-    #[cfg(target_os = "windows")]
-    {
-        setup_panic().unwrap();
+    let app = App::new();
 
-        // This just enables output if the program is already being ran from the CLI
-        console::attach();
-        let res = init();
-        console::free();
+    eframe::run_native("Legion RGB", NativeOptions::default(), Box::new(|cc| Box::new(app))).unwrap();
+}
 
-        if res.is_err() {
-            std::process::exit(2);
-        }
-    }
 
-    #[cfg(target_os = "linux")]
-    {
-        color_eyre::install().unwrap();
+pub struct App {}
 
-        init().unwrap();
+impl App {
+    pub fn new() -> Self {
+        let app = Self {};
+
+        app
     }
 }
 
-#[cfg(target_os = "windows")]
-fn setup_panic() -> Result<()> {
-    // A somewhat unwrapped version of color_eyre::install() to add a "wait for enter" after printing the text
-    use color_eyre::config::Theme;
-    let builder = color_eyre::config::HookBuilder::default()
-    // HACK: Forgo colors in windows outputs because I cannot figure out why allocated consoles don't display them
-    .theme(Theme::new());
+impl eframe::App for App {
+    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
+        if ctx.input(|i| i.viewport().close_requested()) {
+            dbg!("foo");
+            ctx.send_viewport_cmd(ViewportCommand::CancelClose);
 
-    let (panic_hook, eyre_hook) = builder.into_hooks();
-    eyre_hook.install()?;
-
-    std::panic::set_hook(Box::new(move |panic_info| {
-        if !console::alloc() {
-            // No point trying to print without a console...
-            return;
+            ctx.send_viewport_cmd(ViewportCommand::Visible(false));
         }
-
-        eprintln!("{}", panic_hook.panic_report(panic_info));
-        println!("Press Enter to continue...");
-        let _ = std::io::stdin().read_line(&mut String::new());
-
-        std::process::exit(1);
-    }));
-
-    Ok(())
-}
-
-fn init() -> Result<()> {
-    let cli_output = cli::try_cli().map_err(|err| eyre!("{:?}", err))?;
-
-    match cli_output {
-        GuiCommand::Start { hide_window, output } => {
-            start_ui(output, hide_window);
-
-            Ok(())
-        }
-        GuiCommand::Exit => Ok(()),
-    }
-}
-
-fn start_ui(output_type: OutputType, hide_window: bool) {
-    let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
-    let native_options = eframe::NativeOptions {
-        viewport: ViewportBuilder::default()
-            .with_inner_size(WINDOW_SIZE)
-            .with_min_inner_size(WINDOW_SIZE)
-            .with_max_inner_size(WINDOW_SIZE)
-            .with_icon(app_icon),
-        ..eframe::NativeOptions::default()
-    };
-
-    let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
-
-    let gui_sender_clone = gui_sender.clone();
-    let app = App::new(output_type, hide_window, gui_sender_clone, gui_receiver);
-
-    eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender)))).unwrap();
-}
-
-#[must_use]
-fn load_icon_data(image_data: &[u8]) -> IconData {
-    let image = image::load_from_memory(image_data).unwrap();
-    let image_buffer = image.to_rgba8();
-    let pixels = image_buffer.into_flat_samples().samples;
-
-    IconData {
-        rgba: pixels,
-        width: image.width(),
-        height: image.height(),
     }
 }
