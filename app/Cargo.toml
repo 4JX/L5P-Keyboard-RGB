@@ -16,11 +16,12 @@ legion-rgb-driver = { path = "../driver" }
 clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
 
 # Ui
-eframe = "0.25.0"
-egui-modal = "0.3.2"
+eframe = "0.26.2"
+# eframe = { git = "https://github.com/emilk/egui", rev = "5cf99c6" }
+egui-modal = "0.3.4"
 # egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
-egui_file = "0.14.1"
-egui-notify = "0.12.0"
+egui_file = "0.16.2"
+egui-notify = "0.13.0"
 # egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
 
 # App window, taskbar and tray icon loading
@@ -30,7 +31,7 @@ image = "0.24.5"
 scrap = { git = "https://github.com/rustdesk/rustdesk", rev = "6c15dd6", features = [
     "wayland",
 ] }
-fast_image_resize = "2.4.0"
+fast_image_resize = "3.0.4"
 # default-features = false just removes the use_wasm feature that removes a lot of unecessary slack
 # since this app wont ever use the web
 # photon-rs = { version = "0.3.2", default-features = false }
@@ -38,11 +39,11 @@ photon-rs = { git = "https://github.com/silvia-odwyer/photon", rev = "3e8a2a6", 
 
 
 # Keyboard and mouse grabbing
-device_query = "1.1.3"
+device_query = "2.0.0"
 
 rand = "0.8.5"
-strum = "0.25.0"
-strum_macros = "0.25.2"
+strum = "0.26.1"
+strum_macros = "0.26.1"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 color-eyre = "0.6.2"

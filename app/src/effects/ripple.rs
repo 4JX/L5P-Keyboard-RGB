@@ -48,7 +48,7 @@ impl Ripple {
             Keycode::Z,
             Keycode::X,
             Keycode::LControl,
-            Keycode::Meta,
+            Keycode::LMeta,
             Keycode::LAlt,
         ];
         let keys_zone_2: [Keycode; 29] = [

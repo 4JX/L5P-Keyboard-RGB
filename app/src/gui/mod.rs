@@ -160,7 +160,7 @@ impl App {
                 loop {
                     let keys = state.get_keys();
 
-                    if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::RAlt) {
+                    if keys.contains(&Keycode::LMeta) && keys.contains(&Keycode::RAlt) {
                         if !lock_switching {
                             let _ = gui_sender.send(GuiMessage::CycleProfiles);
                             ctx.request_repaint();
