@@ -338,8 +338,8 @@ impl App {
                 show_expand_width: false,
                 show_expand_height: false,
                 show_resize: false,
-                show_blocking_widget: false,
                 show_interactive_widgets: false,
+                show_widget_hits: false,
             },
             ..Style::default()
         };

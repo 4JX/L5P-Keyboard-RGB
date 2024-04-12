@@ -16,16 +16,16 @@ legion-rgb-driver = { path = "../driver" }
 clap = { version = "4.1.2", features = ["color", "cargo", "derive"] }
 
 # Ui
-eframe = "0.26.2"
+eframe = "0.27.2"
 # eframe = { git = "https://github.com/emilk/egui", rev = "5cf99c6" }
 egui-modal = "0.3.4"
 # egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
-egui_file = "0.16.2"
-egui-notify = "0.13.0"
+egui_file = "0.17.0"
+egui-notify = "0.14.0"
 # egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
 
 # App window, taskbar and tray icon loading
-image = "0.24.5"
+image = "0.25.1"
 
 # AmbientLight effect
 scrap = { git = "https://github.com/rustdesk/rustdesk", rev = "6c15dd6", features = [
@@ -62,10 +62,10 @@ env_logger = "0.11.0"
 
 
 [target.'cfg(target_os = "windows")'.dependencies]
-tray-item = { version = "0.8.0" }
+tray-item = { version = "0.10.0" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-tray-item = { version = "0.8.0", features = ["ksni"] }
+tray-item = { version = "0.10.0", features = ["ksni"] }
 
 [build-dependencies]
 windres = "0.2.2"
