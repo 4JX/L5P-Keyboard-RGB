@@ -132,7 +132,9 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ### With GUI
 
-Execute the file by double-clicking on it or running it from a console _without_ arguments.
+Execute the file by double-clicking on it. You may pass extra startup options via the CLI by also specifying the `--gui` flag.
+
+Configuration for this mode is saved by default on the folder the program was executed in a file called `settings.json`, you can override this location by setting the `LEGION_KEYBOARD_CONFIG` environment variable.
 
 ### Via the command line
 
@@ -166,8 +168,8 @@ legion-kb-rgb set -e SmoothWave -s 4 -b 2 -d Left
 
 This program has been tested to work on:
 
-- Legion 5 (Pro) 2020, 2021, 2022, 2023
-- Ideapad Gaming 3 2021, 2022, 2023
+- Legion 5 (Pro) 2020, 2021, 2022, 2023, 2024
+- Ideapad Gaming 3 2021, 2022, 2023, 2024
 
 ### "How about X model"
 

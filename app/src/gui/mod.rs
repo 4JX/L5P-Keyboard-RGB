@@ -1,4 +1,4 @@
-use std::{mem, path::Path, process, thread, time::Duration};
+use std::{mem, process, thread, time::Duration};
 
 use crossbeam_channel::{Receiver, Sender};
 use device_query::{DeviceQuery, Keycode};
@@ -19,8 +19,6 @@ use crate::{
     effects::{self, custom_effect::CustomEffect, EffectManager, ManagerCreationError},
     enums::Effects,
     persist::Settings,
-    profile::Profile,
-    util::StorageTrait,
 };
 
 use self::{effect_options::EffectOptions, menu_bar::MenuBarState, profile_list::ProfileList, style::Theme};
@@ -32,6 +30,8 @@ mod profile_list;
 mod style;
 
 pub struct App {
+    settings: Settings,
+
     instance_not_unique: bool,
     hide_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
@@ -40,7 +40,6 @@ pub struct App {
     tray: Option<TrayItem>,
 
     manager: Option<EffectManager>,
-    profile: Profile,
     profile_changed: bool,
     custom_effect: CustomEffectState,
 
@@ -77,23 +76,25 @@ impl App {
 
         let manager = manager_result.ok();
 
-        let settings: Settings = Settings::load_or_default(Path::new("./settings.json"));
+        let settings: Settings = Settings::load();
+        let profiles = settings.profiles.clone();
 
         // Default app state
         let mut app = Self {
+            settings,
+
             instance_not_unique,
             hide_window,
             window_open_rx: Some(rx),
             tray: None,
 
             manager,
-            profile: Profile::default(),
             // Default to true for an instant update on launch
             profile_changed: true,
             custom_effect: CustomEffectState::default(),
 
             menu_bar: MenuBarState::new(tx),
-            profile_list: ProfileList::new(settings.profiles),
+            profile_list: ProfileList::new(profiles),
             effect_options: EffectOptions::default(),
             global_rgb: [0; 3],
             theme: Theme::default(),
@@ -101,9 +102,9 @@ impl App {
 
         // Update the state according to the option chosen by the user
         match output {
-            OutputType::Profile(profile) => app.profile = profile,
+            OutputType::Profile(profile) => app.settings.current_profile = profile,
             OutputType::Custom(effect) => app.custom_effect = CustomEffectState::Queued(effect),
-            OutputType::NoArgs => app.profile = settings.ui_state,
+            OutputType::NoArgs => {}
             OutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
         }
 
@@ -205,7 +206,7 @@ impl eframe::App for App {
         frame.set_visible(!self.hide_window);
 
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
-            self.menu_bar.show(ctx, ui, &mut self.profile, &mut self.custom_effect, &mut self.profile_changed);
+            self.menu_bar.show(ctx, ui, &mut self.settings.current_profile, &mut self.custom_effect, &mut self.profile_changed);
         });
 
         CentralPanel::default()
@@ -216,7 +217,7 @@ impl eframe::App for App {
                 ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
                     ui.vertical(|ui| {
                         let res = ui.scope(|ui| {
-                            ui.set_enabled(self.profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None));
+                            ui.set_enabled(self.settings.current_profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None));
 
                             ui.style_mut().spacing.item_spacing.y = self.theme.spacing.medium;
 
@@ -224,7 +225,7 @@ impl eframe::App for App {
                                 ui.style_mut().spacing.interact_size = Vec2::splat(60.0);
 
                                 for i in 0..4 {
-                                    self.profile_changed |= ui.color_edit_button_srgb(&mut self.profile.rgb_zones[i].rgb).changed();
+                                    self.profile_changed |= ui.color_edit_button_srgb(&mut self.settings.current_profile.rgb_zones[i].rgb).changed();
                                 }
                             });
 
@@ -232,7 +233,7 @@ impl eframe::App for App {
 
                             if ui.color_edit_button_srgb(&mut self.global_rgb).changed() {
                                 for i in 0..4 {
-                                    self.profile.rgb_zones[i].rgb = self.global_rgb;
+                                    self.settings.current_profile.rgb_zones[i].rgb = self.global_rgb;
                                 }
 
                                 self.profile_changed = true;
@@ -245,11 +246,11 @@ impl eframe::App for App {
 
                         ui.scope(|ui| {
                             ui.set_enabled(matches!(self.custom_effect, CustomEffectState::None));
-                            self.effect_options.show(ui, &mut self.profile, &mut self.profile_changed, &self.theme.spacing);
+                            self.effect_options.show(ui, &mut self.settings.current_profile, &mut self.profile_changed, &self.theme.spacing);
                         });
 
                         self.profile_list
-                            .show(ctx, ui, &mut self.profile, &self.theme.spacing, &mut self.profile_changed, &mut self.custom_effect);
+                            .show(ctx, ui, &mut self.settings.current_profile, &self.theme.spacing, &mut self.profile_changed, &mut self.custom_effect);
                     });
 
                     ui.vertical_centered_justified(|ui| {
@@ -270,7 +271,7 @@ impl eframe::App for App {
                                 ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
                                     for val in Effects::iter() {
                                         let text: &'static str = val.into();
-                                        if ui.selectable_value(&mut self.profile.effect, val, text).clicked() {
+                                        if ui.selectable_value(&mut self.settings.current_profile.effect, val, text).clicked() {
                                             self.profile_changed = true;
                                             self.custom_effect = CustomEffectState::None;
                                         };
@@ -285,7 +286,7 @@ impl eframe::App for App {
         if self.profile_changed {
             if let Some(manager) = self.manager.as_mut() {
                 if matches!(self.custom_effect, CustomEffectState::None) {
-                    manager.set_profile(self.profile.clone());
+                    manager.set_profile(self.settings.current_profile.clone());
                 } else if matches!(self.custom_effect, CustomEffectState::Queued(_)) {
                     let state = mem::replace(&mut self.custom_effect, CustomEffectState::Playing);
                     if let CustomEffectState::Queued(effect) = state {
@@ -308,15 +309,9 @@ impl eframe::App for App {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        let path = Path::new("./settings.json");
+        self.settings.profiles = std::mem::take(&mut self.profile_list.profiles);
 
-        let mut settings = Settings::load_or_default(path);
-
-        settings.profiles = std::mem::take(&mut self.profile_list.profiles);
-
-        settings.ui_state = std::mem::take(&mut self.profile);
-
-        settings.save(path).unwrap();
+        self.settings.save();
     }
 }
 
@@ -354,13 +349,13 @@ impl App {
     fn cycle_profiles(&mut self) {
         let len = self.profile_list.profiles.len();
 
-        let current_profile_name = &self.profile.name;
+        let current_profile_name = &self.settings.current_profile.name;
 
         if let Some((i, _)) = self.profile_list.profiles.iter().enumerate().find(|(_, profile)| &profile.name == current_profile_name) {
             if i == len - 1 && len > 0 {
-                self.profile = self.profile_list.profiles[0].clone();
+                self.settings.current_profile = self.profile_list.profiles[0].clone();
             } else {
-                self.profile = self.profile_list.profiles[i + 1].clone();
+                self.settings.current_profile = self.profile_list.profiles[i + 1].clone();
             }
 
             self.profile_changed = true;
