@@ -230,3 +230,16 @@ pub fn get_keyboard(stop_signal: Arc<AtomicBool>) -> Result<Keyboard> {
     keyboard.refresh()?;
     Ok(keyboard)
 }
+
+pub fn find_possible_keyboards() -> Result<Vec<String>> {
+    let api: HidApi = HidApi::new()?;
+
+    let mut list = api
+        .device_list()
+        // .filter(|d| d.vendor_id() == 0x048d)
+        .map(|d| format!("{:#06x}:{:#06x}", d.vendor_id(), d.product_id()))
+        .collect::<Vec<String>>();
+
+    list.dedup();
+    Ok(list)
+}
