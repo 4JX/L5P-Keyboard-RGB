@@ -13,7 +13,7 @@ mod util;
 
 use cli::{GuiCommand, OutputType};
 use color_eyre::{eyre::eyre, Result};
-use eframe::{epaint::Vec2, IconData};
+use eframe::{egui::IconData, epaint::Vec2};
 use gui::{App, GuiMessage};
 
 const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
@@ -84,19 +84,20 @@ fn init() -> Result<()> {
 fn start_ui(output_type: OutputType, hide_window: bool) {
     let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
     let native_options = eframe::NativeOptions {
-        initial_window_size: Some(WINDOW_SIZE),
-        min_window_size: Some(WINDOW_SIZE),
-        max_window_size: Some(WINDOW_SIZE),
-        icon_data: Some(app_icon),
+        viewport: eframe::egui::ViewportBuilder::default()
+            .with_inner_size(WINDOW_SIZE)
+            .with_min_inner_size(WINDOW_SIZE)
+            .with_max_inner_size(WINDOW_SIZE)
+            .with_icon(app_icon),
         ..eframe::NativeOptions::default()
     };
 
     let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
 
     let gui_sender_clone = gui_sender.clone();
-    let app = App::new(output_type, hide_window, gui_sender_clone, gui_receiver);
+    let app = App::new(output_type, gui_sender_clone, gui_receiver);
 
-    eframe::run_native("Legion RGB", native_options, Box::new(|cc| Box::new(app.init(cc, gui_sender)))).unwrap();
+    eframe::run_native("Legion RGB", native_options, Box::new(move |cc| Ok(Box::new(app.init(cc, gui_sender, hide_window))))).unwrap();
 }
 
 #[must_use]

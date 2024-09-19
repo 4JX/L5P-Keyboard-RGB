@@ -32,9 +32,7 @@ impl EffectOptions {
                     }
                 });
 
-            ui.scope(|ui| {
-                ui.set_enabled(profile.effect.takes_direction());
-
+            ui.add_enabled_ui(profile.effect.takes_direction(), |ui| {
                 ComboBox::from_label("Direction")
                     .width(COMBOBOX_WIDTH)
                     .selected_text({

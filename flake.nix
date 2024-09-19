@@ -6,7 +6,7 @@
 
     crane = {
       url = "github:ipetkov/crane";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
 
     flake-utils.url = "github:numtide/flake-utils";
@@ -15,7 +15,7 @@
       url = "github:oxalica/rust-overlay";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
+        # flake-utils.follows = "flake-utils";
       };
     };
   };
@@ -28,7 +28,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.73.0";
+        rustVersion = "1.81.0";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [
@@ -60,55 +60,15 @@
           freetype
           xorg.libXrandr
           libGL
+          wayland
+          libxkbcommon
         ] ++ sharedDeps;
-
-
-
-        # Manually simulate a vcpkg installation so that it can link the libraries
-        # properly. Borrowed and adapted from: https://github.com/NixOS/nixpkgs/blob/69a35ff92dc404bf04083be2fad4f3643b2152c9/pkgs/applications/networking/remote/rustdesk/default.nix#L51
-        vcpkg = pkgs.stdenv.mkDerivation {
-          pname = "vcpkg";
-          version = "1.0.0";
-
-          unpackPhase =
-            let
-              vcpkg_target = "x64-linux";
-
-              updates_vcpkg_file = pkgs.writeText "update_vcpkg_legion-kb-rgb"
-                ''
-                  Package : libyuv
-                  Architecture : ${vcpkg_target}
-                  Version : 1.0
-                  Status : is installed
-                  Package : libvpx
-                  Architecture : ${vcpkg_target}
-                  Version : 1.0
-                  Status : is installed
-                '';
-            in
-            ''
-              mkdir -p vcpkg/.vcpkg-root
-              mkdir -p vcpkg/installed/${vcpkg_target}/lib
-              mkdir -p vcpkg/installed/vcpkg/updates
-              ln -s ${updates_vcpkg_file} vcpkg/installed/vcpkg/status
-              mkdir -p vcpkg/installed/vcpkg/info
-              touch vcpkg/installed/vcpkg/info/libyuv_1.0_${vcpkg_target}.list
-              touch vcpkg/installed/vcpkg/info/libvpx_1.0_${vcpkg_target}.list
-              ln -s ${pkgs.libvpx.out}/lib/* vcpkg/installed/${vcpkg_target}/lib/
-              ln -s ${pkgs.libyuv.out}/lib/* vcpkg/installed/${vcpkg_target}/lib/
-            '';
-
-          installPhase = ''
-            cp -r vcpkg $out
-          '';
-        };
 
         envVars = rec {
           RUST_BACKTRACE = 1;
           # MOLD_PATH = "${pkgs.mold.out}/bin/mold";
           # RUSTFLAGS = "-Clink-arg=-fuse-ld=${MOLD_PATH} -Clinker=clang";
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-          VCPKG_ROOT = "${vcpkg.out}";
         };
 
         # Allow a few more files to be included in the build workspace
@@ -126,10 +86,12 @@
             filter = workspaceFilter;
           };
 
+        # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/by-name/ru/rustdesk/package.nix
         buildInputs = with pkgs;
           [
             libvpx
             libyuv
+            libaom
           ]
           ++ sharedDeps
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
@@ -144,11 +106,14 @@
 
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
+        # Forgo using VCPKG hacks on local builds because pain
+        cargoExtraArgs = nixLib.optionals stdenv.isLinux ''--locked --features "scrap/linux-pkg-config"'';
+
         inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
         cargoArtifacts = craneLib.buildDepsOnly ({
 
-          inherit pname version src buildInputs nativeBuildInputs stdenv;
+          inherit pname version src buildInputs nativeBuildInputs stdenv cargoExtraArgs;
 
           # This magic thing here is needed otherwise the build fails
           # https://github.com/ipetkov/crane/issues/411#issuecomment-1743441117
@@ -159,7 +124,7 @@
         # The main application derivation
         legion-kb-rgb = craneLib.buildPackage
           ({
-            inherit pname version src cargoArtifacts buildInputs nativeBuildInputs stdenv;
+            inherit pname version src cargoArtifacts buildInputs nativeBuildInputs stdenv cargoExtraArgs;
 
             doCheck = false;
 
@@ -188,7 +153,7 @@
           in
           pkgs.mkShell {
             LD_LIBRARY_PATH = nixLib.makeLibraryPath deps;
-            inherit (envVars) VCPKG_ROOT LIBCLANG_PATH;
+            inherit (envVars) LIBCLANG_PATH;
 
             buildInputs = [ rust ] ++ deps;
           };

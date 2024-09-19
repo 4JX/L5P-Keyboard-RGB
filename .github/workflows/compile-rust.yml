@@ -21,13 +21,13 @@ jobs:
             artifact_name: target/debug/legion-kb-rgb
             asset_name: legion-kb-rgb-linux
             triplet: x64-linux
-            vcpkgCommitId: 'f6a5d4e8eb7476b8d7fc12a56dff300c1c986131'
+            vcpkgCommitId: 'ab67d6306b5e9af69684af5ec761c97731e75834'
           - name: windows
             os: windows-latest
             artifact_name: target/debug/legion-kb-rgb.exe
             asset_name: legion-kb-rgb-windows
             triplet: x64-windows-static
-            vcpkgCommitId: 'f6a5d4e8eb7476b8d7fc12a56dff300c1c986131'
+            vcpkgCommitId: 'ab67d6306b5e9af69684af5ec761c97731e75834'
 
     env:
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
@@ -66,6 +66,7 @@ jobs:
       - name: Set up VCPKG deps
         uses: lukka/run-vcpkg@v11
         id: runvcpkg
+        # if: ${{ runner.os != 'Linux' }}
         with:
           vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
           # Run vcpkg with the command specified by the `runVcpkgFormatString` input.

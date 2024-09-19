@@ -1,5 +1,4 @@
 use std::{
-    num::NonZeroU32,
     sync::atomic::Ordering,
     thread,
     time::{Duration, Instant},
@@ -8,12 +7,12 @@ use std::{
 use fast_image_resize as fr;
 
 use fr::Resizer;
-use scrap::{Capturer, Display, Frame, TraitCapturer};
+use scrap::{Capturer, Display, Frame, TraitCapturer, TraitPixelBuffer};
 
 #[derive(Clone, Copy)]
 struct ScreenDimensions {
-    src: (NonZeroU32, NonZeroU32),
-    dest: (NonZeroU32, NonZeroU32),
+    src: (u32, u32),
+    dest: (u32, u32),
 }
 
 pub(super) struct AmbientLight;
@@ -24,15 +23,15 @@ impl AmbientLight {
             //Display setup
             let display = Display::all().unwrap().remove(0);
 
-            let mut capturer = Capturer::new(display, false).expect("Couldn't begin capture.");
+            let mut capturer = Capturer::new(display).expect("Couldn't begin capture.");
 
             let dimensions = ScreenDimensions {
-                src: (NonZeroU32::new(capturer.width() as u32).unwrap(), NonZeroU32::new(capturer.height() as u32).unwrap()),
-                dest: (NonZeroU32::new(4).unwrap(), NonZeroU32::new(1).unwrap()),
+                src: (capturer.width() as u32, capturer.height() as u32),
+                dest: (4, 1),
             };
 
             let seconds_per_frame = Duration::from_nanos(1_000_000_000 / u64::from(fps));
-            let mut resizer = fr::Resizer::new(fr::ResizeAlg::Convolution(fr::FilterType::Box));
+            let mut resizer = fr::Resizer::new();
 
             #[cfg(target_os = "windows")]
             let mut try_gdi = 1;
@@ -43,7 +42,7 @@ impl AmbientLight {
                 #[allow(clippy::single_match)]
                 match capturer.frame(seconds_per_frame) {
                     Ok(frame) => {
-                        let rgb = process_frame(&frame, dimensions, &mut resizer, saturation_boost);
+                        let rgb = process_frame(frame, dimensions, &mut resizer, saturation_boost);
 
                         manager.keyboard.set_colors_to(&rgb).unwrap();
                         #[cfg(target_os = "windows")]
@@ -83,36 +82,34 @@ impl AmbientLight {
     }
 }
 
-fn process_frame(frame: &Frame, dimensions: ScreenDimensions, resizer: &mut Resizer, saturation_boost: f32) -> [u8; 12] {
+fn process_frame(frame: Frame, dimensions: ScreenDimensions, resizer: &mut Resizer, saturation_boost: f32) -> [u8; 12] {
     // Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
     // Read source image from file
 
     // HACK: Override opacity manually to ensure some kind of output because of jank elsewhere
-    let mut frame_vec = frame.to_vec();
+    let Frame::PixelBuffer(buf) = frame else {
+        unreachable!("Attempted to extract vec from Texture variant in the Ambient effect");
+    };
 
-    for rgba in frame_vec.chunks_exact_mut(4) {
-        rgba[3] = 255;
-    }
+    let frame_vec = buf.data().to_vec();
+    // for rgba in frame_vec.chunks_exact_mut(4) {
+    //     rgba[3] = 255;
+    // }
 
-    let mut src_image = fr::Image::from_vec_u8(dimensions.src.0, dimensions.src.1, frame_vec, fr::PixelType::U8x4).unwrap();
-
-    // Create MulDiv instance
-    let alpha_mul_div: fr::MulDiv = fr::MulDiv::default();
-    // Multiple RGB channels of source image by alpha channel
-    alpha_mul_div.multiply_alpha_inplace(&mut src_image.view_mut()).unwrap();
+    let src_image = fr::images::Image::from_vec_u8(dimensions.src.0, dimensions.src.1, frame_vec, fr::PixelType::U8x4).unwrap();
 
     // Create container for data of destination image
-    let mut dst_image = fr::Image::new(dimensions.dest.0, dimensions.dest.1, fr::PixelType::U8x4);
+    let mut dst_image = fr::images::Image::new(dimensions.dest.0, dimensions.dest.1, fr::PixelType::U8x4);
 
     // Get mutable view of destination image data
-    let mut dst_view = dst_image.view_mut();
+    // let mut dst_view = dst_image.view_mut();
 
     // Create Resizer instance and resize source image
     // into buffer of destination image
-    resizer.resize(&src_image.view(), &mut dst_view).unwrap();
+    resizer.resize(&src_image, &mut dst_image, None).unwrap();
 
     // Divide RGB channels of destination image by alpha
-    alpha_mul_div.divide_alpha_inplace(&mut dst_view).unwrap();
+    // alpha_mul_div.divide_alpha_inplace(&mut dst_view).unwrap();
 
     let bgr_arr = dst_image.buffer();
 
