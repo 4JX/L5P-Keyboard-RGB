@@ -5,7 +5,7 @@ use device_query::{DeviceQuery, Keycode};
 #[cfg(debug_assertions)]
 use eframe::egui::style::DebugOptions;
 use eframe::{
-    egui::{CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel},
+    egui::{CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel, ViewportCommand},
     emath::Align,
     epaint::{Color32, Rounding, Vec2},
     CreationContext,
@@ -33,7 +33,6 @@ pub struct App {
     settings: Settings,
 
     instance_not_unique: bool,
-    hide_window: bool,
     window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
     // The tray struct needs to be kept from being dropped for the tray to appear on windows
     // If this is none it will be assumed there's no tray regardless of cause
@@ -51,7 +50,6 @@ pub struct App {
 }
 
 pub enum GuiMessage {
-    ShowWindow,
     CycleProfiles,
     Quit,
 }
@@ -65,7 +63,7 @@ pub enum CustomEffectState {
 }
 
 impl App {
-    pub fn new(output: OutputType, hide_window: bool, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
+    pub fn new(output: OutputType, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
         let manager_result = EffectManager::new(effects::OperationMode::Gui);
 
         let instance_not_unique = if let Err(err) = &manager_result {
@@ -84,7 +82,6 @@ impl App {
             settings,
 
             instance_not_unique,
-            hide_window,
             window_open_rx: Some(rx),
             tray: None,
 
@@ -111,7 +108,9 @@ impl App {
         app
     }
 
-    pub fn init(mut self, cc: &CreationContext<'_>, gui_sender: Sender<GuiMessage>) -> Self {
+    pub fn init(mut self, cc: &CreationContext<'_>, gui_sender: Sender<GuiMessage>, hide_window: bool) -> Self {
+        cc.egui_ctx.send_viewport_cmd(ViewportCommand::Visible(!hide_window));
+
         //Create the tray icon
         #[cfg(target_os = "linux")]
         let tray_icon = load_tray_icon(include_bytes!("../../res/trayIcon.ico"));
@@ -125,12 +124,13 @@ impl App {
         self.tray = if let Ok(mut tray) = tray_result {
             let mut is_err = false;
 
-            let show_sender = gui_sender.clone();
             let egui_ctx = cc.egui_ctx.clone();
             is_err |= tray
                 .add_menu_item("Show", move || {
                     egui_ctx.request_repaint();
-                    show_sender.send(GuiMessage::ShowWindow).unwrap()
+
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Visible(true));
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Focus);
                 })
                 .is_err();
 
@@ -161,7 +161,7 @@ impl App {
                 loop {
                     let keys = state.get_keys();
 
-                    if keys.contains(&Keycode::Meta) && keys.contains(&Keycode::RAlt) {
+                    if keys.contains(&Keycode::LMeta) && keys.contains(&Keycode::RAlt) {
                         if !lock_switching {
                             let _ = gui_sender.send(GuiMessage::CycleProfiles);
                             ctx.request_repaint();
@@ -183,11 +183,10 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         if let Some(rx) = &self.window_open_rx {
             if let Ok(message) = rx.try_recv() {
                 match message {
-                    GuiMessage::ShowWindow => self.hide_window = false,
                     GuiMessage::CycleProfiles => self.cycle_profiles(),
                     GuiMessage::Quit => self.exit_app(),
                 }
@@ -203,7 +202,7 @@ impl eframe::App for App {
             self.exit_app();
         };
 
-        frame.set_visible(!self.hide_window);
+        // frame.set_visible(!self.hide_window);
 
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
             self.menu_bar.show(ctx, ui, &mut self.settings.current_profile, &mut self.custom_effect, &mut self.profile_changed);
@@ -216,9 +215,9 @@ impl eframe::App for App {
 
                 ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
                     ui.vertical(|ui| {
-                        let res = ui.scope(|ui| {
-                            ui.set_enabled(self.settings.current_profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None));
+                        let can_tweak_colors = self.settings.current_profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None);
 
+                        let res = ui.add_enabled_ui(can_tweak_colors, |ui| {
                             ui.style_mut().spacing.item_spacing.y = self.theme.spacing.medium;
 
                             let response = ui.horizontal(|ui| {
@@ -244,8 +243,7 @@ impl eframe::App for App {
 
                         ui.set_width(res.inner.rect.width());
 
-                        ui.scope(|ui| {
-                            ui.set_enabled(matches!(self.custom_effect, CustomEffectState::None));
+                        ui.add_enabled_ui(matches!(self.custom_effect, CustomEffectState::None), |ui| {
                             self.effect_options.show(ui, &mut self.settings.current_profile, &mut self.profile_changed, &self.theme.spacing);
                         });
 
@@ -297,14 +295,14 @@ impl eframe::App for App {
 
             self.profile_changed = false;
         }
-    }
 
-    fn on_close_event(&mut self) -> bool {
-        if self.tray.is_some() {
-            self.hide_window = true;
-            false
-        } else {
-            true
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if self.tray.is_some() {
+                ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+                ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+            } else {
+                // Close normally
+            }
         }
     }
 
@@ -328,8 +326,8 @@ impl App {
                 show_expand_width: false,
                 show_expand_height: false,
                 show_resize: false,
-                show_blocking_widget: false,
                 show_interactive_widgets: false,
+                show_widget_hits: false,
             },
             ..Style::default()
         };

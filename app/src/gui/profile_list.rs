@@ -39,8 +39,7 @@ impl ProfileList {
 
                     modal.button(ui, "Cancel");
 
-                    ui.scope(|ui| {
-                        ui.set_enabled(!is_empty && !name_not_unique);
+                    ui.add_enabled_ui(!is_empty && !name_not_unique, |ui| {
                         if modal.button(ui, "Save").clicked() {
                             current_profile.name = self.new_profile_name.clone();
                             self.profiles.push(current_profile.clone());

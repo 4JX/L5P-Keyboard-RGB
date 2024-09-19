@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-thiserror = "1.0.38"
-hidapi = { version = "2.1.2", default-features = false, features = [
+thiserror = "1.0.63"
+hidapi = { version = "2.6.3", default-features = false, features = [
     "linux-static-libusb",
 ] }
