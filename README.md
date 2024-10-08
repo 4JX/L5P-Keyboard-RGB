@@ -86,13 +86,24 @@ The best way to add a new effect is to directly edit the source code, as it allo
 
 **Note**: By default, on Linux you will have to run the program with root privileges, however, you can remedy this by adding the following `udev` rule (in a path similar to `/etc/udev/rules.d/99-kblight.rules`):
 
+- **2024 Models:**
+
+```sh
+# Pro Models
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c995", MODE="0666"
+# Regular Legions
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c994", MODE="0666"
+# LOQ Models
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c993", MODE="0666"
+```
+
 - **2023 Models:**
 
 ```sh
-# Regular legions
+# Pro Models
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c985", MODE="0666"
+# Regular Legions
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c984", MODE="0666"
-
 # LOQ Models
 SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c983", MODE="0666"
 ```
