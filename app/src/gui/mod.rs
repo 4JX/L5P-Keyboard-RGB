@@ -297,7 +297,7 @@ impl eframe::App for App {
         }
 
         if ctx.input(|i| i.viewport().close_requested()) {
-            if self.tray.is_some() {
+            if self.tray.is_some() && !std::env::var("WAYLAND_DISPLAY").is_ok() {
                 ctx.send_viewport_cmd(ViewportCommand::CancelClose);
                 ctx.send_viewport_cmd(ViewportCommand::Visible(false));
             } else {
