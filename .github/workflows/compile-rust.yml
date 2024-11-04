@@ -21,13 +21,13 @@ jobs:
             artifact_name: target/debug/legion-kb-rgb
             asset_name: legion-kb-rgb-linux
             triplet: x64-linux
-            vcpkgCommitId: 'ab67d6306b5e9af69684af5ec761c97731e75834'
+            vcpkgCommitId: '335a153de3e398208df4d25eff89d831727bc5da'
           - name: windows
             os: windows-latest
             artifact_name: target/debug/legion-kb-rgb.exe
             asset_name: legion-kb-rgb-windows
             triplet: x64-windows-static
-            vcpkgCommitId: 'ab67d6306b5e9af69684af5ec761c97731e75834'
+            vcpkgCommitId: '335a153de3e398208df4d25eff89d831727bc5da'
 
     env:
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
@@ -55,7 +55,7 @@ jobs:
           if [ "$RUNNER_OS" == "Linux" ]; then
            sudo apt-get update -y
            sudo apt install -y libunwind-dev
-           sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev libusb-1.0-0-dev
+           sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev libusb-1.0-0-dev libpango1.0-dev libgtk-3-dev libxdo-dev libappindicator3-dev
           elif [ "$RUNNER_OS" == "macOS" ]; then
            brew install nasm
           elif [ "$RUNNER_OS" == "Windows" ]; then

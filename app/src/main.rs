@@ -9,12 +9,13 @@ mod enums;
 mod gui;
 mod persist;
 mod profile;
+mod tray;
 mod util;
 
 use cli::{GuiCommand, OutputType};
 use color_eyre::{eyre::eyre, Result};
 use eframe::{egui::IconData, epaint::Vec2};
-use gui::{App, GuiMessage};
+use gui::App;
 
 const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
 
@@ -92,12 +93,9 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
         ..eframe::NativeOptions::default()
     };
 
-    let (gui_sender, gui_receiver) = crossbeam_channel::unbounded::<GuiMessage>();
+    let app = App::new(output_type);
 
-    let gui_sender_clone = gui_sender.clone();
-    let app = App::new(output_type, gui_sender_clone, gui_receiver);
-
-    eframe::run_native("Legion RGB", native_options, Box::new(move |cc| Ok(Box::new(app.init(cc, gui_sender, hide_window))))).unwrap();
+    eframe::run_native("Legion RGB", native_options, Box::new(move |cc| Ok(Box::new(app.init(cc, hide_window))))).unwrap();
 }
 
 #[must_use]
