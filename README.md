@@ -193,13 +193,16 @@ This program has been tested to work on:
 
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Git](https://git-scm.com/downloads)
-- On Linux, you'll need additional dependencies:
 
-#### Ubuntu
+#### Linux (Ubuntu)
 
 ```sh
-sudo apt-get install -y libclang-dev libxcb-shm0-dev libusb-1.0-0-dev libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev
+sudo apt-get install -y libclang-dev libxcb-shm0-dev libusb-1.0-0-dev libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev libpango1.0-dev libgtk-3-dev libxdo-dev libappindicator3-dev
 ```
+
+<!-- #### Windows -->
+
+<!-- Follow [this guide](https://gtk-rs.org/gtk4-rs/stable/latest/book/installation_windows.html#pkg-config) but build GTK3 instead of GTK4. -->
 
 ### Using `cargo-make`
 

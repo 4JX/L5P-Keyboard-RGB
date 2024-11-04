@@ -51,6 +51,12 @@
           xorg.libXi
           libusb1
           expat
+
+          # Tray icon
+          pango
+          gtk3
+          gdk-pixbuf
+          xdotool
         ];
 
         # Libraries needed at runtime
@@ -62,6 +68,9 @@
           libGL
           wayland
           libxkbcommon
+
+          # Tray icon
+          libayatana-appindicator
         ] ++ sharedDeps;
 
         envVars = rec {
