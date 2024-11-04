@@ -63,11 +63,11 @@ The best way to add a new effect is to directly edit the source code, as it allo
 
 ```json
 {
- "effect_steps": [
-  {"rgb_array": [0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0], "step_type": "Set", "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100},
-  {"rgb_array": [0, 100, 0, 0, 0, 200, 0, 0, 200, 200, 0, 0], "step_type": "Transition", "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100}
- ],
- "should_loop": true
+  "effect_steps": [
+    {"rgb_array": [0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0], "step_type": "Set", "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100},
+    {"rgb_array": [0, 100, 0, 0, 0, 200, 0, 0, 200, 200, 0, 0], "step_type": "Transition", "brightness": 1, "steps": 100, "delay_between_steps": 100, "sleep": 100}
+  ],
+  "should_loop": true
 }
 ```
 
@@ -86,54 +86,24 @@ The best way to add a new effect is to directly edit the source code, as it allo
 
 **Note**: By default, on Linux you will have to run the program with root privileges, however, you can remedy this by adding the following `udev` rule (in a path similar to `/etc/udev/rules.d/99-kblight.rules`):
 
-- **2024 Models:**
+### Format
 
 ```sh
-# Pro Models
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c995", MODE="0666"
-# Regular Legions
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c994", MODE="0666"
-# LOQ Models
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c993", MODE="0666"
+SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="####", MODE="0666"
 ```
 
-- **2023 Models:**
+Where `idProduct` can be found in these tables:
 
-```sh
-# Pro Models
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c985", MODE="0666"
-# Regular Legions
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c984", MODE="0666"
-# LOQ Models
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c983", MODE="0666"
-```
+| Year | Pro Models | Regular Legions | LOQ Models |
+| ---- | ---------- | --------------- | ---------- |
+| 2024 | `c995`     | `c994`          | `c993`     |
+| 2023 | `c985`     | `c984`          | `c983`     |
 
-- **2022 Models:**
-
-```sh
-# Regular legions
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c975", MODE="0666"
-
-# Ideapad models
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c973", MODE="0666"
-```
-
-- **2021 Models:**
-
-```sh
-# Regular legions
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c965", MODE="0666"
-
-
-# Ideapad models
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c963", MODE="0666"
-```
-
-- **2020 Models:**
-
-```sh
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="c955", MODE="0666"
-```
+| Year | Regular Legions | Ideapad Models |
+| ---- | --------------- | -------------- |
+| 2022 | `c975`          | `c973`         |
+| 2021 | `c965`          | `c963`         |
+| 2020 | `c955`          |                |
 
 And then reloading the rules:
 
