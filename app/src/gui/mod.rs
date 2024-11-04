@@ -1,6 +1,11 @@
 use std::{mem, process, thread, time::Duration};
 
-use crossbeam_channel::{Receiver, Sender};
+#[cfg(target_os = "linux")]
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
 use device_query::{DeviceQuery, Keycode};
 #[cfg(debug_assertions)]
 use eframe::egui::style::DebugOptions;
@@ -12,13 +17,17 @@ use eframe::{
 };
 
 use strum::IntoEnumIterator;
-use tray_item::{IconSource, TrayItem};
+#[cfg(target_os = "linux")]
+use tray_icon::menu::MenuEvent;
+#[cfg(not(target_os = "linux"))]
+use tray_icon::{menu::MenuEvent, TrayIcon};
 
 use crate::{
     cli::OutputType,
     effects::{self, custom_effect::CustomEffect, EffectManager, ManagerCreationError},
     enums::Effects,
     persist::Settings,
+    tray::{self, QUIT_ID, SHOW_ID},
 };
 
 use self::{effect_options::EffectOptions, menu_bar::MenuBarState, profile_list::ProfileList, style::Theme};
@@ -33,10 +42,16 @@ pub struct App {
     settings: Settings,
 
     instance_not_unique: bool,
-    window_open_rx: Option<crossbeam_channel::Receiver<GuiMessage>>,
-    // The tray struct needs to be kept from being dropped for the tray to appear on windows
+    gui_tx: crossbeam_channel::Sender<GuiMessage>,
+    gui_rx: crossbeam_channel::Receiver<GuiMessage>,
+
+    // For Linux
+    #[cfg(target_os = "linux")]
+    has_tray: Arc<AtomicBool>,
+    // The tray struct needs to be kept from being dropped for the tray to appear on windows/mac
     // If this is none it will be assumed there's no tray regardless of cause
-    tray: Option<TrayItem>,
+    #[cfg(not(target_os = "linux"))]
+    tray: Option<TrayIcon>,
 
     manager: Option<EffectManager>,
     profile_changed: bool,
@@ -63,7 +78,9 @@ pub enum CustomEffectState {
 }
 
 impl App {
-    pub fn new(output: OutputType, tx: Sender<GuiMessage>, rx: Receiver<GuiMessage>) -> Self {
+    pub fn new(output: OutputType) -> Self {
+        let (gui_tx, gui_rx) = crossbeam_channel::unbounded::<GuiMessage>();
+
         let manager_result = EffectManager::new(effects::OperationMode::Gui);
 
         let instance_not_unique = if let Err(err) = &manager_result {
@@ -77,12 +94,17 @@ impl App {
         let settings: Settings = Settings::load();
         let profiles = settings.profiles.clone();
 
+        let gui_tx_c = gui_tx.clone();
         // Default app state
         let mut app = Self {
             settings,
 
             instance_not_unique,
-            window_open_rx: Some(rx),
+            gui_tx,
+            gui_rx,
+            #[cfg(target_os = "linux")]
+            has_tray: Arc::new(AtomicBool::new(false)),
+            #[cfg(not(target_os = "linux"))]
             tray: None,
 
             manager,
@@ -90,7 +112,7 @@ impl App {
             profile_changed: true,
             custom_effect: CustomEffectState::default(),
 
-            menu_bar: MenuBarState::new(tx),
+            menu_bar: MenuBarState::new(gui_tx_c),
             profile_list: ProfileList::new(profiles),
             effect_options: EffectOptions::default(),
             global_rgb: [0; 3],
@@ -108,51 +130,56 @@ impl App {
         app
     }
 
-    pub fn init(mut self, cc: &CreationContext<'_>, gui_sender: Sender<GuiMessage>, hide_window: bool) -> Self {
+    pub fn init(mut self, cc: &CreationContext<'_>, hide_window: bool) -> Self {
         cc.egui_ctx.send_viewport_cmd(ViewportCommand::Visible(!hide_window));
 
-        //Create the tray icon
+        #[cfg(not(target_os = "linux"))]
+        {
+            self.tray = tray::build_tray(true);
+        }
+        // Since egui uses winit under the hood and doesn't use gtk on Linux, and we need gtk for
+        // the tray icon to show up, we need to spawn a thread
+        // where we initialize gtk and create the tray_icon
         #[cfg(target_os = "linux")]
-        let tray_icon = load_tray_icon(include_bytes!("../../res/trayIcon.ico"));
+        {
+            let has_tray_c = self.has_tray.clone();
 
-        #[cfg(target_os = "linux")]
-        let tray_result = TrayItem::new("Keyboard RGB", tray_icon);
+            std::thread::spawn(move || {
+                gtk::init().unwrap();
 
-        #[cfg(target_os = "windows")]
-        let tray_result = TrayItem::new("Keyboard RGB", IconSource::Resource("trayIcon"));
+                let tray_icon = tray::build_tray(true);
+                has_tray_c.store(tray_icon.is_some(), Ordering::SeqCst);
 
-        self.tray = if let Ok(mut tray) = tray_result {
-            let mut is_err = false;
+                gtk::main();
+            });
+        }
 
-            let egui_ctx = cc.egui_ctx.clone();
-            is_err |= tray
-                .add_menu_item("Show", move || {
+        let egui_ctx = cc.egui_ctx.clone();
+        let gui_tx = self.gui_tx.clone();
+        std::thread::spawn(move || loop {
+            // println!("a");
+            // if let Ok(event) = TrayIconEvent::receiver().try_recv() {
+            //     println!("{:?}", event);
+            // }
+
+            if let Ok(event) = MenuEvent::receiver().recv() {
+                if event.id == SHOW_ID {
+                    println!("show");
                     egui_ctx.request_repaint();
 
                     egui_ctx.send_viewport_cmd(ViewportCommand::Visible(true));
                     egui_ctx.send_viewport_cmd(ViewportCommand::Focus);
-                })
-                .is_err();
-
-            let quit_sender = gui_sender.clone();
-            let egui_ctx = cc.egui_ctx.clone();
-            is_err |= tray
-                .add_menu_item("Quit", move || {
+                } else if event.id == QUIT_ID {
+                    println!("quit");
                     egui_ctx.request_repaint();
-                    quit_sender.send(GuiMessage::Quit).unwrap()
-                })
-                .is_err();
 
-            if !is_err {
-                Some(tray)
-            } else {
-                None
+                    let _ = gui_tx.send(GuiMessage::Quit);
+                }
             }
-        } else {
-            None
-        };
+        });
 
         let ctx = cc.egui_ctx.clone();
+        let gui_tx_c = self.gui_tx.clone();
         if self.manager.is_some() {
             thread::spawn(move || {
                 let state = device_query::DeviceState::new();
@@ -163,7 +190,7 @@ impl App {
 
                     if keys.contains(&Keycode::LMeta) && keys.contains(&Keycode::RAlt) {
                         if !lock_switching {
-                            let _ = gui_sender.send(GuiMessage::CycleProfiles);
+                            let _ = gui_tx_c.send(GuiMessage::CycleProfiles);
                             ctx.request_repaint();
                             lock_switching = true;
                         }
@@ -184,12 +211,10 @@ impl App {
 
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
-        if let Some(rx) = &self.window_open_rx {
-            if let Ok(message) = rx.try_recv() {
-                match message {
-                    GuiMessage::CycleProfiles => self.cycle_profiles(),
-                    GuiMessage::Quit => self.exit_app(),
-                }
+        if let Ok(message) = self.gui_rx.try_recv() {
+            match message {
+                GuiMessage::CycleProfiles => self.cycle_profiles(),
+                GuiMessage::Quit => self.exit_app(),
             }
         }
 
@@ -297,7 +322,15 @@ impl eframe::App for App {
         }
 
         if ctx.input(|i| i.viewport().close_requested()) {
-            if self.tray.is_some() && !std::env::var("WAYLAND_DISPLAY").is_ok() {
+            #[cfg(target_os = "linux")]
+            if self.has_tray.load(Ordering::Relaxed) && !std::env::var("WAYLAND_DISPLAY").is_ok() {
+                ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+                ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+            } else {
+                // Close normally
+            }
+            #[cfg(not(target_os = "linux"))]
+            if self.tray.is_some() {
                 ctx.send_viewport_cmd(ViewportCommand::CancelClose);
                 ctx.send_viewport_cmd(ViewportCommand::Visible(false));
             } else {
@@ -358,19 +391,5 @@ impl App {
 
             self.profile_changed = true;
         }
-    }
-}
-
-#[cfg(target_os = "linux")]
-#[must_use]
-pub fn load_tray_icon(image_data: &[u8]) -> IconSource {
-    let image = image::load_from_memory(image_data).unwrap();
-    let image_buffer = image.to_rgba8();
-    let pixels = image_buffer.into_flat_samples().samples;
-
-    IconSource::Data {
-        data: pixels,
-        width: image.width() as i32,
-        height: image.height() as i32,
     }
 }
