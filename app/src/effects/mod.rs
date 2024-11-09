@@ -145,7 +145,7 @@ impl EffectManager {
         self.tx.send(Message::CustomEffect { effect }).unwrap();
     }
 
-    pub fn join_and_exit(mut self) {
+    pub fn shutdown(mut self) {
         self.tx.send(Message::Exit).unwrap();
         if let Some(handle) = self.inner_handle.take() {
             handle.join().unwrap();

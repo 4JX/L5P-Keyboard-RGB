@@ -1,6 +1,5 @@
 use std::{mem, process, thread, time::Duration};
 
-#[cfg(target_os = "linux")]
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -16,18 +15,16 @@ use eframe::{
     CreationContext,
 };
 
+use egui_notify::Toasts;
 use strum::IntoEnumIterator;
-#[cfg(target_os = "linux")]
 use tray_icon::menu::MenuEvent;
-#[cfg(not(target_os = "linux"))]
-use tray_icon::{menu::MenuEvent, TrayIcon};
 
 use crate::{
     cli::OutputType,
     effects::{self, custom_effect::CustomEffect, EffectManager, ManagerCreationError},
     enums::Effects,
     persist::Settings,
-    tray::{self, QUIT_ID, SHOW_ID},
+    tray::{QUIT_ID, SHOW_ID},
 };
 
 use self::{effect_options::EffectOptions, menu_bar::MenuBarState, profile_list::ProfileList, style::Theme};
@@ -45,13 +42,8 @@ pub struct App {
     gui_tx: crossbeam_channel::Sender<GuiMessage>,
     gui_rx: crossbeam_channel::Receiver<GuiMessage>,
 
-    // For Linux
-    #[cfg(target_os = "linux")]
     has_tray: Arc<AtomicBool>,
-    // The tray struct needs to be kept from being dropped for the tray to appear on windows/mac
-    // If this is none it will be assumed there's no tray regardless of cause
-    #[cfg(not(target_os = "linux"))]
-    tray: Option<TrayIcon>,
+    visible: Arc<AtomicBool>,
 
     manager: Option<EffectManager>,
     profile_changed: bool,
@@ -62,6 +54,7 @@ pub struct App {
     effect_options: EffectOptions,
     global_rgb: [u8; 3],
     theme: Theme,
+    toasts: Toasts,
 }
 
 pub enum GuiMessage {
@@ -78,7 +71,7 @@ pub enum CustomEffectState {
 }
 
 impl App {
-    pub fn new(output: OutputType) -> Self {
+    pub fn new(output: OutputType, has_tray: Arc<AtomicBool>, visible: Arc<AtomicBool>) -> Self {
         let (gui_tx, gui_rx) = crossbeam_channel::unbounded::<GuiMessage>();
 
         let manager_result = EffectManager::new(effects::OperationMode::Gui);
@@ -102,10 +95,9 @@ impl App {
             instance_not_unique,
             gui_tx,
             gui_rx,
-            #[cfg(target_os = "linux")]
-            has_tray: Arc::new(AtomicBool::new(false)),
-            #[cfg(not(target_os = "linux"))]
-            tray: None,
+
+            has_tray,
+            visible,
 
             manager,
             // Default to true for an instant update on launch
@@ -117,6 +109,7 @@ impl App {
             effect_options: EffectOptions::default(),
             global_rgb: [0; 3],
             theme: Theme::default(),
+            toasts: Toasts::default(),
         };
 
         // Update the state according to the option chosen by the user
@@ -130,50 +123,25 @@ impl App {
         app
     }
 
-    pub fn init(mut self, cc: &CreationContext<'_>, hide_window: bool) -> Self {
-        cc.egui_ctx.send_viewport_cmd(ViewportCommand::Visible(!hide_window));
-
-        #[cfg(not(target_os = "linux"))]
-        {
-            self.tray = tray::build_tray(true);
-        }
-        // Since egui uses winit under the hood and doesn't use gtk on Linux, and we need gtk for
-        // the tray icon to show up, we need to spawn a thread
-        // where we initialize gtk and create the tray_icon
-        #[cfg(target_os = "linux")]
-        {
-            let has_tray_c = self.has_tray.clone();
-
-            std::thread::spawn(move || {
-                gtk::init().unwrap();
-
-                let tray_icon = tray::build_tray(true);
-                has_tray_c.store(tray_icon.is_some(), Ordering::SeqCst);
-
-                gtk::main();
-            });
-        }
+    pub fn init(self, cc: &CreationContext<'_>) -> Self {
+        // cc.egui_ctx.send_viewport_cmd(ViewportCommand::Visible(self.visible));
 
         let egui_ctx = cc.egui_ctx.clone();
         let gui_tx = self.gui_tx.clone();
-        std::thread::spawn(move || loop {
-            // println!("a");
-            // if let Ok(event) = TrayIconEvent::receiver().try_recv() {
-            //     println!("{:?}", event);
-            // }
+        let has_tray = self.has_tray.clone();
 
+        std::thread::spawn(move || loop {
             if let Ok(event) = MenuEvent::receiver().recv() {
                 if event.id == SHOW_ID {
-                    println!("show");
                     egui_ctx.request_repaint();
 
                     egui_ctx.send_viewport_cmd(ViewportCommand::Visible(true));
                     egui_ctx.send_viewport_cmd(ViewportCommand::Focus);
                 } else if event.id == QUIT_ID {
-                    println!("quit");
                     egui_ctx.request_repaint();
 
                     let _ = gui_tx.send(GuiMessage::Quit);
+                    has_tray.store(false, Ordering::SeqCst);
                 }
             }
         });
@@ -218,6 +186,17 @@ impl eframe::App for App {
             }
         }
 
+        // Show active toast messages
+        self.toasts.show(ctx);
+
+        // TODO: Remove when upstream fixes window hiding
+        if !self.visible.load(Ordering::SeqCst) {
+            self.visible.store(true, Ordering::SeqCst);
+            self.toasts
+                .warning("Window hiding is currently not supported.\nSee https://github.com/4JX/L5P-Keyboard-RGB/issues/181")
+                .set_duration(None);
+        }
+
         if self.instance_not_unique && modals::unique_instance(ctx) {
             self.exit_app();
         };
@@ -227,10 +206,9 @@ impl eframe::App for App {
             self.exit_app();
         };
 
-        // frame.set_visible(!self.hide_window);
-
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
-            self.menu_bar.show(ctx, ui, &mut self.settings.current_profile, &mut self.custom_effect, &mut self.profile_changed);
+            self.menu_bar
+                .show(ctx, ui, &mut self.settings.current_profile, &mut self.custom_effect, &mut self.profile_changed, &mut self.toasts);
         });
 
         CentralPanel::default()
@@ -321,28 +299,34 @@ impl eframe::App for App {
             self.profile_changed = false;
         }
 
-        if ctx.input(|i| i.viewport().close_requested()) {
-            #[cfg(target_os = "linux")]
-            if self.has_tray.load(Ordering::Relaxed) && !std::env::var("WAYLAND_DISPLAY").is_ok() {
-                ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-                ctx.send_viewport_cmd(ViewportCommand::Visible(false));
-            } else {
-                // Close normally
-            }
-            #[cfg(not(target_os = "linux"))]
-            if self.tray.is_some() {
-                ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-                ctx.send_viewport_cmd(ViewportCommand::Visible(false));
-            } else {
-                // Close normally
-            }
-        }
+        // if ctx.input(|i| i.viewport().close_requested()) {
+        //     #[cfg(target_os = "linux")]
+        //     if self.has_tray.load(Ordering::Relaxed) && !std::env::var("WAYLAND_DISPLAY").is_ok() {
+        //         ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+        //         ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+        //     } else {
+        //         // Close normally
+        //     }
+        //     #[cfg(not(target_os = "linux"))]
+        //     if self.tray.is_some() {
+        //         ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+        //         ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+        //     } else {
+        //         // Close normally
+        //     }
+        // }
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
         self.settings.profiles = std::mem::take(&mut self.profile_list.profiles);
 
         self.settings.save();
+
+        self.visible.store(false, Ordering::SeqCst);
+
+        if let Some(manager) = self.manager.take() {
+            manager.shutdown();
+        }
     }
 }
 

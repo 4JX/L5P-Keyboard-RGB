@@ -3,10 +3,13 @@ use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
 };
 
+use crate::APP_ICON;
+
 pub const SHOW_ID: &str = "tray-show";
 pub const QUIT_ID: &str = "tray-quit";
 
 struct TrayMenuItems {
+    #[allow(dead_code)]
     show: MenuItem,
     quit: MenuItem,
 }
@@ -22,9 +25,10 @@ impl TrayMenuItems {
 
 fn build_tray_menu(items: &TrayMenuItems, has_gui: bool) -> Menu {
     let menu = Menu::new();
-    if has_gui {
-        menu.append_items(&[&items.show]).unwrap();
-    }
+    // TODO: Wait for upstream fix
+    // if has_gui {
+    //     menu.append_items(&[&items.show]).unwrap();
+    // }
     menu.append_items(&[&items.quit]).unwrap();
     menu
 }
@@ -35,7 +39,7 @@ pub fn build_tray(has_gui: bool) -> Option<TrayIcon> {
 
     TrayIconBuilder::new()
         .with_tooltip("Legion Keyboard Control")
-        .with_icon(load_tray_icon(include_bytes!("../res/trayIcon.ico")))
+        .with_icon(load_tray_icon(APP_ICON))
         .with_menu(Box::new(menu))
         .build()
         .ok()
