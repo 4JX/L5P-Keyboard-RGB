@@ -17,6 +17,7 @@ clap = { version = "4.5.17", features = ["color", "cargo", "derive"] }
 
 # Ui
 eframe = "0.28.1"
+# tokio = { version = "1.41.1" }
 egui-modal = "0.4.0"
 # egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
 egui_file = "0.18.0"

@@ -22,7 +22,7 @@ pub enum EffectType {
     Transition,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CustomEffect {
     pub effect_steps: Vec<EffectStep>,
     pub should_loop: bool,

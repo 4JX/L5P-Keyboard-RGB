@@ -12,11 +12,17 @@ mod profile;
 mod tray;
 mod util;
 
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
 use cli::{GuiCommand, OutputType};
 use color_eyre::{eyre::eyre, Result};
 use eframe::{egui::IconData, epaint::Vec2};
 use gui::App;
 
+const APP_ICON: &'static [u8; 14987] = include_bytes!("../res/trayIcon.ico");
 const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
 
 fn main() {
@@ -83,7 +89,10 @@ fn init() -> Result<()> {
 }
 
 fn start_ui(output_type: OutputType, hide_window: bool) {
-    let app_icon = load_icon_data(include_bytes!("../res/trayIcon.ico"));
+    let has_tray = Arc::new(AtomicBool::new(true));
+    let visible = Arc::new(AtomicBool::new(!hide_window));
+
+    let app_icon = load_icon_data(APP_ICON);
     let native_options = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_inner_size(WINDOW_SIZE)
@@ -93,9 +102,27 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
         ..eframe::NativeOptions::default()
     };
 
-    let app = App::new(output_type);
+    let has_tray_c = has_tray.clone();
 
-    eframe::run_native("Legion RGB", native_options, Box::new(move |cc| Ok(Box::new(app.init(cc, hide_window))))).unwrap();
+    // Since egui uses winit under the hood and doesn't use gtk on Linux, and we need gtk for
+    // the tray icon to show up, we need to spawn a thread
+    // where we initialize gtk and create the tray_icon
+    {
+        std::thread::spawn(move || {
+            #[cfg(target_os = "linux")]
+            gtk::init().unwrap();
+
+            let tray_icon = tray::build_tray(true);
+            has_tray_c.store(tray_icon.is_some(), Ordering::SeqCst);
+
+            #[cfg(target_os = "linux")]
+            gtk::main();
+        });
+    }
+
+    let app = App::new(output_type, has_tray.clone(), visible.clone());
+
+    eframe::run_native("Legion RGB", native_options, Box::new(move |cc| Ok(Box::new(app.init(cc))))).unwrap();
 }
 
 #[must_use]

@@ -12,11 +12,12 @@ use crate::{effects::custom_effect::CustomEffect, gui::modals, profile::Profile}
 use super::{CustomEffectState, GuiMessage};
 
 pub struct MenuBarState {
+    // TODO: Re-enable when upstream fixes window visibility
+    #[allow(dead_code)]
     gui_sender: Sender<GuiMessage>,
     opened_file: Option<PathBuf>,
     open_file_dialog: Option<FileDialog>,
     file_kind: Option<FileOperation>,
-    toasts: Toasts,
 }
 
 impl MenuBarState {
@@ -26,7 +27,6 @@ impl MenuBarState {
             opened_file: None,
             open_file_dialog: None,
             file_kind: None,
-            toasts: Toasts::default(),
         }
     }
 }
@@ -38,9 +38,7 @@ enum FileOperation {
 }
 
 impl MenuBarState {
-    pub fn show(&mut self, ctx: &Context, ui: &mut egui::Ui, current_profile: &mut Profile, current_effect: &mut CustomEffectState, changed: &mut bool) {
-        self.toasts.show(ctx);
-
+    pub fn show(&mut self, ctx: &Context, ui: &mut egui::Ui, current_profile: &mut Profile, current_effect: &mut CustomEffectState, changed: &mut bool, toasts: &mut Toasts) {
         self.show_menu(ctx, ui);
 
         if let Some(dialog) = &mut self.open_file_dialog {
@@ -55,7 +53,7 @@ impl MenuBarState {
                                     *changed = true;
                                 }
                                 Err(_) => {
-                                    self.toasts.error("Could not load profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                                    toasts.error("Could not load profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
                                 }
                             },
                             FileOperation::LoadEffect => match CustomEffect::from_file(path) {
@@ -64,12 +62,12 @@ impl MenuBarState {
                                     *changed = true;
                                 }
                                 Err(_) => {
-                                    self.toasts.error("Could not load custom effect.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                                    toasts.error("Could not load custom effect.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
                                 }
                             },
                             FileOperation::SaveProfile => {
                                 if current_profile.save_profile(path).is_err() {
-                                    self.toasts.error("Could not save profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                                    toasts.error("Could not save profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
                                 };
                             }
                         }
@@ -118,9 +116,9 @@ impl MenuBarState {
                 open::that("https://www.buymeacoffee.com/4JXdev").unwrap();
             }
 
-            if ui.button("Exit").clicked() {
-                self.gui_sender.send(GuiMessage::Quit).unwrap();
-            }
+            // if ui.button("Exit").clicked() {
+            //     self.gui_sender.send(GuiMessage::Quit).unwrap();
+            // }
 
             #[cfg(target_os = "windows")]
             {
