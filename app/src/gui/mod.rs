@@ -21,19 +21,18 @@ use tray_icon::menu::MenuEvent;
 
 use crate::{
     cli::OutputType,
-    effects::{self, custom_effect::CustomEffect, EffectManager, ManagerCreationError},
     enums::Effects,
+    manager::{self, custom_effect::CustomEffect, EffectManager, ManagerCreationError},
     persist::Settings,
     tray::{QUIT_ID, SHOW_ID},
 };
 
-use self::{effect_options::EffectOptions, menu_bar::MenuBarState, profile_list::ProfileList, style::Theme};
+use self::{menu_bar::MenuBarState, profile_list::ProfileList, style::Theme};
 
-mod effect_options;
 mod menu_bar;
 mod modals;
 mod profile_list;
-mod style;
+pub mod style;
 
 pub struct App {
     settings: Settings,
@@ -51,7 +50,6 @@ pub struct App {
 
     menu_bar: MenuBarState,
     profile_list: ProfileList,
-    effect_options: EffectOptions,
     global_rgb: [u8; 3],
     theme: Theme,
     toasts: Toasts,
@@ -74,7 +72,7 @@ impl App {
     pub fn new(output: OutputType, has_tray: Arc<AtomicBool>, visible: Arc<AtomicBool>) -> Self {
         let (gui_tx, gui_rx) = crossbeam_channel::unbounded::<GuiMessage>();
 
-        let manager_result = EffectManager::new(effects::OperationMode::Gui);
+        let manager_result = EffectManager::new(manager::OperationMode::Gui);
 
         let instance_not_unique = if let Err(err) = &manager_result {
             &ManagerCreationError::InstanceAlreadyRunning == err.current_context()
@@ -106,7 +104,6 @@ impl App {
 
             menu_bar: MenuBarState::new(gui_tx_c),
             profile_list: ProfileList::new(profiles),
-            effect_options: EffectOptions::default(),
             global_rgb: [0; 3],
             theme: Theme::default(),
             toasts: Toasts::default(),
@@ -247,7 +244,8 @@ impl eframe::App for App {
                         ui.set_width(res.inner.rect.width());
 
                         ui.add_enabled_ui(matches!(self.custom_effect, CustomEffectState::None), |ui| {
-                            self.effect_options.show(ui, &mut self.settings.current_profile, &mut self.profile_changed, &self.theme.spacing);
+                            let mut effect = self.settings.current_profile.effect;
+                            effect.show_ui(ui, &mut self.settings.current_profile, &mut self.profile_changed, &self.theme);
                         });
 
                         self.profile_list

@@ -7,7 +7,7 @@ use egui_file::FileDialog;
 use egui_notify::Toasts;
 use std::{path::PathBuf, time::Duration};
 
-use crate::{effects::custom_effect::CustomEffect, gui::modals, profile::Profile};
+use crate::{gui::modals, manager::custom_effect::CustomEffect, profile::Profile};
 
 use super::{CustomEffectState, GuiMessage};
 

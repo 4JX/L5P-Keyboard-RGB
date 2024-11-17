@@ -2,9 +2,9 @@ use std::{sync::atomic::Ordering, thread, time::Duration};
 
 use rand::Rng;
 
-use crate::profile::Profile;
+use crate::{manager::Inner, profile::Profile};
 
-pub fn play(manager: &mut super::Inner, p: &Profile, thread_rng: &mut rand::rngs::ThreadRng) {
+pub fn play(manager: &mut Inner, p: &Profile, thread_rng: &mut rand::rngs::ThreadRng) {
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
         let colors = [[255, 0, 0], [255, 255, 0], [0, 255, 0], [0, 255, 255], [0, 0, 255], [255, 0, 255]];
         let colors_index = thread_rng.gen_range(0..6);

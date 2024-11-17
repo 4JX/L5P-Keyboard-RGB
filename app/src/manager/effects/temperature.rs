@@ -2,7 +2,9 @@ use std::{sync::atomic::Ordering, thread, time::Duration};
 
 use sysinfo::{Components, System};
 
-pub fn play(manager: &mut super::Inner) {
+use crate::manager::Inner;
+
+pub fn play(manager: &mut Inner) {
     let safe_temp = 20.0;
     let ramp_boost = 1.6;
     let temp_cool: [f32; 12] = [0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0, 0.0, 255.0, 0.0];

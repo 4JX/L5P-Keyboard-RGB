@@ -10,7 +10,10 @@ use std::{
 
 use device_query::{DeviceEvents, Keycode};
 
-use crate::{effects::zones::KEY_ZONES, profile::Profile};
+use crate::{
+    manager::{effects::zones::KEY_ZONES, Inner},
+    profile::Profile,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum RippleMove {
@@ -20,7 +23,7 @@ enum RippleMove {
     Off,
 }
 
-pub fn play(manager: &mut super::Inner, p: &Profile) {
+pub fn play(manager: &mut Inner, p: &Profile) {
     // Welcome to the definition of i-don't-know-what-im-doing
     let stop_signals = manager.stop_signals.clone();
 

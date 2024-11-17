@@ -4,6 +4,7 @@ use crate::{
 };
 
 use crossbeam_channel::{Receiver, Sender};
+use effects::{ambient, christmas, disco, fade, lightning, ripple, swipe, temperature};
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use rand::thread_rng;
@@ -18,16 +19,8 @@ use thiserror::Error;
 
 use self::custom_effect::{CustomEffect, EffectType};
 
-mod ambient;
-mod christmas;
 pub mod custom_effect;
-mod disco;
-mod fade;
-mod lightning;
-mod ripple;
-mod swipe;
-mod temperature;
-mod zones;
+mod effects;
 
 #[derive(Debug, Error, PartialEq)]
 #[error("Could not create keyboard manager")]

@@ -4,9 +4,9 @@
 mod cli;
 #[cfg(target_os = "windows")]
 mod console;
-mod effects;
 mod enums;
 mod gui;
+mod manager;
 mod persist;
 mod profile;
 mod tray;
