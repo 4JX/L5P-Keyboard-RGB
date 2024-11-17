@@ -15,68 +15,64 @@ struct ScreenDimensions {
     dest: (u32, u32),
 }
 
-pub(super) struct AmbientLight;
+pub fn play(manager: &mut super::Inner, fps: u8, saturation_boost: f32) {
+    while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
+        //Display setup
+        let display = Display::all().unwrap().remove(0);
 
-impl AmbientLight {
-    pub fn play(manager: &mut super::Inner, fps: u8, saturation_boost: f32) {
-        while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-            //Display setup
-            let display = Display::all().unwrap().remove(0);
+        let mut capturer = Capturer::new(display).expect("Couldn't begin capture.");
 
-            let mut capturer = Capturer::new(display).expect("Couldn't begin capture.");
+        let dimensions = ScreenDimensions {
+            src: (capturer.width() as u32, capturer.height() as u32),
+            dest: (4, 1),
+        };
 
-            let dimensions = ScreenDimensions {
-                src: (capturer.width() as u32, capturer.height() as u32),
-                dest: (4, 1),
-            };
+        let seconds_per_frame = Duration::from_nanos(1_000_000_000 / u64::from(fps));
+        let mut resizer = fr::Resizer::new();
 
-            let seconds_per_frame = Duration::from_nanos(1_000_000_000 / u64::from(fps));
-            let mut resizer = fr::Resizer::new();
+        #[cfg(target_os = "windows")]
+        let mut try_gdi = 1;
 
-            #[cfg(target_os = "windows")]
-            let mut try_gdi = 1;
+        while !manager.stop_signals.keyboard_stop_signal.load(Ordering::SeqCst) {
+            let now = Instant::now();
 
-            while !manager.stop_signals.keyboard_stop_signal.load(Ordering::SeqCst) {
-                let now = Instant::now();
+            #[allow(clippy::single_match)]
+            match capturer.frame(seconds_per_frame) {
+                Ok(frame) => {
+                    let rgb = process_frame(frame, dimensions, &mut resizer, saturation_boost);
 
-                #[allow(clippy::single_match)]
-                match capturer.frame(seconds_per_frame) {
-                    Ok(frame) => {
-                        let rgb = process_frame(frame, dimensions, &mut resizer, saturation_boost);
-
-                        manager.keyboard.set_colors_to(&rgb).unwrap();
+                    manager.keyboard.set_colors_to(&rgb).unwrap();
+                    #[cfg(target_os = "windows")]
+                    {
+                        try_gdi = 0;
+                    }
+                }
+                Err(error) => match error.kind() {
+                    std::io::ErrorKind::WouldBlock =>
+                    {
                         #[cfg(target_os = "windows")]
-                        {
-                            try_gdi = 0;
+                        if try_gdi > 0 && !capturer.is_gdi() {
+                            if try_gdi > 3 {
+                                capturer.set_gdi();
+                                try_gdi = 0;
+                            }
+                            try_gdi += 1;
                         }
                     }
-                    Err(error) => match error.kind() {
-                        std::io::ErrorKind::WouldBlock =>
-                        {
-                            #[cfg(target_os = "windows")]
-                            if try_gdi > 0 && !capturer.is_gdi() {
-                                if try_gdi > 3 {
-                                    capturer.set_gdi();
-                                    try_gdi = 0;
-                                }
-                                try_gdi += 1;
-                            }
+                    _ =>
+                    {
+                        #[cfg(windows)]
+                        if !capturer.is_gdi() {
+                            capturer.set_gdi();
+                            continue;
                         }
-                        _ =>
-                        {
-                            #[cfg(windows)]
-                            if !capturer.is_gdi() {
-                                capturer.set_gdi();
-                                continue;
-                            }
-                        }
-                    },
-                }
+                    }
+                },
+            }
 
-                let elapsed_time = now.elapsed();
-                if elapsed_time < seconds_per_frame {
-                    thread::sleep(seconds_per_frame - elapsed_time);
-                }
+            let elapsed_time = now.elapsed();
+            if elapsed_time < seconds_per_frame {
+                thread::sleep(seconds_per_frame - elapsed_time);
             }
         }
     }

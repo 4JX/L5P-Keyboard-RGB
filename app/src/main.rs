@@ -12,13 +12,12 @@ mod profile;
 mod tray;
 mod util;
 
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+#[cfg(not(target_os = "linux"))]
+use std::{cell::RefCell, rc::Rc};
+
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
 };
 
 use cli::{GuiCommand, OutputType};

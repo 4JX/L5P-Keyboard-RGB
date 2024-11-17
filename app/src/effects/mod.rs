@@ -16,17 +16,7 @@ use std::{
 use std::{sync::Arc, thread::JoinHandle};
 use thiserror::Error;
 
-use self::{
-    ambient::AmbientLight,
-    christmas::Christmas,
-    custom_effect::{CustomEffect, EffectType},
-    disco::Disco,
-    fade::Fade,
-    lightning::Lightning,
-    ripple::Ripple,
-    swipe::Swipe,
-    temperature::Temperature,
-};
+use self::custom_effect::{CustomEffect, EffectType};
 
 mod ambient;
 mod christmas;
@@ -37,6 +27,7 @@ mod lightning;
 mod ripple;
 mod swipe;
 mod temperature;
+mod zones;
 
 #[derive(Debug, Error, PartialEq)]
 #[error("Could not create keyboard manager")]
@@ -189,23 +180,23 @@ impl Inner {
                 }
             },
 
-            Effects::Lightning => Lightning::play(self, &profile, &mut thread_rng),
+            Effects::Lightning => lightning::play(self, &profile, &mut thread_rng),
             Effects::AmbientLight { mut fps, mut saturation_boost } => {
                 fps = fps.clamp(1, 60);
                 saturation_boost = saturation_boost.clamp(0.0, 1.0);
 
-                AmbientLight::play(self, fps, saturation_boost);
+                ambient::play(self, fps, saturation_boost);
             }
             Effects::SmoothWave => {
                 profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
-                Swipe::play(self, &profile);
+                swipe::play(self, &profile);
             }
-            Effects::Swipe => Swipe::play(self, &profile),
-            Effects::Disco => Disco::play(self, &profile, &mut thread_rng),
-            Effects::Christmas => Christmas::play(self, &mut thread_rng),
-            Effects::Fade => Fade::play(self, &profile),
-            Effects::Temperature => Temperature::play(self),
-            Effects::Ripple => Ripple::play(self, &profile),
+            Effects::Swipe => swipe::play(self, &profile),
+            Effects::Disco => disco::play(self, &profile, &mut thread_rng),
+            Effects::Christmas => christmas::play(self, &mut thread_rng),
+            Effects::Fade => fade::play(self, &profile),
+            Effects::Temperature => temperature::play(self),
+            Effects::Ripple => ripple::play(self, &profile),
         }
         self.stop_signals.store_false();
     }
