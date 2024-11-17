@@ -39,7 +39,7 @@ enum FileOperation {
 
 impl MenuBarState {
     pub fn show(&mut self, ctx: &Context, ui: &mut egui::Ui, current_profile: &mut Profile, current_effect: &mut CustomEffectState, changed: &mut bool, toasts: &mut Toasts) {
-        self.show_menu(ctx, ui);
+        self.show_menu(ctx, ui, toasts);
 
         if let Some(dialog) = &mut self.open_file_dialog {
             if dialog.show(ctx).selected() {
@@ -79,7 +79,7 @@ impl MenuBarState {
         }
     }
 
-    fn show_menu(&mut self, ctx: &Context, ui: &mut egui::Ui) {
+    fn show_menu(&mut self, ctx: &Context, ui: &mut egui::Ui, toasts: &mut Toasts) {
         use egui::menu;
 
         menu::bar(ui, |ui| {
@@ -127,10 +127,7 @@ impl MenuBarState {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     if ui.button("📜").clicked() {
                         if !console::alloc() {
-                            self.toasts
-                                .error("Could not allocate debug terminal.")
-                                .set_duration(Some(Duration::from_millis(5000)))
-                                .set_closable(true);
+                            toasts.error("Could not allocate debug terminal.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
                         }
                         println!("Debug terminal enabled.");
                     }

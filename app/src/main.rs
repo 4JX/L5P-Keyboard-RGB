@@ -22,30 +22,30 @@ use color_eyre::{eyre::eyre, Result};
 use eframe::{egui::IconData, epaint::Vec2};
 use gui::App;
 
-const APP_ICON: &'static [u8; 14987] = include_bytes!("../res/trayIcon.ico");
+const APP_ICON: &[u8; 14987] = include_bytes!("../res/trayIcon.ico");
 const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
 
 fn main() {
     #[cfg(target_os = "windows")]
     {
         setup_panic().unwrap();
-
-        // This just enables output if the program is already being ran from the CLI
-        console::attach();
-        let res = init();
-        console::free();
-
-        if res.is_err() {
-            std::process::exit(2);
-        }
+        run_windows();
     }
 
     #[cfg(target_os = "linux")]
     {
         color_eyre::install().unwrap();
-
         init().unwrap();
     }
+}
+
+#[cfg(target_os = "windows")]
+fn run_windows() {
+    console::attach();
+    if init().is_err() {
+        std::process::exit(2);
+    }
+    console::free();
 }
 
 #[cfg(target_os = "windows")]
@@ -61,14 +61,12 @@ fn setup_panic() -> Result<()> {
 
     std::panic::set_hook(Box::new(move |panic_info| {
         if !console::alloc() {
-            // No point trying to print without a console...
-            return;
+            return; // No console to print to
         }
 
         eprintln!("{}", panic_hook.panic_report(panic_info));
         println!("Press Enter to continue...");
         let _ = std::io::stdin().read_line(&mut String::new());
-
         std::process::exit(1);
     }));
 
@@ -79,9 +77,8 @@ fn init() -> Result<()> {
     let cli_output = cli::try_cli().map_err(|err| eyre!("{:?}", err))?;
 
     match cli_output {
-        GuiCommand::Start { hide_window, output } => {
-            start_ui(output, hide_window);
-
+        GuiCommand::Start { hide_window, output_type } => {
+            start_ui(output_type, hide_window);
             Ok(())
         }
         GuiCommand::Exit => Ok(()),
@@ -107,18 +104,16 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
     // Since egui uses winit under the hood and doesn't use gtk on Linux, and we need gtk for
     // the tray icon to show up, we need to spawn a thread
     // where we initialize gtk and create the tray_icon
-    {
-        std::thread::spawn(move || {
-            #[cfg(target_os = "linux")]
-            gtk::init().unwrap();
+    std::thread::spawn(move || {
+        #[cfg(target_os = "linux")]
+        gtk::init().unwrap();
 
-            let tray_icon = tray::build_tray(true);
-            has_tray_c.store(tray_icon.is_some(), Ordering::SeqCst);
+        let tray_icon = tray::build_tray(true);
+        has_tray_c.store(tray_icon.is_some(), Ordering::SeqCst);
 
-            #[cfg(target_os = "linux")]
-            gtk::main();
-        });
-    }
+        #[cfg(target_os = "linux")]
+        gtk::main();
+    });
 
     let app = App::new(output_type, has_tray.clone(), visible.clone());
 
@@ -128,6 +123,7 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
 #[must_use]
 fn load_icon_data(image_data: &[u8]) -> IconData {
     let image = image::load_from_memory(image_data).unwrap();
+
     let image_buffer = image.to_rgba8();
     let pixels = image_buffer.into_flat_samples().samples;
 
