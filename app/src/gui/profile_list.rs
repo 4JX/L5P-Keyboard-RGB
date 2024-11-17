@@ -35,13 +35,13 @@ impl ProfileList {
 
                 modal.buttons(ui, |ui| {
                     let is_empty = self.new_profile_name.is_empty();
-                    let name_not_unique = self.profiles.iter().any(|prof| prof.name == self.new_profile_name);
+                    let name_not_unique = self.profiles.iter().any(|prof| prof.name.as_ref() == Some(&self.new_profile_name));
 
                     modal.button(ui, "Cancel");
 
                     ui.add_enabled_ui(!is_empty && !name_not_unique, |ui| {
                         if modal.button(ui, "Save").clicked() {
-                            current_profile.name = self.new_profile_name.clone();
+                            current_profile.name = Some(self.new_profile_name.clone());
                             self.profiles.push(current_profile.clone());
                         };
                     });
@@ -99,7 +99,8 @@ impl ProfileList {
                     ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| {
                         ui.horizontal_wrapped(|ui| {
                             for prof in &self.profiles {
-                                if ui.selectable_value(current_profile, prof.clone(), &prof.name).clicked() {
+                                let name = prof.name.as_ref().map(|s| s.as_str()).unwrap_or("Unnamed");
+                                if ui.selectable_value(current_profile, prof.clone(), name).clicked() {
                                     *changed = true;
                                     *custom_effect_state = CustomEffectState::None;
                                 };

@@ -2,9 +2,9 @@ use std::{sync::atomic::Ordering, thread, time::Duration};
 
 use rand::{rngs::ThreadRng, Rng};
 
-use crate::profile::Profile;
+use crate::{manager::Inner, profile::Profile};
 
-pub fn play(manager: &mut super::Inner, p: &Profile, thread_rng: &mut ThreadRng) {
+pub fn play(manager: &mut Inner, p: &Profile, thread_rng: &mut ThreadRng) {
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
         let profile_array = p.rgb_array();
 

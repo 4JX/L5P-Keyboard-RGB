@@ -6,8 +6,8 @@ use strum::IntoEnumIterator;
 use thiserror::Error;
 
 use crate::{
-    effects::{self, custom_effect::CustomEffect, ManagerCreationError},
     enums::{Brightness, Direction, Effects},
+    manager::{self, custom_effect::CustomEffect, ManagerCreationError},
     profile::{self, Profile},
 };
 
@@ -152,7 +152,7 @@ pub fn try_cli() -> Result<GuiCommand, CliError> {
 }
 
 fn handle_cli_output(output_type: OutputType) -> Result<GuiCommand, CliError> {
-    let manager_result = effects::EffectManager::new(effects::OperationMode::Cli);
+    let manager_result = manager::EffectManager::new(manager::OperationMode::Cli);
     let instance_not_unique = manager_result
         .as_ref()
         .err()
@@ -205,8 +205,8 @@ fn parse_cli() -> Result<CliOutput, CliError> {
                     [0; 12]
                 };
 
-                let profile = Profile {
-                    name: "Profile".to_string(),
+                let mut profile = Profile {
+                    name: None,
                     rgb_zones: profile::arr_to_zones(rgb_array),
                     effect,
                     direction,

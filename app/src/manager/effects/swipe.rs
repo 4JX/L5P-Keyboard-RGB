@@ -1,8 +1,8 @@
 use std::{sync::atomic::Ordering, thread, time::Duration};
 
-use crate::{enums::Direction, profile::Profile};
+use crate::{enums::Direction, manager::Inner, profile::Profile};
 
-pub fn play(manager: &mut super::Inner, p: &Profile) {
+pub fn play(manager: &mut Inner, p: &Profile) {
     let mut rgb_array = p.rgb_array();
 
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {

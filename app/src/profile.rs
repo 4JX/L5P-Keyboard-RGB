@@ -28,7 +28,7 @@ type Zones = [KeyboardZone; 4];
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Profile {
-    pub name: String,
+    pub name: Option<String>,
     pub rgb_zones: Zones,
     pub effect: Effects,
     pub direction: Direction,
@@ -39,7 +39,7 @@ pub struct Profile {
 impl Default for Profile {
     fn default() -> Self {
         Self {
-            name: "Profile".to_string(),
+            name: None,
             rgb_zones: Zones::default(),
             effect: Effects::default(),
             direction: Direction::default(),
@@ -62,7 +62,10 @@ impl Profile {
         Self::load(path).change_context(LoadProfileError)
     }
 
-    pub fn save_profile(&self, path: &Path) -> Result<(), SaveProfileError> {
+    pub fn save_profile(&mut self, path: &Path) -> Result<(), SaveProfileError> {
+        if self.name.is_none() {
+            self.name = Some("Untitled".to_string());
+        }
         self.save(path).change_context(SaveProfileError)
     }
 

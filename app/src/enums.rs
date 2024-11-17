@@ -1,4 +1,4 @@
-use crate::{effects::custom_effect::CustomEffect, profile::Profile};
+use crate::{manager::custom_effect::CustomEffect, profile::Profile};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr};
 

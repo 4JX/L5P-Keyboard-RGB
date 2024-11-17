@@ -9,13 +9,15 @@ use fast_image_resize as fr;
 use fr::Resizer;
 use scrap::{Capturer, Display, Frame, TraitCapturer, TraitPixelBuffer};
 
+use crate::manager::Inner;
+
 #[derive(Clone, Copy)]
 struct ScreenDimensions {
     src: (u32, u32),
     dest: (u32, u32),
 }
 
-pub fn play(manager: &mut super::Inner, fps: u8, saturation_boost: f32) {
+pub fn play(manager: &mut Inner, fps: u8, saturation_boost: f32) {
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
         //Display setup
         let display = Display::all().unwrap().remove(0);
