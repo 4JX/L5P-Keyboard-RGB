@@ -12,9 +12,13 @@ mod profile;
 mod tray;
 mod util;
 
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 
 use cli::{GuiCommand, OutputType};
@@ -101,20 +105,36 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
     // Since egui uses winit under the hood and doesn't use gtk on Linux, and we need gtk for
     // the tray icon to show up, we need to spawn a thread
     // where we initialize gtk and create the tray_icon
+    #[cfg(target_os = "linux")]
     std::thread::spawn(move || {
-        #[cfg(target_os = "linux")]
         gtk::init().unwrap();
 
         let tray_icon = tray::build_tray(true);
         has_tray_c.store(tray_icon.is_some(), Ordering::SeqCst);
 
-        #[cfg(target_os = "linux")]
         gtk::main();
     });
 
+    #[cfg(not(target_os = "linux"))]
+    let mut _tray_icon = Rc::new(RefCell::new(None));
+    #[cfg(not(target_os = "linux"))]
+    let tray_c = _tray_icon.clone();
+
     let app = App::new(output_type, has_tray.clone(), visible.clone());
 
-    eframe::run_native("Legion RGB", native_options, Box::new(move |cc| Ok(Box::new(app.init(cc))))).unwrap();
+    eframe::run_native(
+        "Legion RGB",
+        native_options,
+        Box::new(move |cc| {
+            #[cfg(target_os = "windows")]
+            {
+                tray_c.borrow_mut().replace(tray::build_tray(true));
+                has_tray_c.store(tray_c.borrow().is_some(), Ordering::SeqCst);
+            }
+            Ok(Box::new(app.init(cc)))
+        }),
+    )
+    .unwrap();
 }
 
 #[must_use]
