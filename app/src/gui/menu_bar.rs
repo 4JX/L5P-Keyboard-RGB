@@ -126,7 +126,7 @@ impl MenuBarState {
                 use eframe::{egui::Layout, emath::Align};
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     if ui.button("📜").clicked() {
-                        if !console::alloc() {
+                        if !console::alloc_with_color_support() {
                             toasts.error("Could not allocate debug terminal.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
                         }
                         println!("Debug terminal enabled.");

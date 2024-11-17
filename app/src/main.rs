@@ -51,16 +51,13 @@ fn run_windows() {
 #[cfg(target_os = "windows")]
 fn setup_panic() -> Result<()> {
     // A somewhat unwrapped version of color_eyre::install() to add a "wait for enter" after printing the text
-    use color_eyre::config::Theme;
-    let builder = color_eyre::config::HookBuilder::default()
-    // HACK: Forgo colors in windows outputs because I cannot figure out why allocated consoles don't display them
-    .theme(Theme::new());
+    let builder = color_eyre::config::HookBuilder::default();
 
     let (panic_hook, eyre_hook) = builder.into_hooks();
     eyre_hook.install()?;
 
     std::panic::set_hook(Box::new(move |panic_info| {
-        if !console::alloc() {
+        if !console::alloc_with_color_support() {
             return; // No console to print to
         }
 
