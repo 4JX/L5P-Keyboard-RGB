@@ -1,4 +1,4 @@
-use std::{convert::TryInto, path::PathBuf, process, str::FromStr};
+use std::{convert::TryInto, path::PathBuf, str::FromStr};
 
 use clap::{arg, command, Parser, Subcommand};
 use error_stack::{Result, ResultExt};
@@ -110,25 +110,15 @@ fn parse_colors(arg: &str) -> std::result::Result<[u8; 12], String> {
 
 pub enum CliOutput {
     /// Start the UI
-    Gui { hide_window: bool, output: OutputType },
+    Gui { hide_window: bool, output_type: OutputType },
 
     /// CLI arguments were passed
     Cli(OutputType),
 }
 
-impl CliOutput {
-    fn maybe_gui(start_gui: bool, hide_window: bool, output: OutputType) -> Self {
-        if start_gui {
-            Self::Gui { hide_window, output }
-        } else {
-            Self::Cli(output)
-        }
-    }
-}
-
 pub enum GuiCommand {
     /// Start the UI
-    Start { hide_window: bool, output: OutputType },
+    Start { hide_window: bool, output_type: OutputType },
 
     /// Close the program as the CLI was invoked
     Exit,
@@ -148,115 +138,119 @@ pub enum OutputType {
 pub struct CliError;
 
 pub fn try_cli() -> Result<GuiCommand, CliError> {
-    let output = parse_cli()?;
+    let output_type = parse_cli()?;
 
-    match output {
-        CliOutput::Gui { hide_window, output } => {
+    match output_type {
+        CliOutput::Gui { hide_window, output_type } => {
             if hide_window {
                 println!("Window hiding is currently not supported. See https://github.com/4JX/L5P-Keyboard-RGB/issues/181");
             }
-            Ok(GuiCommand::Start { hide_window, output })
+            Ok(GuiCommand::Start { hide_window, output_type })
         }
-        CliOutput::Cli(output) => {
-            let manager_result = effects::EffectManager::new(effects::OperationMode::Cli);
-
-            let instance_not_unique = if let Err(err) = &manager_result {
-                &ManagerCreationError::InstanceAlreadyRunning == err.current_context()
-            } else {
-                false
-            };
-
-            // Don't interrupt other instances if trying to interact with the keyboard
-            if let OutputType::Profile(..) | OutputType::Custom(..) = output {
-                if instance_not_unique {
-                    println!("Another instance of the program is already running, please close it before starting a new one.");
-                    process::exit(0);
-                }
-            }
-
-            let mut effect_manager = manager_result.unwrap();
-
-            match output {
-                OutputType::Profile(profile) => {
-                    effect_manager.set_profile(profile);
-                    effect_manager.shutdown();
-                    Ok(GuiCommand::Exit)
-                }
-                OutputType::Custom(effect) => {
-                    effect_manager.custom_effect(effect);
-                    effect_manager.shutdown();
-                    Ok(GuiCommand::Exit)
-                }
-                OutputType::Exit => Ok(GuiCommand::Exit),
-                OutputType::NoArgs => unreachable!("No arguments were provided but the app is in CLI mode"),
-            }
-        }
+        CliOutput::Cli(output_type) => handle_cli_output(output_type),
     }
+}
+
+fn handle_cli_output(output_type: OutputType) -> Result<GuiCommand, CliError> {
+    let manager_result = effects::EffectManager::new(effects::OperationMode::Cli);
+    let instance_not_unique = manager_result
+        .as_ref()
+        .err()
+        .map_or(false, |err| &ManagerCreationError::InstanceAlreadyRunning == err.current_context());
+
+    if matches!(output_type, OutputType::Profile(..) | OutputType::Custom(..)) && instance_not_unique {
+        println!("Another instance of the program is already running, please close it before starting a new one.");
+        return Ok(GuiCommand::Exit);
+    }
+
+    let mut effect_manager = manager_result.change_context(CliError)?;
+
+    let command_result = match output_type {
+        OutputType::Profile(profile) => {
+            effect_manager.set_profile(profile);
+            Ok(GuiCommand::Exit)
+        }
+        OutputType::Custom(effect) => {
+            effect_manager.custom_effect(effect);
+            Ok(GuiCommand::Exit)
+        }
+        OutputType::Exit => Ok(GuiCommand::Exit),
+        OutputType::NoArgs => unreachable!("No arguments were provided but the app is in CLI mode"),
+    };
+
+    effect_manager.shutdown();
+    command_result
 }
 
 fn parse_cli() -> Result<CliOutput, CliError> {
     let cli = Cli::parse();
 
-    let Some(subcommand) = cli.command else {
-        let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
-        println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".",);
-        return Ok(CliOutput::maybe_gui(true, cli.hide_window, OutputType::NoArgs));
-    };
-
-    match subcommand {
-        Commands::Set {
-            effect,
-            colors,
-            brightness,
-            speed,
-            direction,
-            save,
-        } => {
-            let direction = direction.unwrap_or_default();
-
-            let rgb_array: [u8; 12] = if effect.takes_color_array() {
-                colors.unwrap_or_else(|| {
-                    println!("This effect requires specifying the colors to use.");
-                    process::exit(0);
-                })
-            } else {
-                [0; 12]
-            };
-
-            let profile = Profile {
-                name: "Profile".to_string(),
-                rgb_zones: profile::arr_to_zones(rgb_array),
+    if let Some(subcommand) = cli.command {
+        match subcommand {
+            Commands::Set {
                 effect,
-                direction,
-                speed,
+                colors,
                 brightness,
-            };
+                speed,
+                direction,
+                save,
+            } => {
+                let direction = direction.unwrap_or_default();
+                let rgb_array = if effect.takes_color_array() {
+                    colors.unwrap_or_else(|| {
+                        println!("This effect requires specifying the colors to use.");
+                        std::process::exit(0);
+                    })
+                } else {
+                    [0; 12]
+                };
 
-            if let Some(filename) = save {
-                profile.save_profile(&filename).expect("Failed to save.");
+                let profile = Profile {
+                    name: "Profile".to_string(),
+                    rgb_zones: profile::arr_to_zones(rgb_array),
+                    effect,
+                    direction,
+                    speed,
+                    brightness,
+                };
+
+                if let Some(filename) = save {
+                    profile.save_profile(&filename).expect("Failed to save.");
+                }
+
+                return Ok(CliOutput::Cli(OutputType::Profile(profile)));
+            }
+            Commands::List => {
+                println!("List of available effects:");
+                for (i, effect) in Effects::iter().enumerate() {
+                    println!("{}. {effect}", i + 1);
+                }
+                return Ok(CliOutput::Cli(OutputType::Exit));
             }
 
-            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Profile(profile)))
-        }
-        Commands::List => {
-            println!("List of available effects:");
-            for (i, effect) in Effects::iter().enumerate() {
-                println!("{}. {effect}", i + 1);
+            Commands::LoadProfile { path } => {
+                let profile = Profile::load_profile(&path).change_context(CliError)?;
+                return Ok(CliOutput::Gui {
+                    hide_window: cli.hide_window,
+                    output_type: OutputType::Profile(profile),
+                });
             }
 
-            Ok(CliOutput::maybe_gui(false, cli.hide_window, OutputType::Exit))
-        }
-
-        Commands::LoadProfile { path } => {
-            let profile = Profile::load_profile(&path).change_context(CliError)?;
-
-            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Profile(profile)))
-        }
-
-        Commands::CustomEffect { path } => {
-            let effect = CustomEffect::from_file(&path).change_context(CliError)?;
-
-            Ok(CliOutput::maybe_gui(cli.gui, cli.hide_window, OutputType::Custom(effect)))
+            Commands::CustomEffect { path } => {
+                let effect = CustomEffect::from_file(&path).change_context(CliError)?;
+                return Ok(CliOutput::Gui {
+                    hide_window: cli.hide_window,
+                    output_type: OutputType::Custom(effect),
+                });
+            }
         }
     }
+
+    // If no subcommands were found, start in GUI mode
+    let exec_name = std::env::current_exe().unwrap().file_name().unwrap().to_string_lossy().into_owned();
+    println!("No subcommands found, starting in GUI mode. To view the possible subcommands type \"{exec_name} --help\".");
+    Ok(CliOutput::Gui {
+        hide_window: cli.hide_window,
+        output_type: OutputType::NoArgs,
+    })
 }
