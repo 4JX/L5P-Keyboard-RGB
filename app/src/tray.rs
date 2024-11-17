@@ -23,7 +23,7 @@ impl TrayMenuItems {
     }
 }
 
-fn build_tray_menu(items: &TrayMenuItems, has_gui: bool) -> Menu {
+fn build_tray_menu(items: &TrayMenuItems, _has_gui: bool) -> Menu {
     let menu = Menu::new();
     // TODO: Wait for upstream fix
     // if has_gui {

@@ -79,6 +79,7 @@ impl MenuBarState {
         }
     }
 
+    #[allow(unused_variables)]
     fn show_menu(&mut self, ctx: &Context, ui: &mut egui::Ui, toasts: &mut Toasts) {
         use egui::menu;
 
