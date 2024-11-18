@@ -99,7 +99,7 @@ impl ProfileList {
                     ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| {
                         ui.horizontal_wrapped(|ui| {
                             for prof in &self.profiles {
-                                let name = prof.name.as_ref().map(|s| s.as_str()).unwrap_or("Unnamed");
+                                let name = prof.name.as_deref().unwrap_or("Unnamed");
                                 if ui.selectable_value(current_profile, prof.clone(), name).clicked() {
                                     *changed = true;
                                     *custom_effect_state = CustomEffectState::None;
