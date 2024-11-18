@@ -196,12 +196,11 @@ impl eframe::App for App {
 
         if self.instance_not_unique && modals::unique_instance(ctx) {
             self.exit_app();
-        };
+        }
 
-        // The uniqueness prompt has priority over generic errors
         if !self.instance_not_unique && self.manager.is_none() && modals::manager_error(ctx) {
             self.exit_app();
-        };
+        }
 
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
             self.menu_bar
@@ -212,107 +211,14 @@ impl eframe::App for App {
             .frame(Frame::none().inner_margin(self.theme.spacing.large).fill(Color32::from_gray(26)))
             .show(ctx, |ui| {
                 ui.style_mut().spacing.item_spacing = Vec2::splat(self.theme.spacing.large);
-
-                ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
-                    ui.vertical(|ui| {
-                        let can_tweak_colors = self.settings.current_profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None);
-
-                        let res = ui.add_enabled_ui(can_tweak_colors, |ui| {
-                            ui.style_mut().spacing.item_spacing.y = self.theme.spacing.medium;
-
-                            let response = ui.horizontal(|ui| {
-                                ui.style_mut().spacing.interact_size = Vec2::splat(60.0);
-
-                                for i in 0..4 {
-                                    self.profile_changed |= ui.color_edit_button_srgb(&mut self.settings.current_profile.rgb_zones[i].rgb).changed();
-                                }
-                            });
-
-                            ui.style_mut().spacing.interact_size = Vec2::new(response.response.rect.width(), 30.0);
-
-                            if ui.color_edit_button_srgb(&mut self.global_rgb).changed() {
-                                for i in 0..4 {
-                                    self.settings.current_profile.rgb_zones[i].rgb = self.global_rgb;
-                                }
-
-                                self.profile_changed = true;
-                            };
-
-                            response.response
-                        });
-
-                        ui.set_width(res.inner.rect.width());
-
-                        ui.add_enabled_ui(matches!(self.custom_effect, CustomEffectState::None), |ui| {
-                            let mut effect = self.settings.current_profile.effect;
-                            effect.show_ui(ui, &mut self.settings.current_profile, &mut self.profile_changed, &self.theme);
-                        });
-
-                        self.profile_list
-                            .show(ctx, ui, &mut self.settings.current_profile, &self.theme.spacing, &mut self.profile_changed, &mut self.custom_effect);
-                    });
-
-                    ui.vertical_centered_justified(|ui| {
-                        if matches!(self.custom_effect, CustomEffectState::Playing) && ui.button("Stop custom effect").clicked() {
-                            self.custom_effect = CustomEffectState::None;
-                            self.profile_changed = true;
-                        };
-
-                        Frame {
-                            rounding: Rounding::same(6.0),
-                            fill: Color32::from_gray(20),
-                            ..Frame::default()
-                        }
-                        .show(ui, |ui| {
-                            ui.style_mut().spacing.item_spacing = self.theme.spacing.default;
-
-                            ScrollArea::vertical().show(ui, |ui| {
-                                ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
-                                    for val in Effects::iter() {
-                                        let text: &'static str = val.into();
-                                        if ui.selectable_value(&mut self.settings.current_profile.effect, val, text).clicked() {
-                                            self.profile_changed = true;
-                                            self.custom_effect = CustomEffectState::None;
-                                        };
-                                    }
-                                });
-                            });
-                        });
-                    });
-                });
+                self.show_ui_elements(ctx, ui);
             });
 
         if self.profile_changed {
-            if let Some(manager) = self.manager.as_mut() {
-                if matches!(self.custom_effect, CustomEffectState::None) {
-                    manager.set_profile(self.settings.current_profile.clone());
-                } else if matches!(self.custom_effect, CustomEffectState::Queued(_)) {
-                    let state = mem::replace(&mut self.custom_effect, CustomEffectState::Playing);
-                    if let CustomEffectState::Queued(effect) = state {
-                        manager.custom_effect(effect);
-                    }
-                }
-            }
-
-            self.profile_changed = false;
+            self.update_profile();
         }
 
-        // if ctx.input(|i| i.viewport().close_requested()) {
-        //     #[cfg(target_os = "linux")]
-        //     if self.has_tray.load(Ordering::Relaxed) && !std::env::var("WAYLAND_DISPLAY").is_ok() {
-        //         ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-        //         ctx.send_viewport_cmd(ViewportCommand::Visible(false));
-        //     } else {
-        //         // Close normally
-        //     }
-        //     #[cfg(not(target_os = "linux"))]
-        //     if self.tray.is_some() {
-        //         ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-        //         ctx.send_viewport_cmd(ViewportCommand::Visible(false));
-        //     } else {
-        //         // Close normally
-        //     }
-        // }
+        // self.handle_close_request(ctx);
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
@@ -374,4 +280,104 @@ impl App {
             self.profile_changed = true;
         }
     }
+
+    fn show_ui_elements(&mut self, ctx: &Context, ui: &mut eframe::egui::Ui) {
+        ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
+            ui.vertical(|ui| {
+                let can_tweak_colors = self.settings.current_profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None);
+                let res = ui.add_enabled_ui(can_tweak_colors, |ui| {
+                    ui.style_mut().spacing.item_spacing.y = self.theme.spacing.medium;
+                    let response = ui.horizontal(|ui| {
+                        ui.style_mut().spacing.interact_size = Vec2::splat(60.0);
+                        for i in 0..4 {
+                            self.profile_changed |= ui.color_edit_button_srgb(&mut self.settings.current_profile.rgb_zones[i].rgb).changed();
+                        }
+                    });
+
+                    ui.style_mut().spacing.interact_size = Vec2::new(response.response.rect.width(), 30.0);
+                    if ui.color_edit_button_srgb(&mut self.global_rgb).changed() {
+                        for i in 0..4 {
+                            self.settings.current_profile.rgb_zones[i].rgb = self.global_rgb;
+                        }
+                        self.profile_changed = true;
+                    }
+
+                    response.response
+                });
+
+                ui.set_width(res.inner.rect.width());
+                self.show_effect_ui(ui);
+                self.profile_list
+                    .show(ctx, ui, &mut self.settings.current_profile, &self.theme.spacing, &mut self.profile_changed, &mut self.custom_effect);
+            });
+
+            ui.vertical_centered_justified(|ui| {
+                if matches!(self.custom_effect, CustomEffectState::Playing) && ui.button("Stop custom effect").clicked() {
+                    self.custom_effect = CustomEffectState::None;
+                    self.profile_changed = true;
+                }
+
+                Frame {
+                    rounding: Rounding::same(6.0),
+                    fill: Color32::from_gray(20),
+                    ..Frame::default()
+                }
+                .show(ui, |ui| {
+                    ui.style_mut().spacing.item_spacing = self.theme.spacing.default;
+                    ScrollArea::vertical().show(ui, |ui| {
+                        ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
+                            for val in Effects::iter() {
+                                let text: &'static str = val.into();
+                                if ui.selectable_value(&mut self.settings.current_profile.effect, val, text).clicked() {
+                                    self.profile_changed = true;
+                                    self.custom_effect = CustomEffectState::None;
+                                }
+                            }
+                        });
+                    });
+                });
+            });
+        });
+    }
+
+    fn show_effect_ui(&mut self, ui: &mut eframe::egui::Ui) {
+        ui.add_enabled_ui(matches!(self.custom_effect, CustomEffectState::None), |ui| {
+            let mut effect = self.settings.current_profile.effect;
+            effect.show_ui(ui, &mut self.settings.current_profile, &mut self.profile_changed, &self.theme);
+        });
+    }
+
+    fn update_profile(&mut self) {
+        if let Some(manager) = self.manager.as_mut() {
+            if matches!(self.custom_effect, CustomEffectState::None) {
+                manager.set_profile(self.settings.current_profile.clone());
+            } else if matches!(self.custom_effect, CustomEffectState::Queued(_)) {
+                let state = mem::replace(&mut self.custom_effect, CustomEffectState::Playing);
+                if let CustomEffectState::Queued(effect) = state {
+                    manager.custom_effect(effect);
+                }
+            }
+        }
+
+        self.profile_changed = false;
+    }
+
+    // fn handle_close_request(&mut self, ctx: &Context) {
+    //     if ctx.input(|i| i.viewport().close_requested()) {
+    //         #[cfg(target_os = "linux")]
+    //         let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok();
+    //         #[cfg(target_os = "linux")]
+    //         if is_wayland {
+    //             // Force close normally on wayland
+    //             return;
+    //         }
+
+    //         if self.has_tray.load(Ordering::Relaxed) {
+    //             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+    //             ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+    //         } else {
+    //             // Close normally
+    //         }
+    //     }
+    // }
 }

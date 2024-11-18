@@ -15,66 +15,87 @@ pub struct MenuBarState {
     // TODO: Re-enable when upstream fixes window visibility
     #[allow(dead_code)]
     gui_sender: Sender<GuiMessage>,
-    opened_file: Option<PathBuf>,
-    open_file_dialog: Option<FileDialog>,
-    file_kind: Option<FileOperation>,
+    load_profile_dialog: FileDialog,
+    load_effect_dialog: FileDialog,
+    save_profile_dialog: FileDialog,
 }
 
 impl MenuBarState {
     pub(super) fn new(gui_sender: Sender<GuiMessage>) -> Self {
         Self {
             gui_sender,
-            opened_file: None,
-            open_file_dialog: None,
-            file_kind: None,
+            load_profile_dialog: FileDialog::open_file(None).default_size(Vec2::splat(300.0)),
+            load_effect_dialog: FileDialog::open_file(None).default_size(Vec2::splat(300.0)),
+            save_profile_dialog: FileDialog::save_file(None).default_size(Vec2::splat(300.0)),
         }
     }
-}
 
-enum FileOperation {
-    LoadProfile,
-    LoadEffect,
-    SaveProfile,
-}
-
-impl MenuBarState {
     pub fn show(&mut self, ctx: &Context, ui: &mut egui::Ui, current_profile: &mut Profile, current_effect: &mut CustomEffectState, changed: &mut bool, toasts: &mut Toasts) {
         self.show_menu(ctx, ui, toasts);
+        self.handle_load_profile(ctx, current_profile, changed, toasts);
+        self.handle_save_profile(ctx, current_profile, toasts);
+        self.handle_load_effect(ctx, current_effect, changed, toasts);
+    }
 
-        if let Some(dialog) = &mut self.open_file_dialog {
-            if dialog.show(ctx).selected() {
-                if let Some(path) = dialog.path() {
-                    self.opened_file = Some(path.to_owned());
-                    if let Some(kind) = &self.file_kind {
-                        match kind {
-                            FileOperation::LoadProfile => match Profile::load_profile(path) {
-                                Ok(profile) => {
-                                    *current_profile = profile;
-                                    *changed = true;
-                                }
-                                Err(_) => {
-                                    toasts.error("Could not load profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
-                                }
-                            },
-                            FileOperation::LoadEffect => match CustomEffect::from_file(path) {
-                                Ok(effect) => {
-                                    *current_effect = CustomEffectState::Queued(effect);
-                                    *changed = true;
-                                }
-                                Err(_) => {
-                                    toasts.error("Could not load custom effect.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
-                                }
-                            },
-                            FileOperation::SaveProfile => {
-                                if current_profile.save_profile(path).is_err() {
-                                    toasts.error("Could not save profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
-                                };
-                            }
-                        }
+    fn handle_load_profile(&mut self, ctx: &Context, current_profile: &mut Profile, changed: &mut bool, toasts: &mut Toasts) {
+        if self.load_profile_dialog.show(ctx).selected() {
+            if let Some(path) = self.load_profile_dialog.path().map(|p| p.to_path_buf()) {
+                match Profile::load_profile(&path) {
+                    Ok(profile) => {
+                        *current_profile = profile;
+                        *changed = true;
                     }
-
-                    self.file_kind = None;
+                    Err(_) => {
+                        toasts.error("Could not load profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                    }
                 }
+                self.update_paths(path);
+            }
+        }
+    }
+
+    fn handle_save_profile(&mut self, ctx: &Context, current_profile: &mut Profile, toasts: &mut Toasts) {
+        if self.save_profile_dialog.show(ctx).selected() {
+            if let Some(path) = self.save_profile_dialog.path().map(|p| p.to_path_buf()) {
+                if current_profile.save_profile(&path).is_err() {
+                    toasts.error("Could not save profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                }
+                self.update_paths(path);
+            }
+        }
+    }
+
+    fn handle_load_effect(&mut self, ctx: &Context, current_effect: &mut CustomEffectState, changed: &mut bool, toasts: &mut Toasts) {
+        if self.load_effect_dialog.show(ctx).selected() {
+            if let Some(path) = self.load_effect_dialog.path().map(|p| p.to_path_buf()) {
+                match CustomEffect::from_file(&path) {
+                    Ok(effect) => {
+                        *current_effect = CustomEffectState::Queued(effect);
+                        *changed = true;
+                    }
+                    Err(_) => {
+                        toasts.error("Could not load custom effect.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                    }
+                }
+                self.update_paths(path);
+            }
+        }
+    }
+
+    fn update_paths(&mut self, path: PathBuf) {
+        let mut save_paths = |path: PathBuf| {
+            self.load_profile_dialog.set_path(path.clone());
+            self.load_effect_dialog.set_path(path.clone());
+            self.save_profile_dialog.set_path(path);
+        };
+
+        if path.exists() {
+            if path.is_file() {
+                if let Some(parent) = path.parent() {
+                    save_paths(parent.to_path_buf())
+                }
+            } else {
+                save_paths(path)
             }
         }
     }
@@ -86,25 +107,16 @@ impl MenuBarState {
         menu::bar(ui, |ui| {
             ui.menu_button("Profile", |ui| {
                 if ui.button("Open").clicked() {
-                    let mut dialog = self.new_open_dialog();
-                    self.file_kind = Some(FileOperation::LoadProfile);
-                    dialog.open();
-                    self.open_file_dialog = Some(dialog);
+                    self.load_profile_dialog.open();
                 }
                 if ui.button("Save").clicked() {
-                    let mut dialog = self.new_save_dialog();
-                    self.file_kind = Some(FileOperation::SaveProfile);
-                    dialog.open();
-                    self.open_file_dialog = Some(dialog);
+                    self.save_profile_dialog.open();
                 }
             });
 
             ui.menu_button("Effect", |ui| {
                 if ui.button("Open").clicked() {
-                    let mut dialog = self.new_open_dialog();
-                    self.file_kind = Some(FileOperation::LoadEffect);
-                    dialog.open();
-                    self.open_file_dialog = Some(dialog);
+                    self.load_effect_dialog.open();
                 }
             });
 
@@ -135,13 +147,5 @@ impl MenuBarState {
                 });
             }
         });
-    }
-
-    fn new_open_dialog(&self) -> FileDialog {
-        FileDialog::open_file(self.opened_file.clone()).default_size(Vec2::splat(300.0))
-    }
-
-    fn new_save_dialog(&self) -> FileDialog {
-        FileDialog::save_file(self.opened_file.clone()).default_size(Vec2::splat(300.0))
     }
 }

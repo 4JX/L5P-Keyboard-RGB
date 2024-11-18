@@ -7,7 +7,7 @@ use crossbeam_channel::{Receiver, Sender};
 use effects::{ambient, christmas, disco, fade, lightning, ripple, swipe, temperature};
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
-use rand::thread_rng;
+use rand::{rngs::ThreadRng, thread_rng};
 use single_instance::SingleInstance;
 use std::{
     sync::atomic::{AtomicBool, Ordering},
@@ -140,18 +140,28 @@ impl EffectManager {
 impl Inner {
     fn set_profile(&mut self, mut profile: Profile) {
         self.last_profile = profile.clone();
-
         self.stop_signals.store_false();
         let mut thread_rng = thread_rng();
 
-        self.keyboard.set_effect(BaseEffects::Static).unwrap();
         if profile.effect.is_built_in() {
-            let clamped_speed = profile.speed.clamp(SPEED_RANGE.min().unwrap(), SPEED_RANGE.max().unwrap());
-
+            let clamped_speed = self.clamp_speed(profile.speed);
             self.keyboard.set_speed(clamped_speed).unwrap();
-        };
+        } else {
+            // All custom effects rely on rapidly switching a static color
+            self.keyboard.set_effect(BaseEffects::Static).unwrap();
+        }
+
         self.keyboard.set_brightness(profile.brightness as u8 + 1).unwrap();
 
+        self.apply_effect(&mut profile, &mut thread_rng);
+        self.stop_signals.store_false();
+    }
+
+    fn clamp_speed(&self, speed: u8) -> u8 {
+        speed.clamp(SPEED_RANGE.min().unwrap(), SPEED_RANGE.max().unwrap())
+    }
+
+    fn apply_effect(&mut self, profile: &mut Profile, thread_rng: &mut ThreadRng) {
         match profile.effect {
             Effects::Static => {
                 self.keyboard.set_colors_to(&profile.rgb_array()).unwrap();
@@ -164,49 +174,48 @@ impl Inner {
             Effects::Smooth => {
                 self.keyboard.set_effect(BaseEffects::Smooth).unwrap();
             }
-            Effects::Wave => match profile.direction {
-                Direction::Left => {
-                    self.keyboard.set_effect(BaseEffects::LeftWave).unwrap();
-                }
-                Direction::Right => {
-                    self.keyboard.set_effect(BaseEffects::RightWave).unwrap();
-                }
-            },
-
-            Effects::Lightning => lightning::play(self, &profile, &mut thread_rng),
+            Effects::Wave => {
+                let effect = match profile.direction {
+                    Direction::Left => BaseEffects::LeftWave,
+                    Direction::Right => BaseEffects::RightWave,
+                };
+                self.keyboard.set_effect(effect).unwrap();
+            }
+            Effects::Lightning => lightning::play(self, profile, thread_rng),
             Effects::AmbientLight { mut fps, mut saturation_boost } => {
                 fps = fps.clamp(1, 60);
                 saturation_boost = saturation_boost.clamp(0.0, 1.0);
-
                 ambient::play(self, fps, saturation_boost);
             }
             Effects::SmoothWave => {
                 profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
-                swipe::play(self, &profile);
+                swipe::play(self, profile);
             }
-            Effects::Swipe => swipe::play(self, &profile),
-            Effects::Disco => disco::play(self, &profile, &mut thread_rng),
-            Effects::Christmas => christmas::play(self, &mut thread_rng),
-            Effects::Fade => fade::play(self, &profile),
+            Effects::Swipe => swipe::play(self, profile),
+            Effects::Disco => disco::play(self, profile, thread_rng),
+            Effects::Christmas => christmas::play(self, thread_rng),
+            Effects::Fade => fade::play(self, profile),
             Effects::Temperature => temperature::play(self),
-            Effects::Ripple => ripple::play(self, &profile),
+            Effects::Ripple => ripple::play(self, profile),
         }
-        self.stop_signals.store_false();
     }
 
     fn custom_effect(&mut self, custom_effect: &CustomEffect) {
         self.stop_signals.store_false();
 
-        'outer: loop {
-            for step in custom_effect.effect_steps.clone() {
+        loop {
+            for step in &custom_effect.effect_steps {
                 self.keyboard.set_brightness(step.brightness).unwrap();
-                if let EffectType::Set = step.step_type {
-                    self.keyboard.set_colors_to(&step.rgb_array).unwrap();
-                } else {
-                    self.keyboard.transition_colors_to(&step.rgb_array, step.steps, step.delay_between_steps).unwrap();
+                match step.step_type {
+                    EffectType::Set => {
+                        self.keyboard.set_colors_to(&step.rgb_array).unwrap();
+                    }
+                    _ => {
+                        self.keyboard.transition_colors_to(&step.rgb_array, step.steps, step.delay_between_steps).unwrap();
+                    }
                 }
                 if self.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-                    break 'outer;
+                    return;
                 }
                 thread::sleep(Duration::from_millis(step.sleep));
             }

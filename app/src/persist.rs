@@ -41,7 +41,12 @@ impl Settings {
         let default = PathBuf::from("./settings.json");
 
         if let Ok(maybe_path) = env::var("LEGION_KEYBOARD_CONFIG") {
-            PathBuf::try_from(maybe_path).unwrap_or(default)
+            let path = PathBuf::from(maybe_path);
+            if path.exists() && path.is_file() {
+                path
+            } else {
+                default
+            }
         } else {
             default
         }
