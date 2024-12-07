@@ -7,9 +7,12 @@ use egui_file::FileDialog;
 use egui_notify::Toasts;
 use std::{path::PathBuf, time::Duration};
 
-use crate::{gui::modals, manager::custom_effect::CustomEffect, profile::Profile};
+use crate::{
+    gui::modals,
+    manager::{custom_effect::CustomEffect, profile::Profile},
+};
 
-use super::{CustomEffectState, GuiMessage};
+use super::{GuiMessage, LoadedEffect};
 
 pub struct MenuBarState {
     // TODO: Re-enable when upstream fixes window visibility
@@ -30,7 +33,7 @@ impl MenuBarState {
         }
     }
 
-    pub fn show(&mut self, ctx: &Context, ui: &mut egui::Ui, current_profile: &mut Profile, current_effect: &mut CustomEffectState, changed: &mut bool, toasts: &mut Toasts) {
+    pub fn show(&mut self, ctx: &Context, ui: &mut egui::Ui, current_profile: &mut Profile, current_effect: &mut LoadedEffect, changed: &mut bool, toasts: &mut Toasts) {
         self.show_menu(ctx, ui, toasts);
         self.handle_load_profile(ctx, current_profile, changed, toasts);
         self.handle_save_profile(ctx, current_profile, toasts);
@@ -65,12 +68,12 @@ impl MenuBarState {
         }
     }
 
-    fn handle_load_effect(&mut self, ctx: &Context, current_effect: &mut CustomEffectState, changed: &mut bool, toasts: &mut Toasts) {
+    fn handle_load_effect(&mut self, ctx: &Context, current_effect: &mut LoadedEffect, changed: &mut bool, toasts: &mut Toasts) {
         if self.load_effect_dialog.show(ctx).selected() {
             if let Some(path) = self.load_effect_dialog.path().map(|p| p.to_path_buf()) {
                 match CustomEffect::from_file(&path) {
                     Ok(effect) => {
-                        *current_effect = CustomEffectState::Queued(effect);
+                        *current_effect = LoadedEffect::queued(effect);
                         *changed = true;
                     }
                     Err(_) => {

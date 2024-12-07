@@ -5,7 +5,7 @@ use strum::IntoEnumIterator;
 use crate::{
     enums::{Brightness, Direction},
     gui::style::SpacingStyle,
-    profile::Profile,
+    manager::profile::Profile,
 };
 
 const COMBOBOX_WIDTH: f32 = 20.0;

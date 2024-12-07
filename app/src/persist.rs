@@ -5,18 +5,23 @@ use std::{
     path::PathBuf,
 };
 
-use crate::profile::Profile;
+use crate::manager::{custom_effect::CustomEffect, profile::Profile};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct Settings {
     pub profiles: Vec<Profile>,
+    pub effects: Vec<CustomEffect>,
     // Up to 0.19.5
     #[serde(alias = "ui_state")]
     pub current_profile: Profile,
 }
 
 impl Settings {
+    pub fn new(profiles: Vec<Profile>, effects: Vec<CustomEffect>, current_profile: Profile) -> Self {
+        Self { profiles, effects, current_profile }
+    }
+
     /// Load the settings from the configured path or generate default ones if an error occurs
     pub fn load() -> Self {
         let mut persist: Self = Self::default();
