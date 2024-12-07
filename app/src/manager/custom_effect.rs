@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::util::StorageTrait;
 
-#[derive(Clone, Deserialize, Serialize, Debug)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct EffectStep {
     pub rgb_array: [u8; 12],
     pub step_type: EffectType,
@@ -16,14 +16,15 @@ pub struct EffectStep {
     pub sleep: u64,
 }
 
-#[derive(Clone, Deserialize, Serialize, Debug)]
+#[derive(Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub enum EffectType {
     Set,
     Transition,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Default)]
 pub struct CustomEffect {
+    pub name: Option<String>,
     pub effect_steps: Vec<EffectStep>,
     pub should_loop: bool,
 }

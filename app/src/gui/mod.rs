@@ -1,4 +1,4 @@
-use std::{mem, process, thread, time::Duration};
+use std::{process, thread, time::Duration};
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -22,21 +22,19 @@ use tray_icon::menu::MenuEvent;
 use crate::{
     cli::OutputType,
     enums::Effects,
-    manager::{self, custom_effect::CustomEffect, EffectManager, ManagerCreationError},
+    manager::{self, custom_effect::CustomEffect, profile::Profile, EffectManager, ManagerCreationError},
     persist::Settings,
     tray::{QUIT_ID, SHOW_ID},
 };
 
-use self::{menu_bar::MenuBarState, profile_list::ProfileList, style::Theme};
+use self::{menu_bar::MenuBarState, saved_items::SavedItems, style::Theme};
 
 mod menu_bar;
 mod modals;
-mod profile_list;
+mod saved_items;
 pub mod style;
 
 pub struct App {
-    settings: Settings,
-
     instance_not_unique: bool,
     gui_tx: crossbeam_channel::Sender<GuiMessage>,
     gui_rx: crossbeam_channel::Receiver<GuiMessage>,
@@ -45,11 +43,12 @@ pub struct App {
     visible: Arc<AtomicBool>,
 
     manager: Option<EffectManager>,
-    profile_changed: bool,
-    custom_effect: CustomEffectState,
+    state_changed: bool,
+    loaded_effect: LoadedEffect,
+    current_profile: Profile,
 
     menu_bar: MenuBarState,
-    profile_list: ProfileList,
+    saved_items: SavedItems,
     global_rgb: [u8; 3],
     theme: Theme,
     toasts: Toasts,
@@ -60,11 +59,45 @@ pub enum GuiMessage {
     Quit,
 }
 
+pub struct LoadedEffect {
+    state: State,
+    effect: CustomEffect,
+}
+
+impl LoadedEffect {
+    pub fn default() -> Self {
+        Self::none()
+    }
+
+    pub fn none() -> Self {
+        Self {
+            state: State::None,
+            effect: CustomEffect::default(),
+        }
+    }
+
+    pub fn queued(effect: CustomEffect) -> Self {
+        Self { state: State::Queued, effect }
+    }
+
+    pub fn is_none(&self) -> bool {
+        matches!(self.state, State::None)
+    }
+
+    pub fn is_queued(&self) -> bool {
+        matches!(self.state, State::Queued)
+    }
+
+    pub fn is_playing(&self) -> bool {
+        matches!(self.state, State::Playing)
+    }
+}
+
 #[derive(Default)]
-pub enum CustomEffectState {
+pub enum State {
     #[default]
     None,
-    Queued(CustomEffect),
+    Queued,
     Playing,
 }
 
@@ -83,13 +116,11 @@ impl App {
         let manager = manager_result.ok();
 
         let settings: Settings = Settings::load();
-        let profiles = settings.profiles.clone();
+        let Settings { current_profile, profiles, effects } = settings;
 
         let gui_tx_c = gui_tx.clone();
         // Default app state
         let mut app = Self {
-            settings,
-
             instance_not_unique,
             gui_tx,
             gui_rx,
@@ -99,11 +130,12 @@ impl App {
 
             manager,
             // Default to true for an instant update on launch
-            profile_changed: true,
-            custom_effect: CustomEffectState::default(),
+            state_changed: true,
+            loaded_effect: LoadedEffect::default(),
+            current_profile,
 
             menu_bar: MenuBarState::new(gui_tx_c),
-            profile_list: ProfileList::new(profiles),
+            saved_items: SavedItems::new(profiles, effects),
             global_rgb: [0; 3],
             theme: Theme::default(),
             toasts: Toasts::default(),
@@ -111,8 +143,8 @@ impl App {
 
         // Update the state according to the option chosen by the user
         match output {
-            OutputType::Profile(profile) => app.settings.current_profile = profile,
-            OutputType::Custom(effect) => app.custom_effect = CustomEffectState::Queued(effect),
+            OutputType::Profile(profile) => app.current_profile = profile,
+            OutputType::Custom(effect) => app.loaded_effect = LoadedEffect::queued(effect),
             OutputType::NoArgs => {}
             OutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
         }
@@ -204,7 +236,7 @@ impl eframe::App for App {
 
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
             self.menu_bar
-                .show(ctx, ui, &mut self.settings.current_profile, &mut self.custom_effect, &mut self.profile_changed, &mut self.toasts);
+                .show(ctx, ui, &mut self.current_profile, &mut self.loaded_effect, &mut self.state_changed, &mut self.toasts);
         });
 
         CentralPanel::default()
@@ -214,17 +246,19 @@ impl eframe::App for App {
                 self.show_ui_elements(ctx, ui);
             });
 
-        if self.profile_changed {
-            self.update_profile();
+        if self.state_changed {
+            self.update_state();
         }
 
         // self.handle_close_request(ctx);
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
-        self.settings.profiles = std::mem::take(&mut self.profile_list.profiles);
+        let SavedItems { profiles, custom_effects, .. } = self.saved_items.clone();
 
-        self.settings.save();
+        let mut settings = Settings::new(profiles, custom_effects, self.current_profile.clone());
+
+        settings.save();
 
         self.visible.store(false, Ordering::SeqCst);
 
@@ -266,55 +300,58 @@ impl App {
     }
 
     fn cycle_profiles(&mut self) {
-        let len = self.profile_list.profiles.len();
+        let len = self.saved_items.profiles.len();
 
-        let current_profile_name = &self.settings.current_profile.name;
+        let current_profile_name = &self.current_profile.name;
 
-        if let Some((i, _)) = self.profile_list.profiles.iter().enumerate().find(|(_, profile)| &profile.name == current_profile_name) {
+        if let Some((i, _)) = self.saved_items.profiles.iter().enumerate().find(|(_, profile)| &profile.name == current_profile_name) {
             if i == len - 1 && len > 0 {
-                self.settings.current_profile = self.profile_list.profiles[0].clone();
+                self.current_profile = self.saved_items.profiles[0].clone();
             } else {
-                self.settings.current_profile = self.profile_list.profiles[i + 1].clone();
+                self.current_profile = self.saved_items.profiles[i + 1].clone();
             }
 
-            self.profile_changed = true;
+            self.state_changed = true;
         }
     }
 
     fn show_ui_elements(&mut self, ctx: &Context, ui: &mut eframe::egui::Ui) {
         ui.with_layout(Layout::left_to_right(Align::Center).with_cross_justify(true), |ui| {
             ui.vertical(|ui| {
-                let can_tweak_colors = self.settings.current_profile.effect.takes_color_array() && matches!(self.custom_effect, CustomEffectState::None);
+                let can_tweak_colors = self.current_profile.effect.takes_color_array() && self.loaded_effect.is_none();
+
                 let res = ui.add_enabled_ui(can_tweak_colors, |ui| {
                     ui.style_mut().spacing.item_spacing.y = self.theme.spacing.medium;
                     let response = ui.horizontal(|ui| {
                         ui.style_mut().spacing.interact_size = Vec2::splat(60.0);
                         for i in 0..4 {
-                            self.profile_changed |= ui.color_edit_button_srgb(&mut self.settings.current_profile.rgb_zones[i].rgb).changed();
+                            self.state_changed |= ui.color_edit_button_srgb(&mut self.current_profile.rgb_zones[i].rgb).changed();
                         }
                     });
 
                     ui.style_mut().spacing.interact_size = Vec2::new(response.response.rect.width(), 30.0);
                     if ui.color_edit_button_srgb(&mut self.global_rgb).changed() {
                         for i in 0..4 {
-                            self.settings.current_profile.rgb_zones[i].rgb = self.global_rgb;
+                            self.current_profile.rgb_zones[i].rgb = self.global_rgb;
                         }
-                        self.profile_changed = true;
+                        self.state_changed = true;
                     }
 
                     response.response
                 });
 
                 ui.set_width(res.inner.rect.width());
+
                 self.show_effect_ui(ui);
-                self.profile_list
-                    .show(ctx, ui, &mut self.settings.current_profile, &self.theme.spacing, &mut self.profile_changed, &mut self.custom_effect);
+
+                self.saved_items
+                    .show(ctx, ui, &mut self.current_profile, &mut self.loaded_effect, &self.theme.spacing, &mut self.state_changed);
             });
 
             ui.vertical_centered_justified(|ui| {
-                if matches!(self.custom_effect, CustomEffectState::Playing) && ui.button("Stop custom effect").clicked() {
-                    self.custom_effect = CustomEffectState::None;
-                    self.profile_changed = true;
+                if self.loaded_effect.is_playing() && ui.button("Stop custom effect").clicked() {
+                    self.loaded_effect.state = State::None;
+                    self.state_changed = true;
                 }
 
                 Frame {
@@ -328,9 +365,9 @@ impl App {
                         ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
                             for val in Effects::iter() {
                                 let text: &'static str = val.into();
-                                if ui.selectable_value(&mut self.settings.current_profile.effect, val, text).clicked() {
-                                    self.profile_changed = true;
-                                    self.custom_effect = CustomEffectState::None;
+                                if ui.selectable_value(&mut self.current_profile.effect, val, text).clicked() {
+                                    self.state_changed = true;
+                                    self.loaded_effect.state = State::None;
                                 }
                             }
                         });
@@ -341,25 +378,25 @@ impl App {
     }
 
     fn show_effect_ui(&mut self, ui: &mut eframe::egui::Ui) {
-        ui.add_enabled_ui(matches!(self.custom_effect, CustomEffectState::None), |ui| {
-            let mut effect = self.settings.current_profile.effect;
-            effect.show_ui(ui, &mut self.settings.current_profile, &mut self.profile_changed, &self.theme);
+        ui.add_enabled_ui(self.loaded_effect.is_none(), |ui| {
+            let mut effect = self.current_profile.effect;
+            effect.show_ui(ui, &mut self.current_profile, &mut self.state_changed, &self.theme);
         });
     }
 
-    fn update_profile(&mut self) {
+    fn update_state(&mut self) {
         if let Some(manager) = self.manager.as_mut() {
-            if matches!(self.custom_effect, CustomEffectState::None) {
-                manager.set_profile(self.settings.current_profile.clone());
-            } else if matches!(self.custom_effect, CustomEffectState::Queued(_)) {
-                let state = mem::replace(&mut self.custom_effect, CustomEffectState::Playing);
-                if let CustomEffectState::Queued(effect) = state {
-                    manager.custom_effect(effect);
-                }
+            if self.loaded_effect.is_none() {
+                manager.set_profile(self.current_profile.clone());
+            } else if self.loaded_effect.is_queued() {
+                self.loaded_effect.state = State::Playing;
+
+                let effect = self.loaded_effect.effect.clone();
+                manager.custom_effect(effect);
             }
         }
 
-        self.profile_changed = false;
+        self.state_changed = false;
     }
 
     // fn handle_close_request(&mut self, ctx: &Context) {

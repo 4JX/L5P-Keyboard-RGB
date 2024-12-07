@@ -1,7 +1,7 @@
 use default_ui::{show_brightness, show_direction};
 use eframe::egui::{self, Slider};
 
-use crate::{enums::Effects, profile::Profile};
+use crate::{enums::Effects, manager::profile::Profile};
 
 pub mod ambient;
 pub mod christmas;

@@ -9,7 +9,7 @@ use std::{
 
 use device_query::DeviceQuery;
 
-use crate::{manager::Inner, profile::Profile};
+use crate::manager::{profile::Profile, Inner};
 
 pub fn play(manager: &mut Inner, p: &Profile) {
     let stop_signals = manager.stop_signals.clone();

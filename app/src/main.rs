@@ -8,7 +8,6 @@ mod enums;
 mod gui;
 mod manager;
 mod persist;
-mod profile;
 mod tray;
 mod util;
 

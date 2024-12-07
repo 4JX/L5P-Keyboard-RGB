@@ -2,7 +2,7 @@ use std::{sync::atomic::Ordering, thread, time::Duration};
 
 use rand::{rngs::ThreadRng, Rng};
 
-use crate::{manager::Inner, profile::Profile};
+use crate::manager::{profile::Profile, Inner};
 
 pub fn play(manager: &mut Inner, p: &Profile, thread_rng: &mut ThreadRng) {
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {

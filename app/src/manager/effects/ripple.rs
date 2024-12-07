@@ -10,9 +10,9 @@ use std::{
 
 use device_query::{DeviceEvents, Keycode};
 
-use crate::{
-    manager::{effects::zones::KEY_ZONES, Inner},
+use crate::manager::{
     profile::Profile,
+    {effects::zones::KEY_ZONES, Inner},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

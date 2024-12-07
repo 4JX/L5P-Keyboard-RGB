@@ -7,8 +7,12 @@ use thiserror::Error;
 
 use crate::{
     enums::{Brightness, Direction, Effects},
-    manager::{self, custom_effect::CustomEffect, ManagerCreationError},
-    profile::{self, Profile},
+    manager::{
+        self,
+        custom_effect::CustomEffect,
+        profile::{self, Profile},
+        ManagerCreationError,
+    },
 };
 
 #[macro_export]

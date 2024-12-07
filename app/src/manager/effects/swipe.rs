@@ -1,6 +1,9 @@
 use std::{sync::atomic::Ordering, thread, time::Duration};
 
-use crate::{enums::Direction, manager::Inner, profile::Profile};
+use crate::{
+    enums::Direction,
+    manager::{profile::Profile, Inner},
+};
 
 pub fn play(manager: &mut Inner, p: &Profile) {
     let mut rgb_array = p.rgb_array();

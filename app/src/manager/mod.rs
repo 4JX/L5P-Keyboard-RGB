@@ -1,12 +1,10 @@
-use crate::{
-    enums::{Direction, Effects, Message},
-    profile::{self, Profile},
-};
+use crate::enums::{Direction, Effects, Message};
 
 use crossbeam_channel::{Receiver, Sender};
 use effects::{ambient, christmas, disco, fade, lightning, ripple, swipe, temperature};
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
+use profile::Profile;
 use rand::{rngs::ThreadRng, thread_rng};
 use single_instance::SingleInstance;
 use std::{
@@ -21,6 +19,7 @@ use self::custom_effect::{CustomEffect, EffectType};
 
 pub mod custom_effect;
 mod effects;
+pub mod profile;
 
 #[derive(Debug, Error, PartialEq)]
 #[error("Could not create keyboard manager")]
