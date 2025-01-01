@@ -49,7 +49,7 @@ impl MenuBarState {
                         *changed = true;
                     }
                     Err(_) => {
-                        toasts.error("Could not load profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                        toasts.error("Could not load profile.").duration(Some(Duration::from_millis(5000))).closable(true);
                     }
                 }
                 self.update_paths(path);
@@ -61,7 +61,7 @@ impl MenuBarState {
         if self.save_profile_dialog.show(ctx).selected() {
             if let Some(path) = self.save_profile_dialog.path().map(|p| p.to_path_buf()) {
                 if current_profile.save_profile(&path).is_err() {
-                    toasts.error("Could not save profile.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                    toasts.error("Could not save profile.").duration(Some(Duration::from_millis(5000))).closable(true);
                 }
                 self.update_paths(path);
             }
@@ -77,7 +77,7 @@ impl MenuBarState {
                         *changed = true;
                     }
                     Err(_) => {
-                        toasts.error("Could not load custom effect.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                        toasts.error("Could not load custom effect.").duration(Some(Duration::from_millis(5000))).closable(true);
                     }
                 }
                 self.update_paths(path);
@@ -143,7 +143,7 @@ impl MenuBarState {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     if ui.button("📜").clicked() {
                         if !console::alloc_with_color_support() {
-                            toasts.error("Could not allocate debug terminal.").set_duration(Some(Duration::from_millis(5000))).set_closable(true);
+                            toasts.error("Could not allocate debug terminal.").duration(Some(Duration::from_millis(5000))).closable(true);
                         }
                         println!("Debug terminal enabled.");
                     }
