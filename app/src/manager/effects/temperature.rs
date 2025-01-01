@@ -24,17 +24,20 @@ pub fn play(manager: &mut Inner) {
         if component.label().contains("Tctl") {
             while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
                 component.refresh();
-                let mut adjusted_temp = component.temperature() - safe_temp;
-                if adjusted_temp < 0.0 {
-                    adjusted_temp = 0.0;
-                }
-                let temp_percent = (adjusted_temp / 100.0) * ramp_boost;
+                let temp = component.temperature();
+                if let Some(temperature) = temp {
+                    let mut adjusted_temp = temperature - safe_temp;
+                    if adjusted_temp < 0.0 {
+                        adjusted_temp = 0.0;
+                    }
+                    let temp_percent = (adjusted_temp / 100.0) * ramp_boost;
 
-                let mut target = [0.0; 12];
-                for index in 0..12 {
-                    target[index] = color_differences[index].mul_add(temp_percent, temp_cool[index]);
+                    let mut target = [0.0; 12];
+                    for index in 0..12 {
+                        target[index] = color_differences[index].mul_add(temp_percent, temp_cool[index]);
+                    }
+                    manager.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1).unwrap();
                 }
-                manager.keyboard.transition_colors_to(&target.map(|val| val as u8), 5, 1).unwrap();
                 thread::sleep(Duration::from_millis(200));
             }
         }

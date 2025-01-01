@@ -223,7 +223,7 @@ impl eframe::App for App {
             self.visible.store(true, Ordering::SeqCst);
             self.toasts
                 .warning("Window hiding is currently not supported.\nSee https://github.com/4JX/L5P-Keyboard-RGB/issues/181")
-                .set_duration(None);
+                .duration(None);
         }
 
         if self.instance_not_unique && modals::unique_instance(ctx) {
@@ -283,6 +283,7 @@ impl App {
                 show_resize: false,
                 show_interactive_widgets: false,
                 show_widget_hits: false,
+                show_unaligned: false,
             },
             ..Style::default()
         };

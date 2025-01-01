@@ -1,6 +1,6 @@
 [package]
 name = "legion-kb-rgb"
-version = "0.19.6"
+version = "0.20.0"
 authors = ["4JX"]
 edition = "2021"
 homepage = "https://github.com/4JX/L5P-Keyboard-RGB"
@@ -13,26 +13,26 @@ license = "GPL-3.0"
 legion-rgb-driver = { path = "../driver" }
 
 # Cli
-clap = { version = "4.5.17", features = ["color", "cargo", "derive"] }
+clap = { version = "4.5.23", features = ["color", "cargo", "derive"] }
 
 # Ui
-eframe = "0.28.1"
+eframe = { version = "0.30.0", features = ["x11", "wayland"] }
 # tokio = { version = "1.41.1" }
-egui-modal = "0.4.0"
+egui-modal = "0.6.0"
 # egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "8443238" }
-egui_file = "0.18.0"
-egui-notify = "0.15.0"
+egui_file = "0.20.0"
+egui-notify = "0.18.0"
 # egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
 
 # App window, taskbar and tray icon loading
-image = "0.25.2"
+image = "0.25.5"
 
 # AmbientLight effect
 scrap = { git = "https://github.com/rustdesk/rustdesk", rev = "40af9dc", features = [
     "wayland",
     # "linux-pkg-config",
 ] }
-fast_image_resize = "4.2.1"
+fast_image_resize = "5.1.0"
 # default-features = false just removes the use_wasm feature that removes a lot of unecessary slack
 # since this app wont ever use the web
 # photon-rs = { version = "0.3.2", default-features = false }
@@ -45,14 +45,14 @@ device_query = "2.1.0"
 rand = "0.8.5"
 strum = "0.26.3"
 strum_macros = "0.26.4"
-serde = { version = "1.0.210", features = ["derive"] }
+serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.128"
 color-eyre = "0.6.3"
-sysinfo = "0.31.4"
-crossbeam-channel = "0.5.13"
+sysinfo = "0.33.1"
+crossbeam-channel = "0.5.14"
 thiserror = "1.0.63"
 single-instance = "0.3.3"
-open = "5.3.0"
+open = "5.3.1"
 error-stack = "0.5.0"
 winapi = { version = "0.3.9", features = ["consoleapi", "wincon"] }
 
