@@ -3,7 +3,7 @@ use tray_icon::{
     Icon, TrayIcon, TrayIconBuilder,
 };
 
-use crate::APP_ICON;
+use crate::{APP_ICON, DENY_HIDING};
 
 pub const SHOW_ID: &str = "tray-show";
 pub const QUIT_ID: &str = "tray-quit";
@@ -23,12 +23,11 @@ impl TrayMenuItems {
     }
 }
 
-fn build_tray_menu(items: &TrayMenuItems, _has_gui: bool) -> Menu {
+fn build_tray_menu(items: &TrayMenuItems, has_gui: bool) -> Menu {
     let menu = Menu::new();
-    // TODO: Wait for upstream fix
-    // if has_gui {
-    //     menu.append_items(&[&items.show]).unwrap();
-    // }
+    if has_gui && !*DENY_HIDING {
+        menu.append_items(&[&items.show]).unwrap();
+    }
     menu.append_items(&[&items.quit]).unwrap();
     menu
 }

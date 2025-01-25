@@ -13,6 +13,7 @@ use crate::{
         profile::{self, Profile},
         ManagerCreationError,
     },
+    DENY_HIDING,
 };
 
 #[macro_export]
@@ -146,7 +147,7 @@ pub fn try_cli() -> Result<GuiCommand, CliError> {
 
     match output_type {
         CliOutput::Gui { hide_window, output_type } => {
-            if hide_window {
+            if *DENY_HIDING && hide_window {
                 println!("Window hiding is currently not supported. See https://github.com/4JX/L5P-Keyboard-RGB/issues/181");
             }
             Ok(GuiCommand::Start { hide_window, output_type })
@@ -222,7 +223,14 @@ fn parse_cli() -> Result<CliOutput, CliError> {
                     profile.save_profile(&filename).expect("Failed to save.");
                 }
 
-                return Ok(CliOutput::Cli(OutputType::Profile(profile)));
+                if cli.gui {
+                    return Ok(CliOutput::Gui {
+                        hide_window: cli.hide_window,
+                        output_type: OutputType::Profile(profile),
+                    });
+                } else {
+                    return Ok(CliOutput::Cli(OutputType::Profile(profile)));
+                }
             }
             Commands::List => {
                 println!("List of available effects:");

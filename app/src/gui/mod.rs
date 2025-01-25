@@ -25,6 +25,7 @@ use crate::{
     manager::{self, custom_effect::CustomEffect, profile::Profile, EffectManager, ManagerCreationError},
     persist::Settings,
     tray::{QUIT_ID, SHOW_ID},
+    DENY_HIDING,
 };
 
 use self::{menu_bar::MenuBarState, saved_items::SavedItems, style::Theme};
@@ -153,7 +154,9 @@ impl App {
     }
 
     pub fn init(self, cc: &CreationContext<'_>) -> Self {
-        // cc.egui_ctx.send_viewport_cmd(ViewportCommand::Visible(self.visible));
+        if !*DENY_HIDING {
+            cc.egui_ctx.send_viewport_cmd(ViewportCommand::Visible(self.visible.load(Ordering::SeqCst)));
+        }
 
         let egui_ctx = cc.egui_ctx.clone();
         let gui_tx = self.gui_tx.clone();
@@ -218,8 +221,7 @@ impl eframe::App for App {
         // Show active toast messages
         self.toasts.show(ctx);
 
-        // TODO: Remove when upstream fixes window hiding
-        if !self.visible.load(Ordering::SeqCst) {
+        if *DENY_HIDING && !self.visible.load(Ordering::SeqCst) {
             self.visible.store(true, Ordering::SeqCst);
             self.toasts
                 .warning("Window hiding is currently not supported.\nSee https://github.com/4JX/L5P-Keyboard-RGB/issues/181")
@@ -250,7 +252,7 @@ impl eframe::App for App {
             self.update_state();
         }
 
-        // self.handle_close_request(ctx);
+        self.handle_close_request(ctx);
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
@@ -400,22 +402,19 @@ impl App {
         self.state_changed = false;
     }
 
-    // fn handle_close_request(&mut self, ctx: &Context) {
-    //     if ctx.input(|i| i.viewport().close_requested()) {
-    //         #[cfg(target_os = "linux")]
-    //         let is_wayland = std::env::var("WAYLAND_DISPLAY").is_ok();
-    //         #[cfg(target_os = "linux")]
-    //         if is_wayland {
-    //             // Force close normally on wayland
-    //             return;
-    //         }
+    fn handle_close_request(&mut self, ctx: &Context) {
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if *DENY_HIDING {
+                // Force close normally on wayland
+                return;
+            }
 
-    //         if self.has_tray.load(Ordering::Relaxed) {
-    //             ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-    //             ctx.send_viewport_cmd(ViewportCommand::Visible(false));
-    //         } else {
-    //             // Close normally
-    //         }
-    //     }
-    // }
+            if self.has_tray.load(Ordering::Relaxed) {
+                ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+                ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+            } else {
+                // Close normally
+            }
+        }
+    }
 }

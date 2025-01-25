@@ -10,13 +10,12 @@ use std::{path::PathBuf, time::Duration};
 use crate::{
     gui::modals,
     manager::{custom_effect::CustomEffect, profile::Profile},
+    DENY_HIDING,
 };
 
 use super::{GuiMessage, LoadedEffect};
 
 pub struct MenuBarState {
-    // TODO: Re-enable when upstream fixes window visibility
-    #[allow(dead_code)]
     gui_sender: Sender<GuiMessage>,
     load_profile_dialog: FileDialog,
     load_effect_dialog: FileDialog,
@@ -132,9 +131,9 @@ impl MenuBarState {
                 open::that("https://www.buymeacoffee.com/4JXdev").unwrap();
             }
 
-            // if ui.button("Exit").clicked() {
-            //     self.gui_sender.send(GuiMessage::Quit).unwrap();
-            // }
+            if !*DENY_HIDING && ui.button("Exit").clicked() {
+                self.gui_sender.send(GuiMessage::Quit).unwrap();
+            }
 
             #[cfg(target_os = "windows")]
             {
