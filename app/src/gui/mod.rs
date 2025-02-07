@@ -403,12 +403,7 @@ impl App {
     }
 
     fn handle_close_request(&mut self, ctx: &Context) {
-        if ctx.input(|i| i.viewport().close_requested()) {
-            if *DENY_HIDING {
-                // Force close normally on wayland
-                return;
-            }
-
+        if ctx.input(|i| i.viewport().close_requested()) && !*DENY_HIDING {
             if self.has_tray.load(Ordering::Relaxed) {
                 ctx.send_viewport_cmd(ViewportCommand::CancelClose);
                 ctx.send_viewport_cmd(ViewportCommand::Visible(false));

@@ -129,6 +129,7 @@ impl EffectManager {
     }
 
     pub fn shutdown(mut self) {
+        self.stop_signals.store_true();
         self.tx.send(Message::Exit).unwrap();
         if let Some(handle) = self.inner_handle.take() {
             handle.join().unwrap();
