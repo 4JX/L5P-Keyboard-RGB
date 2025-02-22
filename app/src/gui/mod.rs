@@ -22,7 +22,7 @@ use tray_icon::menu::MenuEvent;
 use crate::{
     cli::OutputType,
     enums::Effects,
-    manager::{self, custom_effect::CustomEffect, profile::Profile, EffectManager, ManagerCreationError},
+    manager::{self, custom_effect::CustomEffect, profile::Profile, show_effect_ui, EffectManager, ManagerCreationError},
     persist::Settings,
     tray::{QUIT_ID, SHOW_ID},
     DENY_HIDING,
@@ -382,8 +382,7 @@ impl App {
 
     fn show_effect_ui(&mut self, ui: &mut eframe::egui::Ui) {
         ui.add_enabled_ui(self.loaded_effect.is_none(), |ui| {
-            let mut effect = self.current_profile.effect;
-            effect.show_ui(ui, &mut self.current_profile, &mut self.state_changed, &self.theme);
+            show_effect_ui(ui, &mut self.current_profile, &mut self.state_changed, &self.theme);
         });
     }
 

@@ -21,6 +21,8 @@ pub mod custom_effect;
 mod effects;
 pub mod profile;
 
+pub use effects::show_effect_ui;
+
 #[derive(Debug, Error, PartialEq)]
 #[error("Could not create keyboard manager")]
 pub enum ManagerCreationError {
@@ -187,11 +189,11 @@ impl Inner {
                 saturation_boost = saturation_boost.clamp(0.0, 1.0);
                 ambient::play(self, fps, saturation_boost);
             }
-            Effects::SmoothWave => {
+            Effects::SmoothWave { mode, clean_with_black } => {
                 profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);
-                swipe::play(self, profile);
+                swipe::play(self, profile, mode, clean_with_black);
             }
-            Effects::Swipe => swipe::play(self, profile),
+            Effects::Swipe { mode, clean_with_black } => swipe::play(self, profile, mode, clean_with_black),
             Effects::Disco => disco::play(self, profile, thread_rng),
             Effects::Christmas => christmas::play(self, thread_rng),
             Effects::Fade => fade::play(self, profile),

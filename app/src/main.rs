@@ -26,7 +26,7 @@ use eframe::{egui::IconData, epaint::Vec2};
 use gui::App;
 
 const APP_ICON: &[u8; 14987] = include_bytes!("../res/trayIcon.ico");
-const WINDOW_SIZE: Vec2 = Vec2::new(500., 400.);
+const WINDOW_SIZE: Vec2 = Vec2::new(500., 460.);
 #[cfg(target_os = "linux")]
 pub static DENY_HIDING: LazyLock<bool> = LazyLock::new(|| std::env::var("WAYLAND_DISPLAY").is_ok());
 #[cfg(not(target_os = "linux"))]
