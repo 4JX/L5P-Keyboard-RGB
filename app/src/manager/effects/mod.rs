@@ -19,7 +19,7 @@ pub mod temperature;
 pub mod zones;
 
 pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &mut bool, theme: &crate::gui::style::Theme) {
-    let mut effect = profile.effect.clone();
+    let mut effect = profile.effect;
 
     match &mut effect {
         Effects::SmoothWave { mode, clean_with_black } | Effects::Swipe { mode, clean_with_black } => {

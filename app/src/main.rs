@@ -123,7 +123,7 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
     #[cfg(not(target_os = "linux"))]
     let tray_c = _tray_icon.clone();
 
-    let app = App::new(output_type, has_tray.clone(), visible.clone());
+    let app = App::new(output_type, has_tray, visible);
 
     eframe::run_native(
         "Legion RGB",

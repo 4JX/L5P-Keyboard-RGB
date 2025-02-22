@@ -5,7 +5,7 @@ use effects::{ambient, christmas, disco, fade, lightning, ripple, swipe, tempera
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use profile::Profile;
-use rand::{rngs::ThreadRng, thread_rng};
+use rand::{rng, rngs::ThreadRng};
 use single_instance::SingleInstance;
 use std::{
     sync::atomic::{AtomicBool, Ordering},
@@ -143,7 +143,7 @@ impl Inner {
     fn set_profile(&mut self, mut profile: Profile) {
         self.last_profile = profile.clone();
         self.stop_signals.store_false();
-        let mut thread_rng = thread_rng();
+        let mut rng = rng();
 
         if profile.effect.is_built_in() {
             let clamped_speed = self.clamp_speed(profile.speed);
@@ -155,7 +155,7 @@ impl Inner {
 
         self.keyboard.set_brightness(profile.brightness as u8 + 1).unwrap();
 
-        self.apply_effect(&mut profile, &mut thread_rng);
+        self.apply_effect(&mut profile, &mut rng);
         self.stop_signals.store_false();
     }
 
@@ -163,7 +163,7 @@ impl Inner {
         speed.clamp(SPEED_RANGE.min().unwrap(), SPEED_RANGE.max().unwrap())
     }
 
-    fn apply_effect(&mut self, profile: &mut Profile, thread_rng: &mut ThreadRng) {
+    fn apply_effect(&mut self, profile: &mut Profile, rng: &mut ThreadRng) {
         match profile.effect {
             Effects::Static => {
                 self.keyboard.set_colors_to(&profile.rgb_array()).unwrap();
@@ -183,7 +183,7 @@ impl Inner {
                 };
                 self.keyboard.set_effect(effect).unwrap();
             }
-            Effects::Lightning => lightning::play(self, profile, thread_rng),
+            Effects::Lightning => lightning::play(self, profile, rng),
             Effects::AmbientLight { mut fps, mut saturation_boost } => {
                 fps = fps.clamp(1, 60);
                 saturation_boost = saturation_boost.clamp(0.0, 1.0);
@@ -194,8 +194,8 @@ impl Inner {
                 swipe::play(self, profile, mode, clean_with_black);
             }
             Effects::Swipe { mode, clean_with_black } => swipe::play(self, profile, mode, clean_with_black),
-            Effects::Disco => disco::play(self, profile, thread_rng),
-            Effects::Christmas => christmas::play(self, thread_rng),
+            Effects::Disco => disco::play(self, profile, rng),
+            Effects::Christmas => christmas::play(self, rng),
             Effects::Fade => fade::play(self, profile),
             Effects::Temperature => temperature::play(self),
             Effects::Ripple => ripple::play(self, profile),

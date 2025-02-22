@@ -39,4 +39,4 @@ impl CustomEffect {
     }
 }
 
-impl<'a> StorageTrait<'a> for CustomEffect {}
+impl StorageTrait<'_> for CustomEffect {}

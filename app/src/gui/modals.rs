@@ -44,7 +44,7 @@ pub fn manager_error(ctx: &Context) -> bool {
 
             if let Ok(list) = legion_rgb_driver::find_possible_keyboards() {
                 modal.body(ui, "Please attach the following list of identifiers when making an issue:");
-                Frame::none().fill(Color32::from_gray(20)).inner_margin(5.0).rounding(6.0).show(ui, |ui| {
+                Frame::new().fill(Color32::from_gray(20)).inner_margin(5.0).corner_radius(6.0).show(ui, |ui| {
                     ScrollArea::vertical().show(ui, |ui| {
                         if list.is_empty() {
                             ui.label("No candidates found");

@@ -95,4 +95,4 @@ pub fn arr_to_zones(arr: [u8; 12]) -> Zones {
     ]
 }
 
-impl<'a> StorageTrait<'a> for Profile {}
+impl StorageTrait<'_> for Profile {}

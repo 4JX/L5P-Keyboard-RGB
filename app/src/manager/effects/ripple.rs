@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use device_query::{DeviceEvents, Keycode};
+use device_query::{DeviceEvents, DeviceEventsHandler, Keycode};
 
 use crate::manager::{
     profile::Profile,
@@ -38,26 +38,25 @@ pub fn play(manager: &mut Inner, p: &Profile) {
     let (tx, rx) = crossbeam_channel::unbounded::<Event>();
 
     thread::spawn(move || {
-        let state = device_query::DeviceState::new();
+        let event_handler = DeviceEventsHandler::new(Duration::from_millis(10)).unwrap();
 
         // tx_clone.send(Event::KeyPress(Keycode::Meta)).unwrap();
         let tx_clone = tx.clone();
 
-        let guard = state.on_key_down(move |key| {
+        let press_guard = event_handler.on_key_down(move |key| {
             stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
 
             let _ = tx_clone.send(Event::KeyPress(*key));
         });
 
-        let guard2 = state.on_key_up(move |key| {
+        let release_guard = event_handler.on_key_up(move |key| {
             let _ = tx.send(Event::KeyRelease(*key));
         });
 
         loop {
             if exit_thread.load(Ordering::SeqCst) {
-                drop(guard);
-                drop(guard2);
-
+                drop(press_guard);
+                drop(release_guard);
                 break;
             }
 
@@ -91,7 +90,7 @@ pub fn play(manager: &mut Inner, p: &Profile) {
                 }
             },
             Err(err) => {
-                if let crossbeam_channel::TryRecvError::Disconnected = err {
+                if err == crossbeam_channel::TryRecvError::Disconnected {
                     break;
                 }
             }
@@ -150,7 +149,7 @@ fn advance_zone_state(zone_state: [RippleMove; 4], last_step_time: &mut Instant,
         }
 
         for (i, ripple_move) in zone_state.iter().enumerate() {
-            if let RippleMove::Center = ripple_move {
+            if matches!(ripple_move, RippleMove::Center) {
                 if i != 0 {
                     if let Some(left) = new_state.get_mut(i - 1) {
                         *left = RippleMove::Left;

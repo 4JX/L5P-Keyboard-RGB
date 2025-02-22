@@ -10,6 +10,9 @@ const STEPS: u8 = 150;
 pub fn play(manager: &mut Inner, profile: &Profile, mode: SwipeMode, clean_with_black: bool) {
     let mut change_rgb_array = profile.rgb_array();
     let fill_rgb_array = profile.rgb_array();
+    // Placed here so we don't reset it every loop
+    let mut used_colors_array: [u8; 12] = [0; 12];
+
     let steps = STEPS / profile.speed;
 
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
@@ -22,8 +25,6 @@ pub fn play(manager: &mut Inner, profile: &Profile, mode: SwipeMode, clean_with_
                 manager.keyboard.transition_colors_to(&change_rgb_array, steps, 10).unwrap();
             }
             SwipeMode::Fill => {
-                let mut used_colors_array: [u8; 12] = [0; 12];
-
                 // A little hacky to avoid type mismatch errors, but you gotta do what you gotta do
                 let range: Vec<usize> = match profile.direction {
                     Direction::Left => (0..4).collect(),

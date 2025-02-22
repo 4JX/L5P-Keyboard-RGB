@@ -158,10 +158,7 @@ pub fn try_cli() -> Result<GuiCommand, CliError> {
 
 fn handle_cli_output(output_type: OutputType) -> Result<GuiCommand, CliError> {
     let manager_result = manager::EffectManager::new(manager::OperationMode::Cli);
-    let instance_not_unique = manager_result
-        .as_ref()
-        .err()
-        .map_or(false, |err| &ManagerCreationError::InstanceAlreadyRunning == err.current_context());
+    let instance_not_unique = manager_result.as_ref().err().is_some_and(|err| &ManagerCreationError::InstanceAlreadyRunning == err.current_context());
 
     if matches!(output_type, OutputType::Profile(..) | OutputType::Custom(..)) && instance_not_unique {
         println!("Another instance of the program is already running, please close it before starting a new one.");
