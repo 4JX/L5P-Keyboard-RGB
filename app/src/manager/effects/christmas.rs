@@ -4,14 +4,14 @@ use rand::Rng;
 
 use crate::manager::Inner;
 
-pub fn play(manager: &mut Inner, thread_rng: &mut rand::rngs::ThreadRng) {
+pub fn play(manager: &mut Inner, rng: &mut rand::rngs::ThreadRng) {
     let xmas_color_array = [[255, 10, 10], [255, 255, 20], [30, 255, 30], [70, 70, 255]];
     let subeffect_count = 4;
     let mut last_subeffect = -1;
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-        let mut subeffect = thread_rng.gen_range(0..subeffect_count);
+        let mut subeffect = rng.random_range(0..subeffect_count);
         while last_subeffect == subeffect {
-            subeffect = thread_rng.gen_range(0..subeffect_count);
+            subeffect = rng.random_range(0..subeffect_count);
         }
         last_subeffect = subeffect;
 
@@ -25,12 +25,12 @@ pub fn play(manager: &mut Inner, thread_rng: &mut rand::rngs::ThreadRng) {
                 }
             }
             1 => {
-                let color_1_index = thread_rng.gen_range(0..4);
+                let color_1_index = rng.random_range(0..4);
                 let used_colors_1: [u8; 3] = xmas_color_array[color_1_index];
 
-                let mut color_2_index = thread_rng.gen_range(0..4);
+                let mut color_2_index = rng.random_range(0..4);
                 while color_1_index == color_2_index {
-                    color_2_index = thread_rng.gen_range(0..4);
+                    color_2_index = rng.random_range(0..4);
                 }
                 let used_colors_2: [u8; 3] = xmas_color_array[color_2_index];
 
@@ -45,7 +45,7 @@ pub fn play(manager: &mut Inner, thread_rng: &mut rand::rngs::ThreadRng) {
                 let steps = 100;
                 manager.keyboard.transition_colors_to(&[0; 12], steps, 1).unwrap();
                 let mut used_colors_array: [u8; 12] = [0; 12];
-                let left_or_right = thread_rng.gen_range(0..2);
+                let left_or_right = rng.random_range(0..2);
 
                 // A little hacky to avoid type mismatch errors, but you gotta do what you gotta do
                 let range: Vec<usize> = if left_or_right == 0 { (0..4).collect() } else { (0..4).rev().collect() };

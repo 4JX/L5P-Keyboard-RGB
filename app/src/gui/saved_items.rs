@@ -1,7 +1,4 @@
-use eframe::{
-    egui::{Context, Frame, RichText, ScrollArea, Ui},
-    epaint::{Color32, Rounding},
-};
+use eframe::egui::{Color32, Context, CornerRadius, Frame, RichText, ScrollArea, Ui};
 use egui_modal::Modal;
 
 use crate::manager::{custom_effect::CustomEffect, profile::Profile};
@@ -113,11 +110,9 @@ impl SavedItems {
                 }
             }
             Tab::CustomEffects => {
-                if loaded_effect.is_playing() {
-                    if ui.button("+").clicked() {
-                        self.new_item_name.clear();
-                        effect_modal.open();
-                    }
+                if loaded_effect.is_playing() && ui.button("+").clicked() {
+                    self.new_item_name.clear();
+                    effect_modal.open();
                 }
 
                 if ui.button("-").clicked() {
@@ -136,7 +131,7 @@ impl SavedItems {
             });
 
             Frame {
-                rounding: Rounding::same(6.0),
+                corner_radius: CornerRadius::same(6),
                 fill: Color32::from_gray(20),
                 ..Frame::default()
             }

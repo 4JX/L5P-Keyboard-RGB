@@ -9,9 +9,9 @@ use device_query::{DeviceQuery, Keycode};
 #[cfg(debug_assertions)]
 use eframe::egui::style::DebugOptions;
 use eframe::{
-    egui::{CentralPanel, Context, Frame, Layout, ScrollArea, Style, TopBottomPanel, ViewportCommand},
+    egui::{CentralPanel, Context, CornerRadius, Frame, Layout, ScrollArea, Style, TopBottomPanel, ViewportCommand},
     emath::Align,
-    epaint::{Color32, Rounding, Vec2},
+    epaint::{Color32, Vec2},
     CreationContext,
 };
 
@@ -242,7 +242,7 @@ impl eframe::App for App {
         });
 
         CentralPanel::default()
-            .frame(Frame::none().inner_margin(self.theme.spacing.large).fill(Color32::from_gray(26)))
+            .frame(Frame::new().inner_margin(self.theme.spacing.large).fill(Color32::from_gray(26)))
             .show(ctx, |ui| {
                 ui.style_mut().spacing.item_spacing = Vec2::splat(self.theme.spacing.large);
                 self.show_ui_elements(ctx, ui);
@@ -358,7 +358,7 @@ impl App {
                 }
 
                 Frame {
-                    rounding: Rounding::same(6.0),
+                    corner_radius: CornerRadius::same(6),
                     fill: Color32::from_gray(20),
                     ..Frame::default()
                 }
