@@ -46,35 +46,22 @@ pub fn play(manager: &mut Inner, thread_rng: &mut rand::rngs::ThreadRng) {
                 manager.keyboard.transition_colors_to(&[0; 12], steps, 1).unwrap();
                 let mut used_colors_array: [u8; 12] = [0; 12];
                 let left_or_right = thread_rng.gen_range(0..2);
-                if left_or_right == 0 {
-                    for color in xmas_color_array {
-                        for j in (0..12).step_by(3) {
-                            used_colors_array[j] = color[0];
-                            used_colors_array[j + 1] = color[1];
-                            used_colors_array[j + 2] = color[2];
-                            manager.keyboard.transition_colors_to(&used_colors_array, steps, 1).unwrap();
-                        }
-                        for j in (0..12).step_by(3) {
-                            used_colors_array[j] = 0;
-                            used_colors_array[j + 1] = 0;
-                            used_colors_array[j + 2] = 0;
-                            manager.keyboard.transition_colors_to(&used_colors_array, steps, 1).unwrap();
-                        }
+
+                // A little hacky to avoid type mismatch errors, but you gotta do what you gotta do
+                let range: Vec<usize> = if left_or_right == 0 { (0..4).collect() } else { (0..4).rev().collect() };
+
+                for color in xmas_color_array {
+                    for j in range.clone() {
+                        used_colors_array[j * 3] = color[0];
+                        used_colors_array[j * 3 + 1] = color[1];
+                        used_colors_array[j * 3 + 2] = color[2];
+                        manager.keyboard.transition_colors_to(&used_colors_array, steps, 1).unwrap();
                     }
-                } else {
-                    for i in 0..4 {
-                        for j in (0..12).step_by(3) {
-                            used_colors_array[11 - j] = xmas_color_array[3 - i][0];
-                            used_colors_array[11 - (j + 1)] = xmas_color_array[3 - i][1];
-                            used_colors_array[11 - (j + 2)] = xmas_color_array[3 - i][2];
-                            manager.keyboard.transition_colors_to(&used_colors_array, steps, 1).unwrap();
-                        }
-                        for j in (0..12).step_by(3) {
-                            used_colors_array[11 - j] = 0;
-                            used_colors_array[11 - (j + 1)] = 0;
-                            used_colors_array[11 - (j + 2)] = 0;
-                            manager.keyboard.transition_colors_to(&used_colors_array, steps, 1).unwrap();
-                        }
+                    for j in range.clone() {
+                        used_colors_array[j * 3] = 0;
+                        used_colors_array[j * 3 + 1] = 0;
+                        used_colors_array[j * 3 + 2] = 0;
+                        manager.keyboard.transition_colors_to(&used_colors_array, steps, 1).unwrap();
                     }
                 }
             }

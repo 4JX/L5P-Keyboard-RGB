@@ -14,13 +14,26 @@ pub enum Effects {
         fps: u8,
         saturation_boost: f32,
     },
-    SmoothWave,
-    Swipe,
+    SmoothWave {
+        mode: SwipeMode,
+        clean_with_black: bool,
+    },
+    Swipe {
+        mode: SwipeMode,
+        clean_with_black: bool,
+    },
     Disco,
     Christmas,
     Fade,
     Temperature,
     Ripple,
+}
+
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, EnumIter, EnumString, PartialEq)]
+pub enum SwipeMode {
+    #[default]
+    Change,
+    Fill,
 }
 
 impl PartialEq for Effects {
@@ -36,13 +49,13 @@ impl Effects {
     }
 
     pub fn takes_direction(self) -> bool {
-        matches!(self, Self::Wave | Self::SmoothWave | Self::Swipe { .. })
+        matches!(self, Self::Wave | Self::SmoothWave { .. } | Self::Swipe { .. })
     }
 
     pub fn takes_speed(self) -> bool {
         matches!(
             self,
-            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave | Self::Swipe | Self::Disco | Self::Fade | Self::Ripple
+            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::Disco | Self::Fade | Self::Ripple
         )
     }
 
