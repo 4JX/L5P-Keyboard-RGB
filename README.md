@@ -1,6 +1,6 @@
 <img height="100" align="left" src="./app/res/trayIcon.svg" alt="logo">
 
-# Legion RGB Control
+# Legion RGB Control <!-- omit in toc -->
 
 [![Latest Version](https://img.shields.io/github/v/tag/4JX/L5P-Keyboard-RGB?style=for-the-badge&label=Download+Latest)](https://github.com/4JX/L5P-Keyboard-RGB/releases)
 ![Build Status](https://img.shields.io/github/actions/workflow/status/4JX/L5P-Keyboard-RGB/release-rust.yml?style=for-the-badge)
@@ -19,13 +19,17 @@
 - [Download](#download)
 - [Available effects](#available-effects)
   - [Creating your own effects](#creating-your-own-effects)
+    - [At a glance](#at-a-glance)
+    - [File sections](#file-sections)
 - [Usage](#usage)
+  - [Format](#format)
   - [With GUI](#with-gui)
   - [Via the command line](#via-the-command-line)
 - [Compatibility](#compatibility)
   - ["How about X model"](#how-about-x-model)
 - [Building from source](#building-from-source)
   - [Prerequisites](#prerequisites)
+    - [Linux (Ubuntu)](#linux-ubuntu)
   - [Using `cargo-make`](#using-cargo-make)
   - [Building manually](#building-manually)
 - [Crashes, freezes, etc](#crashes-freezes-etc)
@@ -94,16 +98,16 @@ SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="####", MODE="0666"
 
 Where `idProduct` can be found in these tables:
 
-| Year | Pro Models | Regular Legions | LOQ Models |
-| ---- | ---------- | --------------- | ---------- |
-| 2024 | `c995`     | `c994`          | `c993`     |
-| 2023 | `c985`     | `c984`          | `c983`     |
+| Year | Pro    | Regular + Slim | LOQ    |
+| ---- | ------ | -------------- | ------ |
+| 2024 | `c995` | `c994`         | `c993` |
+| 2023 | `c985` | `c984`         | `c983` |
 
-| Year | Regular Legions | Ideapad Models |
-| ---- | --------------- | -------------- |
-| 2022 | `c975`          | `c973`         |
-| 2021 | `c965`          | `c963`         |
-| 2020 | `c955`          |                |
+| Year | Pro + Regular + Slim | Ideapad |
+| ---- | -------------------- | ------- |
+| 2022 | `c975`               | `c973`  |
+| 2021 | `c965`               | `c963`  |
+| 2020 | `c955`               |         |
 
 And then reloading the rules:
 

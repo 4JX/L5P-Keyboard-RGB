@@ -1,0 +1,73 @@
+name: Bug Report
+description: Create a detailed bug report to help solve your issue.
+labels:
+  - bug
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Provide a clear sequence of steps to reproduce the issue.
+      placeholder: |
+        1. Open the app
+        2. Press the button
+        3. Observe the behavior
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: Describe what you expected to happen.
+      placeholder: |
+        The program should change the lights to red.
+    validations:
+      required: true
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual Behavior
+      description: Describe what actually happened.
+      placeholder: |
+        The program changed the lights to green.
+    validations:
+      required: true
+  - type: input
+    id: app_version
+    attributes:
+      label: App Version
+      description: This can be found in the "About" section of the GUI or by using the --version flag.
+      placeholder: v0.20.0
+    validations:
+      required: true
+  - type: input
+    id: os_version
+    attributes:
+      label: OS Version
+      description: Include your operating system type and version (e.g., Windows 11 22H2, Ubuntu 22.04, etc).
+      placeholder: Windows 11 22H2
+    validations:
+      required: true
+  - type: input
+    id: laptop_model
+    attributes:
+      label: Laptop Model
+      description: Include your laptop model.
+      placeholder: Legion 5 15ACH6R
+    validations:
+      required: true
+  - type: textarea
+    id: other_details
+    attributes:
+      label: Additional Context
+      description: Include any other relevant information, such as screenshots or logs.
+  - type: checkboxes
+    id: acknowledgments
+    attributes:
+      label: Acknowledgments
+      description: 'Please acknowledge the following statements, when applicable:'
+      options:
+        - label: 'I have an RGB 4 zone keyboard.'
+          required: true
+        - label: 'Vantage is able to detect and control my keyboard.'
+          required: false
+        - label: 'I can cycle through the keyboard profiles with FN+Space.'
+          required: false

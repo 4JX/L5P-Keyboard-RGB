@@ -1,0 +1,28 @@
+name: Feature Request
+description: Template for submitting a request for a new feature or enhancement.
+labels:
+  - feature request
+body:
+  - type: textarea
+    attributes:
+      label: Feature Description
+      description: Provide a clear and concise description of the feature you would like to see implemented.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed Solution
+      description: If you have a specific solution in mind, please describe it in detail.
+  - type: textarea
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds? Please describe them.
+  - type: input
+    attributes:
+      label: Use Case
+      description: Describe the use case for this feature.
+      placeholder: e.g., "As a user, I want to be able to..."
+  - type: textarea
+    attributes:
+      label: Additional Context
+      description: Include any other relevant information you would like to share.
