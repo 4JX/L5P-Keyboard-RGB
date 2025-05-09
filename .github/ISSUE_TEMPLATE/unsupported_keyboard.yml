@@ -1,0 +1,91 @@
+name: Keyboard Support
+description: Issues related to support requests or app warnings about unsupported keyboards.
+labels:
+  - keyboard support
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        ---
+
+
+        # ℹ️ Read before submitting
+
+
+        ## Windows
+
+        If you are experiencing issues controlling your keyboard through Lenovo
+        Vantage or using the FN+Space shortcut, it's likely a driver or hardware
+        problem. This application may have limited impact in such cases. Please try 
+        addressing the underlying issue before submitting a new issue here.
+
+
+        ## Linux
+
+        Most Linux installations restrict the permissions required for this
+        application to access the keyboard by default. Please ensure you have
+        [configured the necessary
+        permissions](https://github.com/4JX/L5P-Keyboard-RGB?tab=readme-ov-file#usage).
+        Alternatively, you can run the application with `sudo`, but this is not
+        recommended.
+
+
+        ---
+  - type: textarea
+    id: keyboard_ids
+    attributes:
+      label: Keyboard IDs
+      description: Write or attach the keyboard identifiers the program gave you.
+      placeholder: |
+        0x048d:c995
+        0x048d:c965
+    validations:
+      required: true
+  - type: textarea
+    id: lsusb_output
+    attributes:
+      label: lsusb Output
+      description: Provide the output of `lsusb` if you are using Linux.
+    validations:
+      required: false
+  - type: input
+    id: app_version
+    attributes:
+      label: App Version
+      description: This can be found in the "About" section of the GUI or by using the `--version` flag.
+      placeholder: v0.20.0
+    validations:
+      required: true
+  - type: input
+    id: os_version
+    attributes:
+      label: OS Version
+      description: Include your operating system type and version (e.g., Windows 11 22H2, Ubuntu 22.04, etc).
+      placeholder: Windows 11 22H2
+    validations:
+      required: true
+  - type: input
+    id: laptop_model
+    attributes:
+      label: Laptop Model
+      description: Include your laptop model.
+      placeholder: Legion 5 15ACH6R
+    validations:
+      required: true
+  - type: textarea
+    id: other_details
+    attributes:
+      label: Additional Context
+      description: Include any other relevant information, such as screenshots or logs.
+  - type: checkboxes
+    id: acknowledgments
+    attributes:
+      label: Acknowledgments
+      description: 'Please acknowledge the following statements:'
+      options:
+        - label: 'I have an RGB 4 zone keyboard.'
+          required: true
+        - label: 'Vantage is able to detect and control my keyboard.'
+          required: false
+        - label: 'I can cycle through the keyboard profiles with FN+Space.'
+          required: false
