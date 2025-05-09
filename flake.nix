@@ -2,7 +2,7 @@
   description = "Build env";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    # nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     crane = {
       url = "github:ipetkov/crane";
@@ -28,7 +28,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.84.0";
+        rustVersion = "1.86.0";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [
@@ -113,6 +113,7 @@
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
+        # stdenv = p: (p.stdenvAdapters.useMoldLinker p.stdenv);
         stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
         # Forgo using VCPKG hacks on local builds because pain
