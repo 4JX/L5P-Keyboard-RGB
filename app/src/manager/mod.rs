@@ -73,7 +73,8 @@ impl EffectManager {
         let keyboard = legion_rgb_driver::get_keyboard(stop_signals.keyboard_stop_signal.clone())
             .change_context(ManagerCreationError::AcquireKeyboard)
             .attach_printable("Ensure that you have a supported model and that the application has access to it.")
-            .attach_printable("On Linux, see https://github.com/4JX/L5P-Keyboard-RGB#usage")?;
+            .attach_printable("On Linux, you may need to configure additional permissions")
+            .attach_printable("https://github.com/4JX/L5P-Keyboard-RGB#usage")?;
 
         let (tx, rx) = crossbeam_channel::unbounded::<Message>();
 

@@ -1,4 +1,3 @@
-use eframe::egui::Ui;
 use error_stack::{Result, ResultExt};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{fs::File, io::Write, path::Path};
@@ -33,11 +32,5 @@ where
         file.write_all(stringified_json.as_bytes()).change_context(SaveFileError)?;
 
         Ok(())
-    }
-}
-
-pub fn clickable_link(ui: &mut Ui, url: &str) {
-    if ui.link(url).clicked() {
-        open::that(url).unwrap();
     }
 }
