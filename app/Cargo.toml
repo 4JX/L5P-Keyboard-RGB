@@ -21,6 +21,8 @@ eframe = { version = "0.31.1", features = ["x11", "wayland"] }
 egui-modal = { git = "https://github.com/n00kii/egui-modal", rev = "74add2407bb945992bd15c79fcedc2af2ee0fb4a" }
 egui_file = "0.22.1"
 egui-notify = "0.19.0"
+# Interesting crate, sadly can't be used with what I had planned
+# egui_flex = "0.3.0"
 # egui-notify = { git = "https://github.com/ItsEthra/egui-notify", rev = "bc5eb67" }
 
 # App window, taskbar and tray icon loading

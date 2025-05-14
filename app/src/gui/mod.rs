@@ -324,9 +324,10 @@ impl App {
                 let can_tweak_colors = self.current_profile.effect.takes_color_array() && self.loaded_effect.is_none();
 
                 let res = ui.add_enabled_ui(can_tweak_colors, |ui| {
-                    ui.style_mut().spacing.item_spacing.y = self.theme.spacing.medium;
+                    ui.style_mut().spacing.item_spacing = Vec2::splat(self.theme.spacing.medium);
                     let response = ui.horizontal(|ui| {
-                        ui.style_mut().spacing.interact_size = Vec2::splat(60.0);
+                        ui.style_mut().spacing.interact_size = Vec2::new(70.0, 50.0);
+
                         for i in 0..4 {
                             self.state_changed |= ui.color_edit_button_srgb(&mut self.current_profile.rgb_zones[i].rgb).changed();
                         }
