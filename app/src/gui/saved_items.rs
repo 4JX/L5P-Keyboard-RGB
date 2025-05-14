@@ -138,12 +138,12 @@ impl SavedItems {
             .show(ui, |ui| {
                 ui.set_height(ui.available_height());
 
-                if self.profiles.is_empty() {
-                    ui.centered_and_justified(|ui| ui.label("No profiles added"));
-                } else {
-                    ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| {
-                        ui.horizontal_wrapped(|ui| match self.tab {
-                            Tab::Profiles => {
+                ScrollArea::vertical().auto_shrink([false; 2]).show(ui, |ui| match self.tab {
+                    Tab::Profiles => {
+                        if self.profiles.is_empty() {
+                            ui.centered_and_justified(|ui| ui.label("No profiles added"));
+                        } else {
+                            ui.horizontal_wrapped(|ui| {
                                 for prof in self.profiles.iter() {
                                     let name = prof.name.as_deref().unwrap_or("Unnamed");
                                     if ui.selectable_value(current_profile, prof.clone(), name).clicked() {
@@ -151,8 +151,14 @@ impl SavedItems {
                                         loaded_effect.state = State::None;
                                     };
                                 }
-                            }
-                            Tab::CustomEffects => {
+                            });
+                        }
+                    }
+                    Tab::CustomEffects => {
+                        if self.custom_effects.is_empty() {
+                            ui.centered_and_justified(|ui| ui.label("No custom effects added"));
+                        } else {
+                            ui.horizontal_wrapped(|ui| {
                                 for effect in self.custom_effects.iter() {
                                     let name = effect.name.as_deref().unwrap_or("Unnamed");
                                     if ui.selectable_value(&mut loaded_effect.effect, effect.clone(), name).clicked() {
@@ -161,10 +167,10 @@ impl SavedItems {
                                         loaded_effect.state = State::Queued;
                                     };
                                 }
-                            }
-                        });
-                    });
-                }
+                            });
+                        }
+                    }
+                });
             });
         });
     }
