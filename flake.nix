@@ -113,22 +113,16 @@
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
-        # stdenv = p: (p.stdenvAdapters.useMoldLinker p.stdenv);
-        stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
-
         # Forgo using VCPKG hacks on local builds because pain
-        cargoExtraArgs = nixLib.optionals stdenv.isLinux ''--locked --features "scrap/linux-pkg-config"'';
+        cargoExtraArgs = nixLib.optionals pkgs.stdenv.isLinux ''--locked --features "scrap/linux-pkg-config"'';
+
+        stdenv = p: (p.stdenvAdapters.useMoldLinker p.stdenv);
+        # stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
         inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
         cargoArtifacts = craneLib.buildDepsOnly ({
-
-          inherit pname version src buildInputs nativeBuildInputs stdenv cargoExtraArgs;
-
-          # This magic thing here is needed otherwise the build fails
-          # https://github.com/ipetkov/crane/issues/411#issuecomment-1743441117
-          # Might revisit later to see if anything else pops up
-          installCargoArtifactsMode = "use-zstd";
+          inherit pname version src buildInputs nativeBuildInputs cargoExtraArgs stdenv;
         } // envVars);
 
         # The main application derivation
