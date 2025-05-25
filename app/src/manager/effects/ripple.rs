@@ -38,7 +38,10 @@ pub fn play(manager: &mut Inner, p: &Profile) {
     let (tx, rx) = crossbeam_channel::unbounded::<Event>();
 
     thread::spawn(move || {
-        let event_handler = DeviceEventsHandler::new(Duration::from_millis(10)).unwrap();
+        // Do this in order to avoid having to store the event handler struct somewhere,
+        // since it saves no data and serves only as a fancy function proxy for interacting with the real event loop
+        // This keeps the effect self contained, and other effects should probably use the same pattern
+        let event_handler = DeviceEventsHandler::new(Duration::from_millis(10)).unwrap_or(DeviceEventsHandler {});
 
         // tx_clone.send(Event::KeyPress(Keycode::Meta)).unwrap();
         let tx_clone = tx.clone();
