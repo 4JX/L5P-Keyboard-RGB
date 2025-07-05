@@ -11,7 +11,8 @@ use std::{
 
 pub mod error;
 
-const KNOWN_DEVICE_INFOS: [(u16, u16, u16, u16); 11] = [
+const KNOWN_DEVICE_INFOS: [(u16, u16, u16, u16); 12] = [
+    (0x048d, 0xc195, 0xff89, 0x00cc), // 2025 Pro
     (0x048d, 0xc995, 0xff89, 0x00cc), // 2024 Pro
     (0x048d, 0xc994, 0xff89, 0x00cc), // 2024
     (0x048d, 0xc993, 0xff89, 0x00cc), // 2024 LOQ
