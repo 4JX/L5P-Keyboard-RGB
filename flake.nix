@@ -20,15 +20,24 @@
     };
   };
 
-  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      crane,
+      flake-utils,
+      rust-overlay,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.86.0";
+        rustVersion = "1.89.0";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [
@@ -57,21 +66,28 @@
           gtk3
           gdk-pixbuf
           xdotool
+
+          # XCap
+          pipewire
+          libgbm
         ];
 
         # Libraries needed at runtime
-        runtimeDeps = with pkgs; [
-          xorg.libXcursor
-          xorg.libxcb
-          freetype
-          xorg.libXrandr
-          libGL
-          wayland
-          libxkbcommon
+        runtimeDeps =
+          with pkgs;
+          [
+            xorg.libXcursor
+            xorg.libxcb
+            freetype
+            xorg.libXrandr
+            libGL
+            wayland
+            libxkbcommon
 
-          # Tray icon
-          libayatana-appindicator
-        ] ++ sharedDeps;
+            # Tray icon
+            libayatana-appindicator
+          ]
+          ++ sharedDeps;
 
         envVars = rec {
           RUST_BACKTRACE = 1;
@@ -85,27 +101,18 @@
         workspaceSrcString = builtins.toString workspaceSrc;
 
         resFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/res/.*" path != null;
-        workspaceFilter = path: type:
-          (resFileFilter path type) || (craneLib.filterCargoSources path type);
+        workspaceFilter = path: type: (resFileFilter path type) || (craneLib.filterCargoSources path type);
 
-
-        src = nixLib.cleanSourceWith
-          {
-            src = workspaceSrc;
-            filter = workspaceFilter;
-          };
+        src = nixLib.cleanSourceWith {
+          src = workspaceSrc;
+          filter = workspaceFilter;
+        };
 
         # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/by-name/ru/rustdesk/package.nix
-        buildInputs = with pkgs;
-          [
-            libvpx
-            libyuv
-            libaom
-          ]
-          ++ sharedDeps
-          ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
+        buildInputs = [ ] ++ sharedDeps ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
-        nativeBuildInputs = with pkgs;
+        nativeBuildInputs =
+          with pkgs;
           [
             pkg-config
             cmake
@@ -113,22 +120,37 @@
           ]
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
-        # Forgo using VCPKG hacks on local builds because pain
-        cargoExtraArgs = nixLib.optionals pkgs.stdenv.isLinux ''--locked --features "scrap/linux-pkg-config"'';
-
         stdenv = p: (p.stdenvAdapters.useMoldLinker p.stdenv);
         # stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
         inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
-        cargoArtifacts = craneLib.buildDepsOnly ({
-          inherit pname version src buildInputs nativeBuildInputs cargoExtraArgs stdenv;
-        } // envVars);
+        cargoArtifacts = craneLib.buildDepsOnly (
+          {
+            inherit
+              pname
+              version
+              src
+              buildInputs
+              nativeBuildInputs
+              stdenv
+              ;
+          }
+          // envVars
+        );
 
         # The main application derivation
-        legion-kb-rgb = craneLib.buildPackage
-          ({
-            inherit pname version src cargoArtifacts buildInputs nativeBuildInputs stdenv cargoExtraArgs;
+        legion-kb-rgb = craneLib.buildPackage (
+          {
+            inherit
+              pname
+              version
+              src
+              cargoArtifacts
+              buildInputs
+              nativeBuildInputs
+              stdenv
+              ;
 
             doCheck = false;
 
@@ -137,7 +159,9 @@
             postFixup = ''
               patchelf --add-rpath "${nixLib.makeLibraryPath runtimeDeps}" "$out/bin/${pname}"
             '';
-          } // envVars);
+          }
+          // envVars
+        );
       in
       {
         checks = {
@@ -161,5 +185,6 @@
 
             buildInputs = [ rust ] ++ deps;
           };
-      });
+      }
+    );
 }

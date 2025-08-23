@@ -2,9 +2,9 @@ name: Compile changes
 
 on:
   push:
-    branches-ignore: 'main'
+    branches-ignore: [main]
   pull_request:
-    branches-ignore: 'main'
+    branches-ignore: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,18 +20,10 @@ jobs:
             os: ubuntu-latest
             artifact_name: target/debug/legion-kb-rgb
             asset_name: legion-kb-rgb-linux
-            triplet: x64-linux
-            vcpkgCommitId: 'b12aa38a44a29bd8461404f2514e4c7cf00e1fc5'
           - name: windows
             os: windows-latest
             artifact_name: target/debug/legion-kb-rgb.exe
             asset_name: legion-kb-rgb-windows
-            triplet: x64-windows-static
-            vcpkgCommitId: 'b12aa38a44a29bd8461404f2514e4c7cf00e1fc5'
-
-    env:
-      VCPKG_DEFAULT_TRIPLET: ${{ matrix.triplet }}
-      VCPKG_INSTALLED_DIR: ${{ github.workspace }}/vcpkg/installed
 
     steps:
       - name: Checkout
@@ -55,30 +47,13 @@ jobs:
           if [ "$RUNNER_OS" == "Linux" ]; then
            sudo apt-get update -y
            sudo apt install -y libunwind-dev
-           sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev libusb-1.0-0-dev libpango1.0-dev libgtk-3-dev libxdo-dev libappindicator3-dev
+           sudo apt-get install -y libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev libusb-1.0-0-dev libpango1.0-dev libgtk-3-dev libxdo-dev libappindicator3-dev libpipewire-0.3-dev
           elif [ "$RUNNER_OS" == "macOS" ]; then
            brew install nasm
           elif [ "$RUNNER_OS" == "Windows" ]; then
            echo "Nothing to do."
           fi
         shell: bash
-
-      - name: Set up VCPKG deps
-        uses: lukka/run-vcpkg@v11
-        id: runvcpkg
-        # if: ${{ runner.os != 'Linux' }}
-        with:
-          vcpkgGitCommitId: '${{ matrix.vcpkgCommitId }}'
-          # Run vcpkg with the command specified by the `runVcpkgFormatString` input.
-          runVcpkgInstall: true
-          vcpkgJsonGlob: '**/vcpkg.json'
-          vcpkgDirectory: '${{ github.workspace }}/vcpkg'
-
-      # - name: Prints output of run-vcpkg's action.
-      #   run: echo "root='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_ROOT_OUT }}', triplet='${{ steps.runvcpkg.outputs.RUNVCPKG_VCPKG_DEFAULT_TRIPLET_OUT }}' "
-      # - name: Set VCPKG_ROOT
-      #   run: echo "VCPKG_ROOT=$(echo $VCPKG_INSTALLATION_ROOT)" >> $GITHUB_ENV
-      #   shell: bash
 
       - name: Build
         shell: bash

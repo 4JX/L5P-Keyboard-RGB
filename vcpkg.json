@@ -1,5 +1,0 @@
-{
-	"name": "l5p-kb-rgb",
-	"version-string": "0.1.0",
-	"dependencies": ["libvpx", "libyuv", "aom"]
-}

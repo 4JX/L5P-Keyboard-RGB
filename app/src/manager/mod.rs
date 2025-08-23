@@ -1,4 +1,7 @@
-use crate::enums::{Direction, Effects, Message};
+use crate::{
+    enums::{Direction, Effects, Message},
+    manager::effects::ambient::Ambient,
+};
 
 use crossbeam_channel::{Receiver, Sender};
 use effects::{ambient, christmas, disco, fade, lightning, ripple, swipe, temperature};
@@ -45,6 +48,7 @@ struct Inner {
     rx: Receiver<Message>,
     stop_signals: StopSignals,
     last_profile: Profile,
+    pub ambient: Ambient,
     // Can't drop this else it stops "reserving" whatever underlying implementation identifier it uses
     #[allow(dead_code)]
     single_instance: SingleInstance,
@@ -78,11 +82,14 @@ impl EffectManager {
 
         let (tx, rx) = crossbeam_channel::unbounded::<Message>();
 
+        let ambient = Ambient::new();
+
         let mut inner = Inner {
             keyboard,
             rx,
             stop_signals: stop_signals.clone(),
             last_profile: Profile::default(),
+            ambient,
             single_instance,
         };
 
@@ -185,10 +192,14 @@ impl Inner {
                 self.keyboard.set_effect(effect).unwrap();
             }
             Effects::Lightning => lightning::play(self, profile, rng),
-            Effects::AmbientLight { mut fps, mut saturation_boost } => {
+            Effects::AmbientLight {
+                monitor_id,
+                mut fps,
+                mut saturation_boost,
+            } => {
                 fps = fps.clamp(1, 60);
                 saturation_boost = saturation_boost.clamp(0.0, 1.0);
-                ambient::play(self, fps, saturation_boost);
+                ambient::play(self, monitor_id, fps, saturation_boost);
             }
             Effects::SmoothWave { mode, clean_with_black } => {
                 profile.rgb_zones = profile::arr_to_zones([255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 255]);

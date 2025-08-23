@@ -1,75 +1,109 @@
 use std::{
-    sync::atomic::Ordering,
+    collections::HashMap,
+    sync::{
+        atomic::Ordering,
+        mpsc::{Receiver, RecvTimeoutError},
+    },
     thread,
     time::{Duration, Instant},
 };
 
 use fast_image_resize as fr;
+use fr::{FilterType, ResizeAlg, Resizer};
+use xcap::{Frame, Monitor, VideoRecorder, XCapResult};
 
-use fr::Resizer;
-use scrap::{Capturer, Display, Frame, TraitCapturer, TraitPixelBuffer};
+use crate::{enums::MonitorId, manager::Inner};
 
-use crate::manager::Inner;
-
-#[derive(Clone, Copy)]
-struct ScreenDimensions {
-    src: (u32, u32),
-    dest: (u32, u32),
+pub struct Ambient {
+    entries: HashMap<MonitorId, (VideoRecorder, Receiver<Frame>)>,
 }
 
-pub fn play(manager: &mut Inner, fps: u8, saturation_boost: f32) {
+impl Ambient {
+    pub fn new() -> Self {
+        Self { entries: HashMap::new() }
+    }
+
+    /// Get (or create) the persistent recorder+receiver for a monitor.
+    pub fn get_or_create(&mut self, monitor_id: MonitorId) -> XCapResult<&mut (VideoRecorder, Receiver<Frame>)> {
+        if !self.entries.contains_key(&monitor_id) {
+            let monitor = get_monitor(monitor_id).expect(&format!("Failed to get monitor {}", monitor_id.0));
+            let (recorder, rx) = monitor.video_recorder()?;
+
+            self.entries.insert(monitor_id, (recorder, rx));
+        } else {
+        }
+
+        Ok(self.entries.get_mut(&monitor_id).unwrap())
+    }
+}
+
+pub fn get_monitor(monitor_id: MonitorId) -> Option<Monitor> {
+    let mut monitors = Monitor::all().expect("Failed to enumerate monitors").into_iter();
+
+    monitors
+        .find(|m| m.id().as_ref().map(|id| *id == monitor_id.0).unwrap_or(false))
+        .or_else(|| monitors.find(|m| m.is_primary().unwrap_or(false)))
+        .or_else(|| monitors.next())
+}
+
+pub fn play(manager: &mut Inner, monitor_id: MonitorId, fps: u8, saturation_boost: f32) {
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-        //Display setup
-        let display = Display::all().unwrap().remove(0);
-
-        let mut capturer = Capturer::new(display).expect("Couldn't begin capture.");
-
-        let dimensions = ScreenDimensions {
-            src: (capturer.width() as u32, capturer.height() as u32),
-            dest: (4, 1),
-        };
+        // Select monitor (primary if not found)
+        let (recorder, rx) = manager.ambient.get_or_create(monitor_id).expect("Couldn't get_or_create recorder");
+        recorder.start().expect("Failed to start recording");
 
         let seconds_per_frame = Duration::from_nanos(1_000_000_000 / u64::from(fps));
-        let mut resizer = fr::Resizer::new();
 
-        #[cfg(target_os = "windows")]
-        let mut try_gdi = 1;
+        let mut resizer = Resizer::new();
+        let resize_opts = fr::ResizeOptions::new().resize_alg(ResizeAlg::Convolution(FilterType::Box));
+
+        // Destination 4x1 RGBA buffer reused every frame
+        let mut dst_image = fr::images::Image::new(4, 1, fr::PixelType::U8x4);
+
+        // Reused tiny RGBA & RGB buffers to avoid allocs in the hot path
+        let mut rgba_small: [u8; 16] = [0; 16];
+        let mut rgb_out: [u8; 12] = [0; 12];
+
+        // Discover source size on first frame
+        let mut src_dimension: Option<(u32, u32)> = None;
 
         while !manager.stop_signals.keyboard_stop_signal.load(Ordering::SeqCst) {
             let now = Instant::now();
 
-            #[allow(clippy::single_match)]
-            match capturer.frame(seconds_per_frame) {
-                Ok(frame) => {
-                    let rgb = process_frame(frame, dimensions, &mut resizer, saturation_boost);
+            match rx.recv_timeout(seconds_per_frame) {
+                Ok(mut frame) => {
+                    // Drain the buffer, we only care about the last frame
+                    while let Ok(new_frame) = rx.try_recv() {
+                        frame = new_frame;
+                    }
 
-                    manager.keyboard.set_colors_to(&rgb).unwrap();
-                    #[cfg(target_os = "windows")]
-                    {
-                        try_gdi = 0;
+                    // Remember source dimensions after first frame
+                    let (src_w, src_h) = *src_dimension.get_or_insert((frame.width, frame.height));
+
+                    let src_ref = fr::images::ImageRef::new(src_w, src_h, &frame.raw, fr::PixelType::U8x4).expect("invalid src view");
+
+                    // Resize into 4x1 RGBA image
+                    resizer.resize(&src_ref, &mut dst_image, Some(&resize_opts)).expect("resize failed");
+
+                    // Copy the 16 bytes into our scratch so Photon can work on it
+                    rgba_small.copy_from_slice(dst_image.buffer());
+
+                    // Saturation
+                    let mut img = photon_rs::PhotonImage::new(rgba_small.to_vec(), 4, 1);
+                    photon_rs::colour_spaces::saturate_hsv(&mut img, saturation_boost);
+                    let raw = img.get_raw_pixels();
+
+                    // RGBA to RGB
+                    for (src, dst) in raw.chunks_exact(4).zip(rgb_out.chunks_exact_mut(3)) {
+                        dst[0] = src[0];
+                        dst[1] = src[1];
+                        dst[2] = src[2];
                     }
+
+                    manager.keyboard.set_colors_to(&rgb_out).unwrap();
                 }
-                Err(error) => match error.kind() {
-                    std::io::ErrorKind::WouldBlock =>
-                    {
-                        #[cfg(target_os = "windows")]
-                        if try_gdi > 0 && !capturer.is_gdi() {
-                            if try_gdi > 3 {
-                                capturer.set_gdi();
-                                try_gdi = 0;
-                            }
-                            try_gdi += 1;
-                        }
-                    }
-                    _ =>
-                    {
-                        #[cfg(windows)]
-                        if !capturer.is_gdi() {
-                            capturer.set_gdi();
-                            continue;
-                        }
-                    }
-                },
+                Err(RecvTimeoutError::Timeout) => { /* Keep going */ }
+                Err(_) => break,
             }
 
             let elapsed_time = now.elapsed();
@@ -78,59 +112,4 @@ pub fn play(manager: &mut Inner, fps: u8, saturation_boost: f32) {
             }
         }
     }
-}
-
-fn process_frame(frame: Frame, dimensions: ScreenDimensions, resizer: &mut Resizer, saturation_boost: f32) -> [u8; 12] {
-    // Adapted from https://github.com/Cykooz/fast_image_resize#resize-image
-    // Read source image from file
-
-    // HACK: Override opacity manually to ensure some kind of output because of jank elsewhere
-    let Frame::PixelBuffer(buf) = frame else {
-        unreachable!("Attempted to extract vec from Texture variant in the Ambient effect");
-    };
-
-    let frame_vec = buf.data().to_vec();
-    // for rgba in frame_vec.chunks_exact_mut(4) {
-    //     rgba[3] = 255;
-    // }
-
-    let src_image = fr::images::Image::from_vec_u8(dimensions.src.0, dimensions.src.1, frame_vec, fr::PixelType::U8x4).unwrap();
-
-    // Create container for data of destination image
-    let mut dst_image = fr::images::Image::new(dimensions.dest.0, dimensions.dest.1, fr::PixelType::U8x4);
-
-    // Get mutable view of destination image data
-    // let mut dst_view = dst_image.view_mut();
-
-    // Create Resizer instance and resize source image
-    // into buffer of destination image
-    resizer.resize(&src_image, &mut dst_image, None).unwrap();
-
-    // Divide RGB channels of destination image by alpha
-    // alpha_mul_div.divide_alpha_inplace(&mut dst_view).unwrap();
-
-    let bgr_arr = dst_image.buffer();
-
-    // BGRA -> RGBA
-    let mut rgba: [u8; 16] = [0; 16];
-    for (src, dst) in bgr_arr.chunks_exact(4).zip(rgba.chunks_exact_mut(4)) {
-        dst[0] = src[2];
-        dst[1] = src[1];
-        dst[2] = src[0];
-        dst[3] = src[3];
-    }
-
-    let mut img = photon_rs::PhotonImage::new(rgba.to_vec(), 4, 1);
-    photon_rs::colour_spaces::saturate_hsv(&mut img, saturation_boost);
-
-    // RGBA -> RGB
-    let raw = img.get_raw_pixels();
-    let mut rgb: [u8; 12] = [0; 12];
-    for (src, dst) in raw.chunks_exact(4).zip(rgb.chunks_exact_mut(3)) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-    }
-
-    rgb
 }

@@ -203,23 +203,6 @@ cargo make build-release
 
 ### Building manually
 
-- Download and bootstrap [VCPKG](https://github.com/Microsoft/vcpkg#getting-started)
-- You'll need to set an environment variable called `VCPKG_ROOT` pointing to the directory where you downloaded and bootstrapped VCPKG.
-
-- Download the VCPKG dependencies
-
-Windows:
-
-```cmd
-vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
-```
-
-Linux:
-
-```sh
-vcpkg update && vcpkg install libvpx libyuv
-```
-
 - Clone the repository
 
 ```sh

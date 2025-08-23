@@ -1,6 +1,7 @@
 use crate::manager::{custom_effect::CustomEffect, profile::Profile};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr};
+use xcap::Monitor;
 
 #[derive(Clone, Copy, EnumString, Serialize, Deserialize, Display, EnumIter, Debug, IntoStaticStr, Default)]
 pub enum Effects {
@@ -11,6 +12,7 @@ pub enum Effects {
     Wave,
     Lightning,
     AmbientLight {
+        monitor_id: MonitorId,
         fps: u8,
         saturation_boost: f32,
     },
@@ -27,6 +29,23 @@ pub enum Effects {
     Fade,
     Temperature,
     Ripple,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct MonitorId(pub u32);
+
+impl Default for MonitorId {
+    fn default() -> Self {
+        if let Ok(monitors) = Monitor::all() {
+            if let Some(primary) = monitors.iter().find(|m| m.is_primary().unwrap_or(false)) {
+                MonitorId(primary.id().unwrap())
+            } else {
+                MonitorId(0)
+            }
+        } else {
+            MonitorId(0)
+        }
+    }
 }
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, EnumIter, EnumString, PartialEq)]
