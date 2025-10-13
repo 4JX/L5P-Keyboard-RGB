@@ -98,10 +98,10 @@ SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="####", MODE="0666"
 
 Where `idProduct` can be found in these tables:
 
-| Year | Pro    | Regular + Slim | LOQ    |
-| ---- | ------ | -------------- | ------ |
-| 2024 | `c995` | `c994`         | `c993` |
-| 2023 | `c985` | `c984`         | `c983` |
+| Year | Pro    | Regular + Slim | LOQ              |
+| ---- | ------ | -------------- | ---------------- |
+| 2024 | `c995` | `c994`         | `c993` or `c996` |
+| 2023 | `c985` | `c984`         | `c983`           |
 
 | Year | Pro + Regular + Slim | Ideapad |
 | ---- | -------------------- | ------- |
