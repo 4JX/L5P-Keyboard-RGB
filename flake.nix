@@ -2,7 +2,7 @@
   description = "Build env";
 
   inputs = {
-    # nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
     crane = {
       url = "github:ipetkov/crane";
@@ -20,8 +20,17 @@
     };
   };
 
-  outputs = { self, nixpkgs, crane, flake-utils, rust-overlay, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      crane,
+      flake-utils,
+      rust-overlay,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -60,18 +69,21 @@
         ];
 
         # Libraries needed at runtime
-        runtimeDeps = with pkgs; [
-          xorg.libXcursor
-          xorg.libxcb
-          freetype
-          xorg.libXrandr
-          libGL
-          wayland
-          libxkbcommon
+        runtimeDeps =
+          with pkgs;
+          [
+            xorg.libXcursor
+            xorg.libxcb
+            freetype
+            xorg.libXrandr
+            libGL
+            wayland
+            libxkbcommon
 
-          # Tray icon
-          libayatana-appindicator
-        ] ++ sharedDeps;
+            # Tray icon
+            libayatana-appindicator
+          ]
+          ++ sharedDeps;
 
         envVars = rec {
           RUST_BACKTRACE = 1;
@@ -85,18 +97,16 @@
         workspaceSrcString = builtins.toString workspaceSrc;
 
         resFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/res/.*" path != null;
-        workspaceFilter = path: type:
-          (resFileFilter path type) || (craneLib.filterCargoSources path type);
+        workspaceFilter = path: type: (resFileFilter path type) || (craneLib.filterCargoSources path type);
 
-
-        src = nixLib.cleanSourceWith
-          {
-            src = workspaceSrc;
-            filter = workspaceFilter;
-          };
+        src = nixLib.cleanSourceWith {
+          src = workspaceSrc;
+          filter = workspaceFilter;
+        };
 
         # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/by-name/ru/rustdesk/package.nix
-        buildInputs = with pkgs;
+        buildInputs =
+          with pkgs;
           [
             libvpx
             libyuv
@@ -105,7 +115,8 @@
           ++ sharedDeps
           ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [ ];
 
-        nativeBuildInputs = with pkgs;
+        nativeBuildInputs =
+          with pkgs;
           [
             pkg-config
             cmake
@@ -121,14 +132,34 @@
 
         inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
-        cargoArtifacts = craneLib.buildDepsOnly ({
-          inherit pname version src buildInputs nativeBuildInputs cargoExtraArgs stdenv;
-        } // envVars);
+        cargoArtifacts = craneLib.buildDepsOnly (
+          {
+            inherit
+              pname
+              version
+              src
+              buildInputs
+              nativeBuildInputs
+              cargoExtraArgs
+              stdenv
+              ;
+          }
+          // envVars
+        );
 
         # The main application derivation
-        legion-kb-rgb = craneLib.buildPackage
-          ({
-            inherit pname version src cargoArtifacts buildInputs nativeBuildInputs stdenv cargoExtraArgs;
+        legion-kb-rgb = craneLib.buildPackage (
+          {
+            inherit
+              pname
+              version
+              src
+              cargoArtifacts
+              buildInputs
+              nativeBuildInputs
+              stdenv
+              cargoExtraArgs
+              ;
 
             doCheck = false;
 
@@ -137,7 +168,9 @@
             postFixup = ''
               patchelf --add-rpath "${nixLib.makeLibraryPath runtimeDeps}" "$out/bin/${pname}"
             '';
-          } // envVars);
+          }
+          // envVars
+        );
       in
       {
         checks = {
@@ -161,5 +194,6 @@
 
             buildInputs = [ rust ] ++ deps;
           };
-      });
+      }
+    );
 }
