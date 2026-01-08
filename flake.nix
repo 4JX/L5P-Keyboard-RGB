@@ -37,7 +37,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rustVersion = "1.86.0";
+        rustVersion = "1.92.0";
 
         rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
           extensions = [
@@ -60,6 +60,7 @@
           xorg.libXi
           libusb1
           expat
+          openssl
 
           # Tray icon
           pango
@@ -132,6 +133,34 @@
 
         inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
+        # Vendor dependencies to fix webm-sys compile issue
+        # https://github.com/NixOS/nixpkgs/pull/475893
+        # https://crane.dev/patching_dependency_sources.html
+        cargoVendorDir = craneLib.vendorCargoDeps {
+          inherit src;
+
+          overrideVendorGitCheckout =
+            ps: drv:
+            let
+              isRustWebmRepo = nixLib.any (
+                p: nixLib.hasPrefix "git+https://github.com/rustdesk-org/rust-webm" p.source
+              ) ps;
+
+              # Technically both of these come from the same repo/"set"
+              # So the if will only be true once
+              hasWebmSys = nixLib.any (p: p.name == "webm-sys") ps;
+              hasWebm = nixLib.any (p: p.name == "webm") ps;
+            in
+            if isRustWebmRepo && (hasWebmSys || hasWebm) then
+              drv.overrideAttrs (old: {
+                postPatch = (old.postPatch or "") + ''
+                  sed -e '1i #include <cstdint>' -i "src/sys/libwebm/mkvparser/mkvparser.cc"
+                '';
+              })
+            else
+              drv;
+        };
+
         cargoArtifacts = craneLib.buildDepsOnly (
           {
             inherit
@@ -142,6 +171,7 @@
               nativeBuildInputs
               cargoExtraArgs
               stdenv
+              cargoVendorDir
               ;
           }
           // envVars
@@ -159,6 +189,7 @@
               nativeBuildInputs
               stdenv
               cargoExtraArgs
+              cargoVendorDir
               ;
 
             doCheck = false;
