@@ -1,13 +1,10 @@
 {
-  description = "Build env";
+  description = "Cross platform software to control the RGB/lighting of the 4 zone keyboard included in the 2020, 2021, 2022, 2023 and 2024 lineup of the Lenovo Legion laptops";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-    crane = {
-      url = "github:ipetkov/crane";
-      # inputs.nixpkgs.follows = "nixpkgs";
-    };
+    crane.url = "github:ipetkov/crane";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
 
@@ -18,19 +15,16 @@
 
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
   outputs =
     inputs@{
-      self,
       nixpkgs,
-      crane,
       flake-parts,
       systems,
+      crane,
       rust-overlay,
       ...
     }:
@@ -41,6 +35,7 @@
         {
           pkgs,
           system,
+          lib,
           ...
         }:
         let
@@ -52,7 +47,6 @@
             ];
           };
 
-          nixLib = nixpkgs.lib;
           craneLib = (crane.mkLib pkgs).overrideToolchain rust;
 
           # Libraries needed both at compile and runtime
@@ -93,10 +87,7 @@
             ]
             ++ sharedDeps;
 
-          envVars = rec {
-            RUST_BACKTRACE = 1;
-            # MOLD_PATH = "${pkgs.mold.out}/bin/mold";
-            # RUSTFLAGS = "-Clink-arg=-fuse-ld=${MOLD_PATH} -Clinker=clang";
+          buildEnvVars = {
             LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
           };
 
@@ -104,10 +95,10 @@
           workspaceSrc = ./.;
           workspaceSrcString = builtins.toString workspaceSrc;
 
-          resFileFilter = path: _type: builtins.match "${workspaceSrcString}/app/res/.*" path != null;
+          resFileFilter = path: _type: lib.hasPrefix "${workspaceSrcString}/app/res/" path;
           workspaceFilter = path: type: (resFileFilter path type) || (craneLib.filterCargoSources path type);
 
-          src = nixLib.cleanSourceWith {
+          src = lib.cleanSourceWith {
             src = workspaceSrc;
             filter = workspaceFilter;
           };
@@ -129,10 +120,9 @@
           ];
 
           # Forgo using VCPKG hacks on local builds because pain
-          cargoExtraArgs = nixLib.optionals pkgs.stdenv.isLinux ''--locked --features "scrap/linux-pkg-config"'';
+          cargoExtraArgs = ''--locked --features "scrap/linux-pkg-config"'';
 
           stdenv = p: (p.stdenvAdapters.useMoldLinker p.stdenv);
-          # stdenv = pkgs.stdenvAdapters.useMoldLinker pkgs.stdenv;
 
           inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
@@ -145,16 +135,13 @@
             overrideVendorGitCheckout =
               ps: drv:
               let
-                isRustWebmRepo = nixLib.any (
-                  p: nixLib.hasPrefix "git+https://github.com/rustdesk-org/rust-webm" p.source
+                hasPackageNamed = name: lib.any (p: p.name == name) ps;
+                isRustWebmRepo = lib.any (
+                  p: lib.hasPrefix "git+https://github.com/rustdesk-org/rust-webm" p.source
                 ) ps;
-
-                # Technically both of these come from the same repo/"set"
-                # So the if will only be true once
-                hasWebmSys = nixLib.any (p: p.name == "webm-sys") ps;
-                hasWebm = nixLib.any (p: p.name == "webm") ps;
               in
-              if isRustWebmRepo && (hasWebmSys || hasWebm) then
+              # Technically both webm and webm-sys come from the same repo/"set"
+              if isRustWebmRepo && (hasPackageNamed "webm-sys" || hasPackageNamed "webm") then
                 drv.overrideAttrs (old: {
                   postPatch = (old.postPatch or "") + ''
                     sed -e '1i #include <cstdint>' -i "src/sys/libwebm/mkvparser/mkvparser.cc"
@@ -164,46 +151,35 @@
                 drv;
           };
 
-          cargoArtifacts = craneLib.buildDepsOnly (
-            {
-              inherit
-                pname
-                version
-                src
-                buildInputs
-                nativeBuildInputs
-                cargoExtraArgs
-                stdenv
-                cargoVendorDir
-                ;
-            }
-            // envVars
-          );
+          commonArgs = {
+            inherit
+              pname
+              version
+              src
+              buildInputs
+              nativeBuildInputs
+              cargoExtraArgs
+              stdenv
+              cargoVendorDir
+              ;
+          }
+          // buildEnvVars;
+
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
           # The main application derivation
           legion-kb-rgb = craneLib.buildPackage (
-            {
-              inherit
-                pname
-                version
-                src
-                cargoArtifacts
-                buildInputs
-                nativeBuildInputs
-                stdenv
-                cargoExtraArgs
-                cargoVendorDir
-                ;
+            commonArgs
+            // {
+              meta.mainProgram = pname;
+              inherit cargoArtifacts;
 
               doCheck = false;
 
-              # cargoBuildCommand = "cargo build";
-
               postFixup = ''
-                patchelf --add-rpath "${nixLib.makeLibraryPath runtimeDeps}" "$out/bin/${pname}"
+                patchelf --add-rpath "${lib.makeLibraryPath runtimeDeps}" "$out/bin/${pname}"
               '';
             }
-            // envVars
           );
         in
         {
@@ -212,25 +188,18 @@
             overlays = [ (import rust-overlay) ];
           };
 
-          checks = {
-            # inherit legion-kb-rgb;
-          };
-
           packages.default = legion-kb-rgb;
 
-          apps.default = {
-            type = "app";
-            program = "${legion-kb-rgb}/bin/${pname}";
-          };
+          apps.default.program = "${legion-kb-rgb}/bin/${pname}";
 
-          devShells.default = legion-kb-rgb;
-          devShells.rust =
+          devShells.default =
             let
-              deps = buildInputs ++ nativeBuildInputs ++ sharedDeps ++ runtimeDeps;
+              deps = buildInputs ++ nativeBuildInputs ++ runtimeDeps;
             in
             pkgs.mkShell {
-              LD_LIBRARY_PATH = nixLib.makeLibraryPath deps;
-              inherit (envVars) LIBCLANG_PATH;
+              LD_LIBRARY_PATH = lib.makeLibraryPath deps;
+              RUST_BACKTRACE = "1";
+              inherit (buildEnvVars) LIBCLANG_PATH;
 
               buildInputs = [ rust ] ++ deps;
             };
