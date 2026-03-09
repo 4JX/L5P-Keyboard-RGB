@@ -52,13 +52,13 @@
           # Libraries needed both at compile and runtime
           sharedDeps = with pkgs; [
             dbus
-            xorg.libX11
+            libx11
             fontconfig
             udev
             glib
             gst_all_1.gstreamer
             gst_all_1.gst-plugins-base
-            xorg.libXi
+            libxi
             libusb1
             expat
             openssl
@@ -74,10 +74,10 @@
           runtimeDeps =
             with pkgs;
             [
-              xorg.libXcursor
-              xorg.libxcb
+              libxcursor
+              libxcb
               freetype
-              xorg.libXrandr
+              libxrandr
               libGL
               wayland
               libxkbcommon
