@@ -39,7 +39,7 @@
           ...
         }:
         let
-          rustVersion = "1.92.0";
+          rustVersion = "1.94.0";
 
           rust = pkgs.rust-bin.stable.${rustVersion}.default.override {
             extensions = [
