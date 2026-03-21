@@ -5,6 +5,7 @@ use std::sync::{
     Arc,
 };
 
+#[cfg(target_os = "windows")]
 use device_query::{DeviceQuery, Keycode};
 #[cfg(debug_assertions)]
 use eframe::egui::style::DebugOptions;
@@ -181,6 +182,7 @@ impl App {
         let ctx = cc.egui_ctx.clone();
         let gui_tx_c = self.gui_tx.clone();
         if self.manager.is_some() {
+            #[cfg(target_os = "windows")]
             thread::spawn(move || {
                 let state = device_query::DeviceState::new();
                 let mut lock_switching = false;
@@ -199,6 +201,48 @@ impl App {
                     }
 
                     thread::sleep(Duration::from_millis(50));
+                }
+            });
+
+            #[cfg(target_os = "linux")]
+            thread::spawn(move || {
+                use std::collections::HashSet;
+
+                let mut dev = match crate::input::find_keyboard_device() {
+                    Some(d) => d,
+                    None => return,
+                };
+
+                let mut held_keys: HashSet<evdev::Key> = HashSet::new();
+                let mut lock_switching = false;
+
+                loop {
+                    if crate::input::poll_device(&dev, 50) {
+                        if let Ok(events) = dev.fetch_events() {
+                            for ev in events {
+                                if ev.event_type() == evdev::EventType::KEY {
+                                    let key = evdev::Key(ev.code());
+                                    match ev.value() {
+                                        1 => { held_keys.insert(key); }
+                                        0 => { held_keys.remove(&key); }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if held_keys.contains(&evdev::Key::KEY_LEFTMETA)
+                        && held_keys.contains(&evdev::Key::KEY_RIGHTALT)
+                    {
+                        if !lock_switching {
+                            let _ = gui_tx_c.send(GuiMessage::CycleProfiles);
+                            ctx.request_repaint();
+                            lock_switching = true;
+                        }
+                    } else {
+                        lock_switching = false;
+                    }
                 }
             });
         }
