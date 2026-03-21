@@ -6,6 +6,7 @@ mod cli;
 mod console;
 mod enums;
 mod gui;
+pub(crate) mod input;
 mod manager;
 mod persist;
 mod tray;

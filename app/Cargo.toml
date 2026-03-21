@@ -40,8 +40,8 @@ fast_image_resize = "5.1.3"
 photon-rs = { git = "https://github.com/silvia-odwyer/photon", rev = "b7e57c9", default-features = false }
 
 
-# Keyboard and mouse grabbing
-device_query = "4.0.1"
+# Keyboard and mouse grabbing (Windows only; Linux uses evdev below)
+# device_query = "4.0.1"  # moved to [target.'cfg(target_os = "windows")'.dependencies]
 
 rand = "0.9.1"
 strum = "0.27.1"
@@ -64,6 +64,11 @@ tray-icon = { version = "0.20.1", default-features = false }
 [target.'cfg(target_os = "linux")'.dependencies]
 tray-icon = { version = "0.20.1", default-features = false }
 gtk = "0.18.2"
+evdev = "0.12"
+nix = { version = "0.29", features = ["poll"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+device_query = "4.0.1"
 
 # Fix versions to stop cargo from yelling about dependency resolution
 regex = "1.11.1"
