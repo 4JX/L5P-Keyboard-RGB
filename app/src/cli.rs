@@ -239,18 +239,26 @@ fn parse_cli() -> Result<CliOutput, CliError> {
 
             Commands::LoadProfile { path } => {
                 let profile = Profile::load_profile(&path).change_context(CliError)?;
-                return Ok(CliOutput::Gui {
-                    hide_window: cli.hide_window,
-                    output_type: OutputType::Profile(profile),
-                });
+                if cli.gui {
+                    return Ok(CliOutput::Gui {
+                        hide_window: cli.hide_window,
+                        output_type: OutputType::Profile(profile),
+                    });
+                } else {
+                    return Ok(CliOutput::Cli(OutputType::Profile(profile)));
+                }
             }
 
             Commands::CustomEffect { path } => {
                 let effect = CustomEffect::from_file(&path).change_context(CliError)?;
-                return Ok(CliOutput::Gui {
-                    hide_window: cli.hide_window,
-                    output_type: OutputType::Custom(effect),
-                });
+                if cli.gui {
+                    return Ok(CliOutput::Gui {
+                        hide_window: cli.hide_window,
+                        output_type: OutputType::Custom(effect),
+                    });
+                } else {
+                    return Ok(CliOutput::Cli(OutputType::Custom(effect)));
+                }
             }
         }
     }
