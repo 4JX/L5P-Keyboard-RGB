@@ -44,7 +44,7 @@ impl MenuBarState {
             if let Some(path) = self.load_profile_dialog.path().map(|p| p.to_path_buf()) {
                 match Profile::load_profile(&path) {
                     Ok(profile) => {
-                        *current_profile = profile;
+                        *current_profile = profile.normalize_effect();
                         *changed = true;
                     }
                     Err(_) => {

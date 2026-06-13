@@ -1,7 +1,9 @@
 use crate::enums::{Direction, Effects, Message};
 
 use crossbeam_channel::{Receiver, Sender};
-use effects::{ambient, christmas, disco, fade, lightning, ripple, swipe, temperature};
+#[cfg(feature = "ambient-light")]
+use effects::ambient;
+use effects::{christmas, disco, fade, lightning, ripple, swipe, temperature};
 use error_stack::{Result, ResultExt};
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use profile::Profile;
@@ -185,6 +187,7 @@ impl Inner {
                 self.keyboard.set_effect(effect).unwrap();
             }
             Effects::Lightning => lightning::play(self, profile, rng),
+            #[cfg(feature = "ambient-light")]
             Effects::AmbientLight { mut fps, mut saturation_boost } => {
                 fps = fps.clamp(1, 60);
                 saturation_boost = saturation_boost.clamp(0.0, 1.0);
@@ -200,6 +203,10 @@ impl Inner {
             Effects::Fade => fade::play(self, profile),
             Effects::Temperature => temperature::play(self),
             Effects::Ripple => ripple::play(self, profile),
+            #[cfg(not(feature = "ambient-light"))]
+            Effects::AmbientLight { .. } => {
+                eprintln!("Warning: AmbientLight effect is not available in this build. Install with `--features ambient-light` to enable.");
+            }
         }
     }
 

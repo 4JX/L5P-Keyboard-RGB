@@ -368,6 +368,13 @@ impl App {
                     ScrollArea::vertical().show(ui, |ui| {
                         ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
                             for val in Effects::iter() {
+                                #[cfg(feature = "ambient-light")]
+                                let show = true;
+                                #[cfg(not(feature = "ambient-light"))]
+                                let show = !matches!(val, Effects::AmbientLight { .. });
+                                if !show {
+                                    continue;
+                                }
                                 let text: &'static str = val.into();
                                 if ui.selectable_value(&mut self.current_profile.effect, val, text).clicked() {
                                     self.state_changed = true;
