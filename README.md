@@ -233,6 +233,15 @@ cd L5P-Keyboard-RGB/
 cargo build --release
 ```
 
+### Building manually (Without vcpkg)
+
+If you don't need the **AmbientLight** effect (keyboard mirroring) or don't have the required video libraries, you can build without it:
+
+```sh
+cd L5P-Keyboard-RGB/
+cargo build --release --no-default-features
+```
+
 ## Crashes, freezes, etc
 
 I cannot guarantee this solution will work for anyone but myself. That being said feel free to open an issue if you encounter any of these problems on the [issues tab](https://github.com/4JX/L5P-Keyboard-RGB/issues).

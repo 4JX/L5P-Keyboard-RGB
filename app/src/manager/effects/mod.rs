@@ -1,5 +1,7 @@
 use default_ui::{show_brightness, show_direction, show_effect_settings};
-use eframe::egui::{self, ComboBox, Slider};
+use eframe::egui::{self, ComboBox};
+#[cfg(feature = "ambient-light")]
+use eframe::egui::Slider;
 use strum::IntoEnumIterator;
 
 use crate::{
@@ -7,6 +9,7 @@ use crate::{
     manager::profile::Profile,
 };
 
+#[cfg(feature = "ambient-light")]
 pub mod ambient;
 pub mod christmas;
 pub mod default_ui;
@@ -37,6 +40,7 @@ pub fn show_effect_ui(ui: &mut egui::Ui, profile: &mut Profile, update_lights: &
                 *update_lights |= ui.add_enabled(matches!(mode, SwipeMode::Fill), egui::Checkbox::new(clean_with_black, "Clean with black")).changed();
             });
         }
+        #[cfg(feature = "ambient-light")]
         Effects::AmbientLight { fps, saturation_boost } => {
             ui.scope(|ui| {
                 ui.style_mut().spacing.item_spacing = theme.spacing.default;

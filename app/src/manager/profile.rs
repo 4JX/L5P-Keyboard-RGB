@@ -72,6 +72,15 @@ impl Profile {
     pub fn rgb_array(&self) -> [u8; 12] {
         self.rgb_zones.map(|zone| if zone.enabled { zone.rgb } else { [0; 3] }).concat().try_into().unwrap()
     }
+
+    pub fn normalize_effect(self) -> Self {
+        #[cfg(not(feature = "ambient-light"))]
+        if matches!(self.effect, Effects::AmbientLight { .. }) {
+            eprintln!("Warning: Profile uses AmbientLight effect which is not available in this build. Falling back to Static.");
+            return Self { effect: Effects::Static, ..self };
+        }
+        self
+    }
 }
 
 pub fn arr_to_zones(arr: [u8; 12]) -> Zones {
