@@ -8,6 +8,7 @@ use scrap::{Capturer, Display};
 
 use crate::manager::Inner;
 
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 struct ScreenDimensions {
     src: (u32, u32),

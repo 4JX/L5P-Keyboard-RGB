@@ -23,7 +23,7 @@ use std::sync::{
 
 use cli::{GuiCommand, OutputType};
 use color_eyre::{eyre::eyre, Result};
-use eframe::{egui::IconData, epaint::{Pos2, Vec2}};
+use eframe::{egui::IconData, epaint::Vec2};
 use gui::App;
 
 const APP_ICON: &[u8; 14987] = include_bytes!("../res/trayIcon.ico");
@@ -102,7 +102,8 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
             .with_inner_size(WINDOW_SIZE)
             .with_min_inner_size(WINDOW_SIZE)
             .with_max_inner_size(WINDOW_SIZE)
-            .with_icon(app_icon),
+            .with_icon(app_icon)
+            .with_visible(!hide),
         ..eframe::NativeOptions::default()
     };
 
@@ -126,7 +127,7 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
     #[cfg(not(target_os = "linux"))]
     let tray_c = _tray_icon.clone();
 
-    let app = App::new(output_type, has_tray, visible, hide);
+    let app = App::new(output_type, has_tray, visible);
 
     eframe::run_native(
         "Legion RGB",

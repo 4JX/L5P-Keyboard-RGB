@@ -43,8 +43,6 @@ pub struct App {
     has_tray: Arc<AtomicBool>,
     visible: Arc<AtomicBool>,
     was_minimized: bool,
-    hide_on_startup: bool,
-    first_frame_rendered: bool,
 
     manager: Option<EffectManager>,
     state_changed: bool,
@@ -107,7 +105,7 @@ pub enum State {
 }
 
 impl App {
-    pub fn new(output: OutputType, has_tray: Arc<AtomicBool>, visible: Arc<AtomicBool>, hide_on_startup: bool) -> Self {
+    pub fn new(output: OutputType, has_tray: Arc<AtomicBool>, visible: Arc<AtomicBool>) -> Self {
         let (gui_tx, gui_rx) = crossbeam_channel::unbounded::<GuiMessage>();
 
         let manager_result = EffectManager::new(manager::OperationMode::Gui);
@@ -159,8 +157,6 @@ impl App {
             has_tray,
             visible,
             was_minimized: false,
-            hide_on_startup,
-            first_frame_rendered: false,
 
             manager,
             // Default to true for an instant update on launch
@@ -204,7 +200,9 @@ impl App {
             if let Ok(event) = MenuEvent::receiver().try_recv() {
                 if event.id == SHOW_ID {
                     visible_c.store(true, Ordering::SeqCst);
-                    force_show_window(&egui_ctx);
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Visible(true));
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Focus);
                     egui_ctx.request_repaint();
                 } else if event.id == QUIT_ID {
                     std::process::exit(0);
@@ -215,7 +213,9 @@ impl App {
             if let Ok(event) = tray_icon::TrayIconEvent::receiver().try_recv() {
                 if let tray_icon::TrayIconEvent::Click { button: tray_icon::MouseButton::Left, .. } = event {
                     visible_c.store(true, Ordering::SeqCst);
-                    force_show_window(&egui_ctx);
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Visible(true));
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Focus);
                     egui_ctx.request_repaint();
                 }
             }
@@ -225,7 +225,9 @@ impl App {
                 if let Ok((amt, _)) = sock.recv_from(&mut buf) {
                     if &buf[..amt] == b"WAKE" {
                         visible_c.store(true, Ordering::SeqCst);
-                        force_show_window(&egui_ctx);
+                        egui_ctx.send_viewport_cmd(ViewportCommand::Visible(true));
+                        egui_ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
+                        egui_ctx.send_viewport_cmd(ViewportCommand::Focus);
                         egui_ctx.request_repaint();
                     }
                 }
@@ -292,13 +294,6 @@ impl eframe::App for App {
             self.exit_app();
         }
 
-        if !self.visible.load(Ordering::SeqCst) && self.first_frame_rendered {
-            if self.state_changed {
-                self.update_state();
-            }
-            return;
-        }
-
         TopBottomPanel::top("top-panel").show(ctx, |ui| {
             self.menu_bar.show(
                 ctx,
@@ -321,17 +316,6 @@ impl eframe::App for App {
 
         if self.state_changed {
             self.update_state();
-        }
-
-        if self.hide_on_startup && !self.first_frame_rendered {
-            self.first_frame_rendered = true;
-            self.visible.store(false, Ordering::SeqCst);
-            ctx.send_viewport_cmd(ViewportCommand::Visible(false));
-            #[cfg(target_os = "windows")]
-            {
-                hide_all_process_windows();
-            }
-            return;
         }
 
         self.handle_close_request(ctx);
@@ -525,67 +509,7 @@ impl App {
                 }
                 ctx.send_viewport_cmd(ViewportCommand::Visible(false));
                 self.visible.store(false, Ordering::SeqCst);
-                
-                #[cfg(target_os = "windows")]
-                {
-                    hide_all_process_windows();
-                }
             }
         }
-    }
-}
-
-fn force_show_window(ctx: &Context) {
-    ctx.send_viewport_cmd(ViewportCommand::Visible(true));
-    ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
-    ctx.send_viewport_cmd(ViewportCommand::Focus);
-
-    #[cfg(target_os = "windows")]
-    {
-        show_all_process_windows();
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn hide_all_process_windows() {
-    use winapi::shared::minwindef::{BOOL, LPARAM};
-    use winapi::shared::windef::HWND;
-    use winapi::um::processthreadsapi::GetCurrentProcessId;
-    use winapi::um::winuser::{EnumWindows, GetWindowThreadProcessId, ShowWindow, SW_HIDE};
-
-    unsafe extern "system" fn enum_hide(hwnd: HWND, _: LPARAM) -> BOOL {
-        let mut pid = 0;
-        GetWindowThreadProcessId(hwnd, &mut pid);
-        if pid == GetCurrentProcessId() {
-            ShowWindow(hwnd, SW_HIDE);
-        }
-        1
-    }
-
-    unsafe {
-        EnumWindows(Some(enum_hide), 0);
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn show_all_process_windows() {
-    use winapi::shared::minwindef::{BOOL, LPARAM};
-    use winapi::shared::windef::HWND;
-    use winapi::um::processthreadsapi::GetCurrentProcessId;
-    use winapi::um::winuser::{EnumWindows, GetWindowThreadProcessId, SetForegroundWindow, ShowWindow, SW_RESTORE, SW_SHOW};
-
-    unsafe extern "system" fn enum_show(hwnd: HWND, _: LPARAM) -> BOOL {
-        let mut pid = 0;
-        GetWindowThreadProcessId(hwnd, &mut pid);
-        if pid == GetCurrentProcessId() {
-            ShowWindow(hwnd, SW_SHOW);
-            ShowWindow(hwnd, SW_RESTORE);
-            SetForegroundWindow(hwnd);
-        }
-        1
-    }
-
-    unsafe {
-        EnumWindows(Some(enum_show), 0);
     }
 }
