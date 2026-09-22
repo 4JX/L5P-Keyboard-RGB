@@ -57,6 +57,15 @@ You may also download pre-compiled versions from [here](https://github.com/4JX/L
 - **Fade:** Turns off the keyboard lights after a period of inactivity.
 - **Temperature:** Displays a gradient based on the current CPU temperature. (Linux only)
 
+**Hardware effects on 2025 and newer keyboards** (these run on the keyboard itself, like the stock ones):
+
+- **RainbowScrew:** A rotating rainbow spiral, direction picks clockwise or counter clockwise.
+- **ColorChange:** Cycles through the selected colors.
+- **ColorWave:** A wave of the selected colors moving left or right.
+- **Rain:** Raindrops in the selected colors.
+
+Leave all colors black to let the keyboard pick random ones. The firmware's key press effects (ripple, type lighting) do nothing on these 24 zone keyboards, so they are not exposed.
+
 ### Creating your own effects
 
 The best way to add a new effect is to directly edit the source code, as it allows the most flexibility. You can however also use the built-in feature to make basic effects.

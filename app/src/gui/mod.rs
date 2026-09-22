@@ -367,7 +367,8 @@ impl App {
                     ui.style_mut().spacing.item_spacing = self.theme.spacing.default;
                     ScrollArea::vertical().show(ui, |ui| {
                         ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
-                            for val in Effects::iter() {
+                            let supports_effect = |effect: Effects| self.manager.as_ref().is_none_or(|manager| manager.supports_effect(effect));
+                            for val in Effects::iter().filter(|effect| supports_effect(*effect)) {
                                 let text: &'static str = val.into();
                                 if ui.selectable_value(&mut self.current_profile.effect, val, text).clicked() {
                                     self.state_changed = true;

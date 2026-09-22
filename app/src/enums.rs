@@ -27,6 +27,11 @@ pub enum Effects {
     Fade,
     Temperature,
     Ripple,
+    // Hardware effects that only exist on the 2025+ "Spectrum" keyboards
+    RainbowScrew,
+    ColorChange,
+    ColorWave,
+    Rain,
 }
 
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize, EnumIter, EnumString, PartialEq)]
@@ -45,22 +50,43 @@ impl PartialEq for Effects {
 #[allow(dead_code)]
 impl Effects {
     pub fn takes_color_array(self) -> bool {
-        matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Fade | Self::Ripple)
+        matches!(
+            self,
+            Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Fade | Self::Ripple | Self::ColorChange | Self::ColorWave | Self::Rain
+        )
     }
 
     pub fn takes_direction(self) -> bool {
-        matches!(self, Self::Wave | Self::SmoothWave { .. } | Self::Swipe { .. })
+        matches!(self, Self::Wave | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::RainbowScrew | Self::ColorWave)
     }
 
     pub fn takes_speed(self) -> bool {
         matches!(
             self,
-            Self::Breath | Self::Smooth | Self::Wave | Self::Lightning | Self::SmoothWave { .. } | Self::Swipe { .. } | Self::Disco | Self::Fade | Self::Ripple
+            Self::Breath
+                | Self::Smooth
+                | Self::Wave
+                | Self::Lightning
+                | Self::SmoothWave { .. }
+                | Self::Swipe { .. }
+                | Self::Disco
+                | Self::Fade
+                | Self::Ripple
+                | Self::RainbowScrew
+                | Self::ColorChange
+                | Self::ColorWave
+                | Self::Rain
         )
     }
 
+    /// Effects handled entirely by the keyboard's firmware
     pub fn is_built_in(self) -> bool {
-        matches!(self, Self::Static | Self::Breath | Self::Smooth | Self::Wave)
+        matches!(self, Self::Static | Self::Breath | Self::Smooth | Self::Wave) || self.requires_spectrum()
+    }
+
+    /// Effects that only exist on the 2025+ "Spectrum" keyboards
+    pub fn requires_spectrum(self) -> bool {
+        matches!(self, Self::RainbowScrew | Self::ColorChange | Self::ColorWave | Self::Rain)
     }
 }
 

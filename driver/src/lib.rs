@@ -48,25 +48,57 @@ mod spectrum_op {
 }
 
 mod spectrum_effect {
+    pub const SCREW_RAINBOW: u8 = 1;
     pub const RAINBOW_WAVE: u8 = 2;
+    pub const COLOR_CHANGE: u8 = 3;
     pub const COLOR_PULSE: u8 = 4;
+    pub const COLOR_WAVE: u8 = 5;
     pub const SMOOTH: u8 = 6;
+    pub const RAIN: u8 = 7;
     pub const ALWAYS: u8 = 11;
 
     pub const COLOR_MODE_NONE: u8 = 0;
     pub const COLOR_MODE_RANDOM: u8 = 1;
     pub const COLOR_MODE_LIST: u8 = 2;
 
+    pub const DIRECTION_TOP_TO_BOTTOM: u8 = 2;
     pub const DIRECTION_RIGHT_TO_LEFT: u8 = 3;
     pub const DIRECTION_LEFT_TO_RIGHT: u8 = 4;
+
+    pub const CLOCKWISE: u8 = 1;
+    pub const COUNTER_CLOCKWISE: u8 = 2;
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum BaseEffects {
     Static,
     Breath,
     Smooth,
     LeftWave,
     RightWave,
+    // The effects below only exist on "Spectrum" keyboards (2025+). On older keyboards they fall back to Static.
+    /// Rainbow spiral, rotating clockwise or counter clockwise
+    RainbowScrewClockwise,
+    RainbowScrewCounterClockwise,
+    /// Cycles through the zone colors (or random colors when none are set)
+    ColorChange,
+    /// A wave of the zone colors (or random colors when none are set) moving left or right
+    ColorWaveLeft,
+    ColorWaveRight,
+    /// Raindrops in the zone colors (or random colors when none are set)
+    Rain,
+}
+
+impl BaseEffects {
+    /// Whether this effect needs a "Spectrum" keyboard
+    pub fn is_spectrum_only(self) -> bool {
+        !matches!(self, Self::Static | Self::Breath | Self::Smooth | Self::LeftWave | Self::RightWave)
+    }
+
+    /// Whether this effect uses the zone colors
+    pub fn takes_colors(self) -> bool {
+        matches!(self, Self::Static | Self::Breath | Self::ColorChange | Self::ColorWaveLeft | Self::ColorWaveRight | Self::Rain)
+    }
 }
 
 pub struct LightingState {
@@ -115,7 +147,6 @@ impl Keyboard {
         payload[0] = 0xcc;
         payload[1] = 0x16;
         payload[2] = match keyboard_state.effect_type {
-            BaseEffects::Static => 0x01,
             BaseEffects::Breath => 0x03,
             BaseEffects::Smooth => 0x06,
             BaseEffects::LeftWave => {
@@ -126,12 +157,14 @@ impl Keyboard {
                 payload[18] = 0x1;
                 0x04
             }
+            // Static, and the Spectrum-only effects which fall back to it
+            _ => 0x01,
         };
 
         payload[3] = keyboard_state.speed;
         payload[4] = keyboard_state.brightness;
 
-        if let BaseEffects::Static | BaseEffects::Breath = keyboard_state.effect_type {
+        if !matches!(keyboard_state.effect_type, BaseEffects::Smooth | BaseEffects::LeftWave | BaseEffects::RightWave) {
             payload[5..(12 + 5)].copy_from_slice(&keyboard_state.rgb_values[..12]);
         };
 
@@ -147,8 +180,8 @@ impl Keyboard {
 
         let mut payload = vec![profile, 0x01, 0x01];
 
-        let mut push_effect = |effect_no: u8, effect_type: u8, direction: u8, color_mode: u8, colors: &[[u8; 3]], keys: &[u16]| {
-            payload.extend_from_slice(&[effect_no, 0x06, 0x01, effect_type, 0x02, speed, 0x03, 0x00, 0x04, direction, 0x05, color_mode, 0x06, 0x00]);
+        let mut push_effect = |effect_no: u8, effect_type: u8, direction: u8, clockwise: u8, color_mode: u8, colors: &[[u8; 3]], keys: &[u16]| {
+            payload.extend_from_slice(&[effect_no, 0x06, 0x01, effect_type, 0x02, speed, 0x03, clockwise, 0x04, direction, 0x05, color_mode, 0x06, 0x00]);
             payload.push(colors.len() as u8);
             for color in colors {
                 payload.extend_from_slice(color);
@@ -161,37 +194,42 @@ impl Keyboard {
 
         let all_keys: Vec<u16> = zone_keys.iter().flatten().copied().collect();
 
+        // The distinct, non-black zone colors, used as the color list for the effects that take one.
+        // Without any colors the keyboard picks random ones instead.
+        let mut color_list: Vec<[u8; 3]> = Vec::with_capacity(4);
+        for zone_index in 0..4 {
+            let rgb = &keyboard_state.rgb_values;
+            let color = [rgb[zone_index * 3], rgb[zone_index * 3 + 1], rgb[zone_index * 3 + 2]];
+            if color != [0, 0, 0] && !color_list.contains(&color) {
+                color_list.push(color);
+            }
+        }
+        let color_mode = if color_list.is_empty() {
+            spectrum_effect::COLOR_MODE_RANDOM
+        } else {
+            spectrum_effect::COLOR_MODE_LIST
+        };
+
+        use spectrum_effect::*;
         match keyboard_state.effect_type {
             BaseEffects::Static | BaseEffects::Breath => {
-                let effect_type = if let BaseEffects::Static = keyboard_state.effect_type {
-                    spectrum_effect::ALWAYS
-                } else {
-                    spectrum_effect::COLOR_PULSE
-                };
+                let effect_type = if let BaseEffects::Static = keyboard_state.effect_type { ALWAYS } else { COLOR_PULSE };
 
                 for (zone_index, keys) in zone_keys.iter().enumerate() {
                     let rgb = &keyboard_state.rgb_values;
                     let color = [rgb[zone_index * 3], rgb[zone_index * 3 + 1], rgb[zone_index * 3 + 2]];
-                    push_effect(zone_index as u8 + 1, effect_type, 0, spectrum_effect::COLOR_MODE_LIST, &[color], keys);
+                    push_effect(zone_index as u8 + 1, effect_type, 0, 0, COLOR_MODE_LIST, &[color], keys);
                 }
             }
-            BaseEffects::Smooth => push_effect(1, spectrum_effect::SMOOTH, 0, spectrum_effect::COLOR_MODE_RANDOM, &[], &all_keys),
-            BaseEffects::LeftWave => push_effect(
-                1,
-                spectrum_effect::RAINBOW_WAVE,
-                spectrum_effect::DIRECTION_RIGHT_TO_LEFT,
-                spectrum_effect::COLOR_MODE_NONE,
-                &[],
-                &all_keys,
-            ),
-            BaseEffects::RightWave => push_effect(
-                1,
-                spectrum_effect::RAINBOW_WAVE,
-                spectrum_effect::DIRECTION_LEFT_TO_RIGHT,
-                spectrum_effect::COLOR_MODE_NONE,
-                &[],
-                &all_keys,
-            ),
+            BaseEffects::Smooth => push_effect(1, SMOOTH, 0, 0, COLOR_MODE_RANDOM, &[], &all_keys),
+            BaseEffects::LeftWave => push_effect(1, RAINBOW_WAVE, DIRECTION_RIGHT_TO_LEFT, 0, COLOR_MODE_NONE, &[], &all_keys),
+            BaseEffects::RightWave => push_effect(1, RAINBOW_WAVE, DIRECTION_LEFT_TO_RIGHT, 0, COLOR_MODE_NONE, &[], &all_keys),
+            BaseEffects::RainbowScrewClockwise => push_effect(1, SCREW_RAINBOW, 0, CLOCKWISE, COLOR_MODE_NONE, &[], &all_keys),
+            BaseEffects::RainbowScrewCounterClockwise => push_effect(1, SCREW_RAINBOW, 0, COUNTER_CLOCKWISE, COLOR_MODE_NONE, &[], &all_keys),
+            BaseEffects::ColorChange => push_effect(1, COLOR_CHANGE, 0, 0, color_mode, &color_list, &all_keys),
+            BaseEffects::ColorWaveLeft => push_effect(1, COLOR_WAVE, DIRECTION_RIGHT_TO_LEFT, 0, color_mode, &color_list, &all_keys),
+            BaseEffects::ColorWaveRight => push_effect(1, COLOR_WAVE, DIRECTION_LEFT_TO_RIGHT, 0, color_mode, &color_list, &all_keys),
+            BaseEffects::Rain => push_effect(1, RAIN, DIRECTION_TOP_TO_BOTTOM, 0, color_mode, &color_list, &all_keys),
         }
 
         Ok(spectrum_request(spectrum_op::EFFECT_CHANGE, &payload))
@@ -205,6 +243,11 @@ impl Keyboard {
         };
         self.keyboard_hid.send_feature_report(&spectrum_request(spectrum_op::BRIGHTNESS, &[brightness]))?;
         Ok(())
+    }
+
+    /// Whether the keyboard supports the "Spectrum" only effects (see [`BaseEffects::is_spectrum_only`])
+    pub fn supports_spectrum_effects(&self) -> bool {
+        matches!(self.backend, Backend::Spectrum { .. })
     }
 
     pub fn refresh(&mut self) -> Result<()> {
@@ -270,7 +313,7 @@ impl Keyboard {
     }
 
     pub fn set_colors_to(&mut self, new_values: &[u8; 12]) -> Result<()> {
-        if let BaseEffects::Static | BaseEffects::Breath = self.current_state.effect_type {
+        if self.current_state.effect_type.takes_colors() {
             for (i, _) in new_values.iter().enumerate() {
                 self.current_state.rgb_values[i] = new_values[i];
             }
@@ -281,7 +324,7 @@ impl Keyboard {
     }
 
     pub fn solid_set_colors_to(&mut self, new_values: [u8; 3]) -> Result<()> {
-        if let BaseEffects::Static | BaseEffects::Breath = self.current_state.effect_type {
+        if self.current_state.effect_type.takes_colors() {
             for i in (0..12).step_by(3) {
                 self.current_state.rgb_values[i] = new_values[0];
                 self.current_state.rgb_values[i + 1] = new_values[1];
