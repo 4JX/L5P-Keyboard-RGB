@@ -81,7 +81,7 @@ scrap-pkg-config = ["scrap/linux-pkg-config"]
 
 [package.metadata.vcpkg]
 git = "https://github.com/microsoft/vcpkg"
-rev = "b12aa38"
+rev = "9e593bb"
 
 [package.metadata.vcpkg.target]
 x86_64-unknown-linux-gnu = { dependencies = ["libvpx", "libyuv", "aom"] }
