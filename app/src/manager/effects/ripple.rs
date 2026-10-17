@@ -8,12 +8,18 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(target_os = "windows")]
 use device_query::{DeviceEvents, DeviceEventsHandler, Keycode};
 
 use crate::manager::{
     profile::Profile,
     {effects::zones::KEY_ZONES, Inner},
 };
+
+#[cfg(target_os = "windows")]
+type KeyType = Keycode;
+#[cfg(target_os = "linux")]
+type KeyType = evdev::Key;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum RippleMove {
@@ -31,43 +37,101 @@ pub fn play(manager: &mut Inner, p: &Profile) {
     let exit_thread = kill_thread.clone();
 
     enum Event {
-        KeyPress(Keycode),
-        KeyRelease(Keycode),
+        KeyPress(KeyType),
+        KeyRelease(KeyType),
     }
 
     let (tx, rx) = crossbeam_channel::unbounded::<Event>();
 
-    thread::spawn(move || {
-        // Do this in order to avoid having to store the event handler struct somewhere,
-        // since it saves no data and serves only as a fancy function proxy for interacting with the real event loop
-        // This keeps the effect self contained, and other effects should probably use the same pattern
-        let event_handler = DeviceEventsHandler::new(Duration::from_millis(10)).unwrap_or(DeviceEventsHandler {});
+    #[cfg(target_os = "windows")]
+    {
+        let stop_signals = stop_signals.clone();
+        thread::spawn(move || {
+            let event_handler = DeviceEventsHandler::new(Duration::from_millis(10)).unwrap_or(DeviceEventsHandler {});
 
-        // tx_clone.send(Event::KeyPress(Keycode::Meta)).unwrap();
-        let tx_clone = tx.clone();
+            let tx_clone = tx.clone();
 
-        let press_guard = event_handler.on_key_down(move |key| {
-            stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
+            let press_guard = event_handler.on_key_down(move |key| {
+                stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
+                let _ = tx_clone.send(Event::KeyPress(*key));
+            });
 
-            let _ = tx_clone.send(Event::KeyPress(*key));
-        });
+            let release_guard = event_handler.on_key_up(move |key| {
+                let _ = tx.send(Event::KeyRelease(*key));
+            });
 
-        let release_guard = event_handler.on_key_up(move |key| {
-            let _ = tx.send(Event::KeyRelease(*key));
-        });
+            loop {
+                if exit_thread.load(Ordering::SeqCst) {
+                    drop(press_guard);
+                    drop(release_guard);
+                    break;
+                }
 
-        loop {
-            if exit_thread.load(Ordering::SeqCst) {
-                drop(press_guard);
-                drop(release_guard);
-                break;
+                thread::sleep(Duration::from_millis(5));
             }
+        });
+    }
 
-            thread::sleep(Duration::from_millis(5));
-        }
-    });
+    #[cfg(target_os = "linux")]
+    {
+        let stop_signals = stop_signals.clone();
+        thread::spawn(move || {
+            let mut dev = match crate::input::find_keyboard_device() {
+                Some(d) => d,
+                None => {
+                    eprintln!("Warning: Could not find keyboard input device for ripple effect");
+                    return;
+                }
+            };
+            let mut consecutive_errors = 0u32;
 
-    let mut zone_pressed: [HashSet<Keycode>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
+            loop {
+                if exit_thread.load(Ordering::SeqCst) {
+                    break;
+                }
+
+                if crate::input::poll_device(&dev, 10) {
+                    let fetch_ok = match dev.fetch_events() {
+                        Ok(events) => {
+                            consecutive_errors = 0;
+                            for ev in events {
+                                if ev.event_type() == evdev::EventType::KEY {
+                                    let key = evdev::Key(ev.code());
+                                    match ev.value() {
+                                        1 => {
+                                            stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
+                                            let _ = tx.send(Event::KeyPress(key));
+                                        }
+                                        0 => {
+                                            let _ = tx.send(Event::KeyRelease(key));
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                            true
+                        }
+                        Err(_) => false,
+                    };
+
+                    if !fetch_ok {
+                        consecutive_errors += 1;
+                        if consecutive_errors > 5 {
+                            eprintln!("Input device lost, attempting to reopen...");
+                            thread::sleep(Duration::from_secs(1));
+                            if let Some(d) = crate::input::find_keyboard_device() {
+                                dev = d;
+                                consecutive_errors = 0;
+                                eprintln!("Input device reopened successfully");
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    let mut zone_pressed: [HashSet<KeyType>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
     let mut zone_state: [RippleMove; 4] = [RippleMove::Off, RippleMove::Off, RippleMove::Off, RippleMove::Off];
 
     let mut last_step_time = Instant::now();
