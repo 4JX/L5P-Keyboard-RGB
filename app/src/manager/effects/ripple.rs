@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use device_query::{DeviceEvents, DeviceEventsHandler, Keycode};
+use legion_input::{Event, EventKind, Key};
 
 use crate::manager::{
     profile::Profile,
@@ -25,57 +25,38 @@ enum RippleMove {
 
 pub fn play(manager: &mut Inner, p: &Profile) {
     // Welcome to the definition of i-don't-know-what-im-doing
+    let Some(input) = manager.input.clone() else {
+        return;
+    };
     let stop_signals = manager.stop_signals.clone();
 
     let kill_thread = Arc::new(AtomicBool::new(false));
     let exit_thread = kill_thread.clone();
-
-    enum Event {
-        KeyPress(Keycode),
-        KeyRelease(Keycode),
-    }
-
     let (tx, rx) = crossbeam_channel::unbounded::<Event>();
+    let events = input.subscribe();
 
-    thread::spawn(move || {
-        // Do this in order to avoid having to store the event handler struct somewhere,
-        // since it saves no data and serves only as a fancy function proxy for interacting with the real event loop
-        // This keeps the effect self contained, and other effects should probably use the same pattern
-        let event_handler = DeviceEventsHandler::new(Duration::from_millis(10)).unwrap_or(DeviceEventsHandler {});
-
-        // tx_clone.send(Event::KeyPress(Keycode::Meta)).unwrap();
-        let tx_clone = tx.clone();
-
-        let press_guard = event_handler.on_key_down(move |key| {
-            stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
-
-            let _ = tx_clone.send(Event::KeyPress(*key));
-        });
-
-        let release_guard = event_handler.on_key_up(move |key| {
-            let _ = tx.send(Event::KeyRelease(*key));
-        });
-
-        loop {
-            if exit_thread.load(Ordering::SeqCst) {
-                drop(press_guard);
-                drop(release_guard);
-                break;
+    let input_thread = thread::spawn(move || {
+        while !exit_thread.load(Ordering::SeqCst) {
+            if let Ok(event) = events.recv_timeout(Duration::from_millis(50)) {
+                if matches!(event.kind, EventKind::KeyDown(_)) {
+                    stop_signals.keyboard_stop_signal.store(true, Ordering::SeqCst);
+                }
+                if tx.send(event).is_err() {
+                    break;
+                }
             }
-
-            thread::sleep(Duration::from_millis(5));
         }
     });
 
-    let mut zone_pressed: [HashSet<Keycode>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
+    let mut zone_pressed: [HashSet<Key>; 4] = [HashSet::new(), HashSet::new(), HashSet::new(), HashSet::new()];
     let mut zone_state: [RippleMove; 4] = [RippleMove::Off, RippleMove::Off, RippleMove::Off, RippleMove::Off];
 
     let mut last_step_time = Instant::now();
 
     while !manager.stop_signals.manager_stop_signal.load(Ordering::SeqCst) {
-        match rx.try_recv() {
-            Ok(event) => match event {
-                Event::KeyPress(key) => {
+        while let Ok(event) = rx.try_recv() {
+            match event.kind {
+                EventKind::KeyDown(key) => {
                     for (i, zone) in KEY_ZONES.iter().enumerate() {
                         if zone.contains(&key) {
                             zone_pressed[i].insert(key);
@@ -84,17 +65,17 @@ pub fn play(manager: &mut Inner, p: &Profile) {
 
                     manager.stop_signals.keyboard_stop_signal.store(false, Ordering::SeqCst);
                 }
-                Event::KeyRelease(key) => {
+                EventKind::KeyUp(key) => {
                     for (i, zone) in KEY_ZONES.iter().enumerate() {
                         if zone.contains(&key) {
                             zone_pressed[i].remove(&key);
                         }
                     }
                 }
-            },
-            Err(err) => {
-                if err == crossbeam_channel::TryRecvError::Disconnected {
-                    break;
+                EventKind::Reset => {
+                    for pressed in &mut zone_pressed {
+                        pressed.clear();
+                    }
                 }
             }
         }
@@ -121,6 +102,7 @@ pub fn play(manager: &mut Inner, p: &Profile) {
     }
 
     kill_thread.store(true, Ordering::SeqCst);
+    let _ = input_thread.join();
 }
 
 fn advance_zone_state(zone_state: [RippleMove; 4], last_step_time: &mut Instant, speed: &u8) -> [RippleMove; 4] {

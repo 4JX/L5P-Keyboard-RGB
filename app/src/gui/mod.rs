@@ -1,11 +1,10 @@
-use std::{process, thread, time::Duration};
+use std::{collections::HashSet, process, thread};
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
 
-use device_query::{DeviceQuery, Keycode};
 #[cfg(debug_assertions)]
 use eframe::egui::style::DebugOptions;
 use eframe::{
@@ -16,6 +15,7 @@ use eframe::{
 };
 
 use egui_notify::Toasts;
+use legion_input::{EventKind, Key};
 use strum::IntoEnumIterator;
 use tray_icon::menu::MenuEvent;
 
@@ -180,25 +180,28 @@ impl App {
 
         let ctx = cc.egui_ctx.clone();
         let gui_tx_c = self.gui_tx.clone();
-        if self.manager.is_some() {
+        if let Some(events) = self.manager.as_ref().and_then(EffectManager::input).map(|input| input.subscribe()) {
             thread::spawn(move || {
-                let state = device_query::DeviceState::new();
-                let mut lock_switching = false;
+                let mut held = HashSet::new();
+                let mut active = false;
 
-                loop {
-                    let keys = state.get_keys();
-
-                    if keys.contains(&Keycode::LMeta) && keys.contains(&Keycode::RAlt) {
-                        if !lock_switching {
-                            let _ = gui_tx_c.send(GuiMessage::CycleProfiles);
-                            ctx.request_repaint();
-                            lock_switching = true;
+                while let Ok(event) = events.recv() {
+                    match event.kind {
+                        EventKind::KeyDown(key) => {
+                            held.insert(key);
                         }
-                    } else {
-                        lock_switching = false;
+                        EventKind::KeyUp(key) => {
+                            held.remove(&key);
+                        }
+                        EventKind::Reset => held.clear(),
                     }
 
-                    thread::sleep(Duration::from_millis(50));
+                    let chord_pressed = held.contains(&Key::MetaLeft) && held.contains(&Key::AltRight);
+                    if chord_pressed && !active {
+                        let _ = gui_tx_c.send(GuiMessage::CycleProfiles);
+                        ctx.request_repaint();
+                    }
+                    active = chord_pressed;
                 }
             });
         }

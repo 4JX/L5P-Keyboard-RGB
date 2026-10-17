@@ -3,6 +3,7 @@ use crate::enums::{Direction, Effects, Message};
 use crossbeam_channel::{Receiver, Sender};
 use effects::{ambient, christmas, disco, fade, lightning, ripple, swipe, temperature};
 use error_stack::{Result, ResultExt};
+use legion_input::Input;
 use legion_rgb_driver::{BaseEffects, Keyboard, SPEED_RANGE};
 use profile::Profile;
 use rand::{rng, rngs::ThreadRng};
@@ -37,11 +38,13 @@ pub struct EffectManager {
     pub tx: Sender<Message>,
     inner_handle: Option<JoinHandle<()>>,
     stop_signals: StopSignals,
+    input: Option<Input>,
 }
 
 /// Controls the keyboard lighting logic
 struct Inner {
     keyboard: Keyboard,
+    input: Option<Input>,
     rx: Receiver<Message>,
     stop_signals: StopSignals,
     last_profile: Profile,
@@ -75,11 +78,13 @@ impl EffectManager {
             .attach_printable("Ensure that you have a supported model and that the application has access to it.")
             .attach_printable("On Linux, you may need to configure additional permissions")
             .attach_printable("https://github.com/4JX/L5P-Keyboard-RGB#usage")?;
+        let input = Input::new().ok();
 
         let (tx, rx) = crossbeam_channel::unbounded::<Message>();
 
         let mut inner = Inner {
             keyboard,
+            input: input.clone(),
             rx,
             stop_signals: stop_signals.clone(),
             last_profile: Profile::default(),
@@ -116,9 +121,14 @@ impl EffectManager {
             tx,
             inner_handle: Some(inner_handle),
             stop_signals,
+            input,
         };
 
         Ok(manager)
+    }
+
+    pub fn input(&self) -> Option<&Input> {
+        self.input.as_ref()
     }
 
     pub fn set_profile(&mut self, profile: Profile) {

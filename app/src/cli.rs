@@ -1,6 +1,6 @@
 use std::{convert::TryInto, path::PathBuf, str::FromStr};
 
-use clap::{arg, command, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use error_stack::{Result, ResultExt};
 use strum::IntoEnumIterator;
 use thiserror::Error;
