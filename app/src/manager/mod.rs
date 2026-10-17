@@ -37,6 +37,7 @@ pub struct EffectManager {
     pub tx: Sender<Message>,
     inner_handle: Option<JoinHandle<()>>,
     stop_signals: StopSignals,
+    supports_spectrum_effects: bool,
 }
 
 /// Controls the keyboard lighting logic
@@ -77,6 +78,7 @@ impl EffectManager {
             .attach_printable("https://github.com/4JX/L5P-Keyboard-RGB#usage")?;
 
         let (tx, rx) = crossbeam_channel::unbounded::<Message>();
+        let supports_spectrum_effects = keyboard.supports_spectrum_effects();
 
         let mut inner = Inner {
             keyboard,
@@ -116,9 +118,15 @@ impl EffectManager {
             tx,
             inner_handle: Some(inner_handle),
             stop_signals,
+            supports_spectrum_effects,
         };
 
         Ok(manager)
+    }
+
+    /// Whether the connected keyboard can play the effects for which [`Effects::requires_spectrum`] is true
+    pub fn supports_effect(&self, effect: Effects) -> bool {
+        !effect.requires_spectrum() || self.supports_spectrum_effects
     }
 
     pub fn set_profile(&mut self, profile: Profile) {
@@ -142,6 +150,11 @@ impl EffectManager {
 
 impl Inner {
     fn set_profile(&mut self, mut profile: Profile) {
+        if profile.effect.requires_spectrum() && !self.keyboard.supports_spectrum_effects() {
+            println!("The {} effect is only available on 2025 and newer keyboards, using Static instead.", profile.effect);
+            profile.effect = Effects::Static;
+        }
+
         self.last_profile = profile.clone();
         self.stop_signals.store_false();
         let mut rng = rng();
@@ -200,6 +213,26 @@ impl Inner {
             Effects::Fade => fade::play(self, profile),
             Effects::Temperature => temperature::play(self),
             Effects::Ripple => ripple::play(self, profile),
+            Effects::RainbowScrew => {
+                let effect = match profile.direction {
+                    Direction::Left => BaseEffects::RainbowScrewCounterClockwise,
+                    Direction::Right => BaseEffects::RainbowScrewClockwise,
+                };
+                self.keyboard.set_effect(effect).unwrap();
+            }
+            Effects::ColorWave => {
+                let effect = match profile.direction {
+                    Direction::Left => BaseEffects::ColorWaveLeft,
+                    Direction::Right => BaseEffects::ColorWaveRight,
+                };
+                self.keyboard.set_effect(effect).unwrap();
+                self.keyboard.set_colors_to(&profile.rgb_array()).unwrap();
+            }
+            Effects::ColorChange | Effects::Rain => {
+                let effect = if let Effects::ColorChange = profile.effect { BaseEffects::ColorChange } else { BaseEffects::Rain };
+                self.keyboard.set_effect(effect).unwrap();
+                self.keyboard.set_colors_to(&profile.rgb_array()).unwrap();
+            }
         }
     }
 

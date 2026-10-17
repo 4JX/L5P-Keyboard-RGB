@@ -57,6 +57,15 @@ You may also download pre-compiled versions from [here](https://github.com/4JX/L
 - **Fade:** Turns off the keyboard lights after a period of inactivity.
 - **Temperature:** Displays a gradient based on the current CPU temperature. (Linux only)
 
+**Hardware effects on 2025 and newer keyboards** (these run on the keyboard itself, like the stock ones):
+
+- **RainbowScrew:** A rotating rainbow spiral, direction picks clockwise or counter clockwise.
+- **ColorChange:** Cycles through the selected colors.
+- **ColorWave:** A wave of the selected colors moving left or right.
+- **Rain:** Raindrops in the selected colors.
+
+Leave all colors black to let the keyboard pick random ones. The firmware's key press effects (ripple, type lighting) do nothing on these 24 zone keyboards, so they are not exposed.
+
 ### Creating your own effects
 
 The best way to add a new effect is to directly edit the source code, as it allows the most flexibility. You can however also use the built-in feature to make basic effects.
@@ -93,13 +102,14 @@ The best way to add a new effect is to directly edit the source code, as it allo
 ### Format
 
 ```sh
-SUBSYSTEM=="usb", ATTR{idVendor}=="048d", ATTR{idProduct}=="####", MODE="0666"
+KERNEL=="hidraw*", ATTRS{idVendor}=="048d", ATTRS{idProduct}=="####", MODE="0666"
 ```
 
 Where `idProduct` can be found in these tables:
 
 | Year | Pro    | Regular + Slim | LOQ    |
 | ---- | ------ | -------------- | ------ |
+| 2025 | `c195` |                |        |
 | 2024 | `c995` | `c994`         | `c993` |
 | 2023 | `c985` | `c984`         | `c983` |
 
@@ -153,8 +163,10 @@ legion-kb-rgb set -e SmoothWave -s 4 -b 2 -d Left
 
 This program has been tested to work on:
 
-- Legion 5 (Pro) 2020, 2021, 2022, 2023, 2024
+- Legion 5 (Pro) 2020, 2021, 2022, 2023, 2024, 2025
 - Ideapad Gaming 3 2021, 2022, 2023, 2024
+
+**Note**: The 2025 models (`048d:c195`) use a different protocol ("Spectrum") and have 24 lighting zones. The keyboard's LED layout is read from the device and grouped into the usual 4 zones.
 
 ### "How about X model"
 
@@ -171,7 +183,7 @@ This program has been tested to work on:
 #### Linux (Ubuntu)
 
 ```sh
-sudo apt-get install -y libclang-dev libxcb-shm0-dev libusb-1.0-0-dev libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev libpango1.0-dev libgtk-3-dev libxdo-dev libappindicator3-dev
+sudo apt-get install -y libssl-dev libclang-dev libxcb-shm0-dev libusb-1.0-0-dev libx11-dev nasm libdbus-1-dev libudev-dev libxcb-randr0-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev libxi-dev libxtst-dev libpango1.0-dev libgtk-3-dev libxdo-dev libappindicator3-dev
 ```
 
 <!-- #### Windows -->
