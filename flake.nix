@@ -47,7 +47,11 @@
             ];
           };
 
-          craneLib = (crane.mkLib pkgs).overrideToolchain rust;
+          craneLib = ((crane.mkLib pkgs).overrideToolchain rust).overrideScope (
+            _final: _prev: {
+              stdenvSelector = p: p.stdenvAdapters.useMoldLinker p.stdenv;
+            }
+          );
 
           # Libraries needed both at compile and runtime
           sharedDeps = with pkgs; [
@@ -122,8 +126,6 @@
           # Forgo using VCPKG hacks on local builds because pain
           cargoExtraArgs = ''--locked --features "scrap/linux-pkg-config"'';
 
-          stdenv = p: (p.stdenvAdapters.useMoldLinker p.stdenv);
-
           inherit (craneLib.crateNameFromCargoToml { cargoToml = ./app/Cargo.toml; }) pname version;
 
           # Vendor dependencies to fix webm-sys compile issue
@@ -159,7 +161,6 @@
               buildInputs
               nativeBuildInputs
               cargoExtraArgs
-              stdenv
               cargoVendorDir
               ;
           }
@@ -195,13 +196,23 @@
           devShells.default =
             let
               deps = buildInputs ++ nativeBuildInputs ++ runtimeDeps;
+              run-legion-kb-rgb = pkgs.writeShellScriptBin "run-legion-kb-rgb" ''
+                exec env LD_LIBRARY_PATH=${lib.escapeShellArg (lib.makeLibraryPath deps)} \
+                  cargo run -p ${lib.escapeShellArg pname} "$@"
+              '';
             in
             pkgs.mkShell {
-              LD_LIBRARY_PATH = lib.makeLibraryPath deps;
               RUST_BACKTRACE = "1";
+              # rust-analyzer uses Cargo directly, bypassing the patched Crane vendor tree.
+              # Force rust-webm's bundled libwebm to include the fixed-width integer types it uses.
+              CXXFLAGS = "-include cstdint";
               inherit (buildEnvVars) LIBCLANG_PATH;
 
-              buildInputs = [ rust ] ++ deps;
+              buildInputs = [
+                rust
+                run-legion-kb-rgb
+              ]
+              ++ deps;
             };
         };
     };
