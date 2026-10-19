@@ -198,9 +198,8 @@ fn parse_cli() -> Result<CliOutput, CliError> {
                 save,
             } => {
                 let direction = direction.unwrap_or_default();
-                #[cfg(not(feature = "ambient-light"))]
-                if matches!(effect, Effects::AmbientLight { .. }) {
-                    println!("Error: AmbientLight effect is not available in this build.");
+                if !effect.is_available() {
+                    println!("Error: {effect} is not available in this build.");
                     std::process::exit(1);
                 }
                 let rgb_array = if effect.takes_color_array() {
@@ -236,21 +235,14 @@ fn parse_cli() -> Result<CliOutput, CliError> {
             }
             Commands::List => {
                 println!("List of available effects:");
-                for (i, effect) in Effects::iter().enumerate() {
-                    #[cfg(feature = "ambient-light")]
-                    let show = true;
-                    #[cfg(not(feature = "ambient-light"))]
-                    let show = !matches!(effect, Effects::AmbientLight { .. });
-                    if !show {
-                        continue;
-                    }
+                for (i, effect) in Effects::iter().filter(|effect| effect.is_available()).enumerate() {
                     println!("{}. {effect}", i + 1);
                 }
                 return Ok(CliOutput::Cli(OutputType::Exit));
             }
 
             Commands::LoadProfile { path } => {
-                let profile = Profile::load_profile(&path).change_context(CliError)?.normalize_effect();
+                let profile = Profile::load_profile(&path).change_context(CliError)?.normalize_chosen_effect();
                 if cli.gui {
                     return Ok(CliOutput::Gui {
                         hide_window: cli.hide_window,

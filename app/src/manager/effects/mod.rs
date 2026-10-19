@@ -1,7 +1,7 @@
 use default_ui::{show_brightness, show_direction, show_effect_settings};
-use eframe::egui::{self, ComboBox};
 #[cfg(feature = "ambient-light")]
 use eframe::egui::Slider;
+use eframe::egui::{self, ComboBox};
 use strum::IntoEnumIterator;
 
 use crate::{

@@ -118,6 +118,7 @@ impl App {
 
         let settings: Settings = Settings::load();
         let Settings { current_profile, profiles, effects } = settings;
+        let current_profile = current_profile.normalize_chosen_effect();
 
         let gui_tx_c = gui_tx.clone();
         // Default app state
@@ -312,9 +313,9 @@ impl App {
 
         if let Some((i, _)) = self.saved_items.profiles.iter().enumerate().find(|(_, profile)| &profile.name == current_profile_name) {
             if i == len - 1 && len > 0 {
-                self.current_profile = self.saved_items.profiles[0].clone();
+                self.current_profile = self.saved_items.profiles[0].clone().normalize_chosen_effect();
             } else {
-                self.current_profile = self.saved_items.profiles[i + 1].clone();
+                self.current_profile = self.saved_items.profiles[i + 1].clone().normalize_chosen_effect();
             }
 
             self.state_changed = true;
@@ -370,14 +371,7 @@ impl App {
                     ui.style_mut().spacing.item_spacing = self.theme.spacing.default;
                     ScrollArea::vertical().show(ui, |ui| {
                         ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
-                            for val in Effects::iter() {
-                                #[cfg(feature = "ambient-light")]
-                                let show = true;
-                                #[cfg(not(feature = "ambient-light"))]
-                                let show = !matches!(val, Effects::AmbientLight { .. });
-                                if !show {
-                                    continue;
-                                }
+                            for val in Effects::iter().filter(|effect| effect.is_available()) {
                                 let text: &'static str = val.into();
                                 if ui.selectable_value(&mut self.current_profile.effect, val, text).clicked() {
                                     self.state_changed = true;

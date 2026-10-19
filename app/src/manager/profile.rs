@@ -73,10 +73,9 @@ impl Profile {
         self.rgb_zones.map(|zone| if zone.enabled { zone.rgb } else { [0; 3] }).concat().try_into().unwrap()
     }
 
-    pub fn normalize_effect(self) -> Self {
-        #[cfg(not(feature = "ambient-light"))]
-        if matches!(self.effect, Effects::AmbientLight { .. }) {
-            eprintln!("Warning: Profile uses AmbientLight effect which is not available in this build. Falling back to Static.");
+    pub fn normalize_chosen_effect(self) -> Self {
+        if !self.effect.is_available() {
+            eprintln!("Warning: Profile uses the {} effect, which is not available in this build. Falling back to Static.", self.effect);
             return Self { effect: Effects::Static, ..self };
         }
         self
