@@ -72,6 +72,14 @@ impl Profile {
     pub fn rgb_array(&self) -> [u8; 12] {
         self.rgb_zones.map(|zone| if zone.enabled { zone.rgb } else { [0; 3] }).concat().try_into().unwrap()
     }
+
+    pub fn normalize_chosen_effect(self) -> Self {
+        if !self.effect.is_available() {
+            eprintln!("Warning: Profile uses the {} effect, which is not available in this build. Falling back to Static.", self.effect);
+            return Self { effect: Effects::Static, ..self };
+        }
+        self
+    }
 }
 
 pub fn arr_to_zones(arr: [u8; 12]) -> Zones {

@@ -44,6 +44,17 @@ impl PartialEq for Effects {
 
 #[allow(dead_code)]
 impl Effects {
+    pub fn is_available(self) -> bool {
+        #[cfg(feature = "ambient-light")]
+        {
+            true
+        }
+        #[cfg(not(feature = "ambient-light"))]
+        {
+            !matches!(self, Self::AmbientLight { .. })
+        }
+    }
+
     pub fn takes_color_array(self) -> bool {
         matches!(self, Self::Static | Self::Breath | Self::Lightning | Self::Swipe { .. } | Self::Fade | Self::Ripple)
     }

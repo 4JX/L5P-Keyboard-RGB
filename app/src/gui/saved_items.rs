@@ -146,7 +146,7 @@ impl SavedItems {
                             ui.horizontal_wrapped(|ui| {
                                 for prof in self.profiles.iter() {
                                     let name = prof.name.as_deref().unwrap_or("Unnamed");
-                                    if ui.selectable_value(current_profile, prof.clone(), name).clicked() {
+                                    if ui.selectable_value(current_profile, prof.clone().normalize_chosen_effect(), name).clicked() {
                                         *changed = true;
                                         loaded_effect.state = State::None;
                                     };
