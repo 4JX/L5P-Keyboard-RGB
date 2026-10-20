@@ -8,6 +8,8 @@ pub enum Error {
     HidError(#[from] HidError),
     #[error("Error: Couldn't find device")]
     DeviceNotFound,
+    #[error("Error: Couldn't read the keyboard's LED layout")]
+    KeyMapUnavailable,
     #[error("Error: {}", .0)]
     RangeError(#[from] RangeError),
 }

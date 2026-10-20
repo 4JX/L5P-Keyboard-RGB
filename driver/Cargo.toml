@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 thiserror = "2.0.12"
 hidapi = { version = "2.6.3", default-features = false, features = [
-    "linux-static-libusb",
+    "linux-static-hidraw",
 ] }
