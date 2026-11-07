@@ -100,6 +100,7 @@ Where `idProduct` can be found in these tables:
 
 | Year | Pro    | Regular + Slim | LOQ    |
 | ---- | ------ | -------------- | ------ |
+| 2025 |        |                | `c693` |
 | 2024 | `c995` | `c994`         | `c993` |
 | 2023 | `c985` | `c984`         | `c983` |
 
@@ -155,6 +156,17 @@ This program has been tested to work on:
 
 - Legion 5 (Pro) 2020, 2021, 2022, 2023, 2024
 - Ideapad Gaming 3 2021, 2022, 2023, 2024
+- LOQ 15IRX10 (`c693`, 2025 model; tested on a May 2026 build)
+
+> **LOQ 15IRX10 (2025 model, including 2026 builds):** This model exposes its keyboard through the standard HID
+> Lighting and Illumination (LampArray) usage page rather than the older vendor
+> protocol. The app controls it directly over LampArray, so **Legion Space is not
+> required** and can stay closed. On Windows, the app briefly releases the device
+> from Windows Dynamic Lighting at startup (pulsing `AmbientLightingEnabled`) and
+> restores the previous lighting settings when it exits. Effects are rendered in
+> software at 24 lamps and mapped onto the same four zones as the other models.
+> The keyboard keeps the last frame after the app exits, so CLI `set` commands
+> keep their color too.
 
 ### "How about X model"
 
@@ -211,14 +223,19 @@ cargo make build-release
 Windows:
 
 ```cmd
-vcpkg update && vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static
+vcpkg install libvpx:x64-windows-static libyuv:x64-windows-static aom:x64-windows-static
 ```
 
 Linux:
 
 ```sh
-vcpkg update && vcpkg install libvpx libyuv
+vcpkg install libvpx libyuv aom
 ```
+
+On Windows you also need:
+
+- [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the **Desktop development with C++** workload (MSVC linker and Windows SDK).
+- LLVM/libclang for `bindgen` (the **C++ Clang tools for Windows** component of the Build Tools installs it). Set `LIBCLANG_PATH` to the folder containing `libclang.dll` if it is not found automatically.
 
 - Clone the repository
 
