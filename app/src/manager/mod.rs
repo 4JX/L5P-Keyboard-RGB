@@ -215,6 +215,9 @@ impl Inner {
 
     fn custom_effect(&mut self, custom_effect: &CustomEffect) {
         self.stop_signals.store_false();
+        // Custom effects are built from static color steps, so make sure a
+        // hardware/software animation effect isn't still driving the keyboard.
+        self.keyboard.set_effect(BaseEffects::Static).unwrap();
 
         loop {
             for step in &custom_effect.effect_steps {
