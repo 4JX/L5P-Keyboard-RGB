@@ -30,7 +30,7 @@ const WINDOW_SIZE: Vec2 = Vec2::new(500., 460.);
 #[cfg(target_os = "linux")]
 pub static DENY_HIDING: LazyLock<bool> = LazyLock::new(|| std::env::var("WAYLAND_DISPLAY").is_ok());
 #[cfg(not(target_os = "linux"))]
-pub static DENY_HIDING: LazyLock<bool> = LazyLock::new(|| true);
+pub static DENY_HIDING: LazyLock<bool> = LazyLock::new(|| false);
 
 fn main() {
     #[cfg(target_os = "windows")]
@@ -99,6 +99,7 @@ fn start_ui(output_type: OutputType, hide_window: bool) {
             .with_inner_size(WINDOW_SIZE)
             .with_min_inner_size(WINDOW_SIZE)
             .with_max_inner_size(WINDOW_SIZE)
+            .with_visible(!hide_window || *DENY_HIDING)
             .with_icon(app_icon),
         ..eframe::NativeOptions::default()
     };
