@@ -40,7 +40,18 @@ pub struct EffectManager {
     stop_signals: StopSignals,
     input: Option<Input>,
 }
+#[derive(Clone)]
+pub struct ManagerHandle {
+    tx: Sender<Message>,
+    stop_signals: StopSignals,
+}
 
+impl ManagerHandle {
+    pub fn shutdown(&self) {
+        self.stop_signals.store_true();
+        let _ = self.tx.send(Message::Exit);
+    }
+}
 /// Controls the keyboard lighting logic
 struct Inner {
     keyboard: Keyboard,
@@ -130,7 +141,12 @@ impl EffectManager {
     pub fn input(&self) -> Option<&Input> {
         self.input.as_ref()
     }
-
+    pub fn handle(&self) -> ManagerHandle {
+        ManagerHandle {
+            tx: self.tx.clone(),
+            stop_signals: self.stop_signals.clone(),
+        }
+    }
     pub fn set_profile(&mut self, profile: Profile) {
         self.stop_signals.store_true();
         self.tx.try_send(Message::Profile { profile }).unwrap();

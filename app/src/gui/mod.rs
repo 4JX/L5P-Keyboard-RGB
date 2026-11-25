@@ -1,4 +1,4 @@
-use std::{collections::HashSet, process, thread};
+use std::{collections::HashSet, process, thread, time::Duration};
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -34,7 +34,36 @@ mod menu_bar;
 mod modals;
 mod saved_items;
 pub mod style;
+#[cfg(target_os = "windows")]
+mod win_window {
+    use std::{ffi::OsStr, os::windows::ffi::OsStrExt};
 
+    #[link(name = "user32")]
+    unsafe extern "system" {
+        fn FindWindowW(lp_class_name: *const u16, lp_window_name: *const u16) -> *mut core::ffi::c_void;
+        fn ShowWindow(h_wnd: *mut core::ffi::c_void, n_cmd_show: i32) -> i32;
+        fn IsIconic(h_wnd: *mut core::ffi::c_void) -> i32;
+        fn SetForegroundWindow(h_wnd: *mut core::ffi::c_void) -> i32;
+    }
+
+    pub fn set_visible(visible: bool) {
+        let title: Vec<u16> = OsStr::new("Legion RGB").encode_wide().chain(std::iter::once(0)).collect();
+        unsafe {
+            let hwnd = FindWindowW(std::ptr::null(), title.as_ptr());
+            if !hwnd.is_null() {
+                if visible {
+                    ShowWindow(hwnd, 5); // SW_SHOW
+                    if IsIconic(hwnd) != 0 {
+                        ShowWindow(hwnd, 9); // SW_RESTORE
+                    }
+                    SetForegroundWindow(hwnd);
+                } else {
+                    ShowWindow(hwnd, 0); // SW_HIDE
+                }
+            }
+        }
+    }
+}
 pub struct App {
     instance_not_unique: bool,
     gui_tx: crossbeam_channel::Sender<GuiMessage>,
@@ -149,7 +178,8 @@ impl App {
             OutputType::NoArgs => {}
             OutputType::Exit => unreachable!("Exiting the app supersedes starting the GUI"),
         }
-
+        // Start lighting immediately even when launched hidden (-w)
+        app.update_state();
         app
     }
 
@@ -161,19 +191,29 @@ impl App {
         let egui_ctx = cc.egui_ctx.clone();
         let gui_tx = self.gui_tx.clone();
         let has_tray = self.has_tray.clone();
+        let manager_handle = self.manager.as_ref().map(EffectManager::handle);
 
         std::thread::spawn(move || loop {
             if let Ok(event) = MenuEvent::receiver().recv() {
                 if event.id == SHOW_ID {
-                    egui_ctx.request_repaint();
-
                     egui_ctx.send_viewport_cmd(ViewportCommand::Visible(true));
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
                     egui_ctx.send_viewport_cmd(ViewportCommand::Focus);
+                    #[cfg(target_os = "windows")]
+                    win_window::set_visible(true);
+                    egui_ctx.request_repaint();
                 } else if event.id == QUIT_ID {
+                    has_tray.store(false, Ordering::SeqCst);
+                    let _ = gui_tx.send(GuiMessage::Quit);
+                    egui_ctx.send_viewport_cmd(ViewportCommand::Close);
                     egui_ctx.request_repaint();
 
-                    let _ = gui_tx.send(GuiMessage::Quit);
-                    has_tray.store(false, Ordering::SeqCst);
+                    // Fallback exit if window is hidden and Windows doesn't wake update()
+                    thread::sleep(Duration::from_millis(250));
+                    if let Some(ref handle) = manager_handle {
+                        handle.shutdown();
+                    }
+                    process::exit(0);
                 }
             }
         });
@@ -406,13 +446,14 @@ impl App {
     }
 
     fn handle_close_request(&mut self, ctx: &Context) {
-        if ctx.input(|i| i.viewport().close_requested()) && !*DENY_HIDING {
-            if self.has_tray.load(Ordering::Relaxed) {
-                ctx.send_viewport_cmd(ViewportCommand::CancelClose);
-                ctx.send_viewport_cmd(ViewportCommand::Visible(false));
-            } else {
-                // Close normally
-            }
+        if ctx.input(|i| i.viewport().close_requested()) && !*DENY_HIDING && self.has_tray.load(Ordering::Relaxed) {
+            let SavedItems { profiles, custom_effects, .. } = self.saved_items.clone();
+            Settings::new(profiles, custom_effects, self.current_profile.clone()).save();
+
+            ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+            ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+            #[cfg(target_os = "windows")]
+            win_window::set_visible(false);
         }
     }
 }
